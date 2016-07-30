@@ -1,0 +1,15 @@
+{
+  "name": "linucc-screeps",
+  "version": "0.0.1",
+  "description": "Just my screeps-code",
+  "author": "LinuCC <linucc@linu.cc>",
+  "scripts": {
+    "build": "webpack && echo 'module.exports = ' | cat - 'libs/bundle.js' > /tmp/out && mv /tmp/out libs/bundle.js"
+  },
+  "main": "libs/bundle.js",
+  "dependencies": {
+    "babel-core": "^6.11.4",
+    "babel-loader": "^6.2.4",
+    "babel-preset-es2015": "^6.9.0"
+  }
+}
