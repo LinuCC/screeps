@@ -215,6 +215,7 @@ module.exports =
 	                }
 	            }
 	        } else {
+	            var void_extension = void 0;
 	            if (Game.spawns['Underground Traaains'].energy < 300) {
 	                if (creep.transfer(Game.spawns['Underground Traaains'], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
 	                    creep.moveTo(Game.spawns['Underground Traaains']);
@@ -254,9 +255,9 @@ module.exports =
 	        }
 	    },
 	    getFirstVoidExtension: function getFirstVoidExtension(room) {
-	        void_extensions = room.find(FIND_MY_STRUCTURES, { filter: this.filterNonVoidExtension });
+	        var void_extensions = room.find(FIND_MY_STRUCTURES, { filter: this.filterNonVoidExtension });
 	        if (void_extensions.length > 0) {
-	            void_extension = Array.isArray(void_extensions) ? void_extensions[0] : void_extensions;
+	            var void_extension = Array.isArray(void_extensions) ? void_extensions[0] : void_extensions;
 	            return void_extension;
 	        } else {
 	            return null;
@@ -336,6 +337,7 @@ module.exports =
 	        }
 
 	        if (creep.memory.harvesting) {
+	            var container = void 0;
 	            if (container = role.findNonVoidEnergyContainer(creep)) {
 	                if (creep.withdraw(container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
 	                    creep.moveTo(container);
@@ -476,6 +478,7 @@ module.exports =
 	            }
 	        } else {
 	            var store = Game.getObjectById(creep.memory.toTarget);
+	            var void_extension = void 0;
 	            if (store && store['store'] && store.store[RESOURCE_ENERGY] < store.storeCapacity) {
 	                if (creep.transfer(store, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
 	                    creep.moveTo(store);
@@ -503,9 +506,9 @@ module.exports =
 	        return structure.structureType == STRUCTURE_EXTENSION && structure.energy < 50;
 	    },
 	    getFirstVoidExtension: function getFirstVoidExtension(room) {
-	        void_extensions = room.find(FIND_MY_STRUCTURES, { filter: this.filterNonVoidExtension });
+	        var void_extensions = room.find(FIND_MY_STRUCTURES, { filter: this.filterNonVoidExtension });
 	        if (void_extensions.length > 0) {
-	            void_extension = Array.isArray(void_extensions) ? void_extensions[0] : void_extensions;
+	            var void_extension = Array.isArray(void_extensions) ? void_extensions[0] : void_extensions;
 	            return void_extension;
 	        } else {
 	            return null;
@@ -549,12 +552,14 @@ module.exports =
 	        }
 
 	        if (creep.memory.repairing) {
+	            var target = void 0;
 	            if (target = this.getRepairTarget(creep)) {
 	                if (creep.repair(target) == ERR_NOT_IN_RANGE) {
 	                    creep.moveTo(target);
 	                }
 	            }
 	        } else {
+	            var container = void 0;
 	            if (container = role.findNonVoidEnergyContainer(creep)) {
 	                if (creep.withdraw(container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
 	                    creep.moveTo(container);

@@ -14,6 +14,7 @@ const roleRepairer = {
 	    }
 
 	    if(creep.memory.repairing) {
+            let target
             if(target = this.getRepairTarget(creep)) {
                 if(creep.repair(target) == ERR_NOT_IN_RANGE) {
                     creep.moveTo(target);
@@ -21,6 +22,7 @@ const roleRepairer = {
             }
 	    }
 	    else {
+          let container
 	        if(container = role.findNonVoidEnergyContainer(creep)) {
 	            if(creep.withdraw(container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
 	                creep.moveTo(container)

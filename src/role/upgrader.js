@@ -12,6 +12,7 @@ var roleUpgrader = {
         }
 
 	    if(creep.memory.harvesting) {
+          let container
 	        if(container = role.findNonVoidEnergyContainer(creep)) {
 	            if(creep.withdraw(container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
 	                creep.moveTo(container)
