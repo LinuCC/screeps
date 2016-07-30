@@ -7,6 +7,8 @@ const roleRepairer = require('./role/repairer')
 const roleTransporter = require('./role/transporter')
 const spawnCreepWatcher = require('./spawn/creepWatcher')
 
+import 'babel-preset-es2017/polyfill'
+
 // Maximum range for a remote mine, assuming 100% effectiveness: 190 squares
 
 PathFinder.use(true)
