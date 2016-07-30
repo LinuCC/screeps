@@ -16,7 +16,8 @@ var spawnCreepWatcher = {
 
         let excavators = _.filter(Game.creeps, (creep) => creep.memory.role == 'excavator');
         if(spawn.memory.excavators) {
-            for(memExcavator of spawn.memory.excavators) {
+          let memExcavator = null
+            for(let memExcavator of spawn.memory.excavators) {
                 if(_.filter(excavators, (ex)=> (ex.memory.fromSource == memExcavator.fromSource && ex.memory.toTarget == memExcavator.toTarget)).length == 0) {
                     //console.log("Wanna spawn new excavator!");
                     let newName = spawner.excavator(memExcavator.fromSource, memExcavator.toTarget)
@@ -26,7 +27,8 @@ var spawnCreepWatcher = {
 
         let transporters = _.filter(Game.creeps, (creep) => creep.memory.role == 'transporter');
         if(spawn.memory.transporters) {
-            for(memTransporter of spawn.memory.transporters) {
+            let memTransporter = null
+            for(let memTransporter of spawn.memory.transporters) {
                 if(_.filter(transporters, (ex)=> (ex.memory.fromSource.id == memTransporter.fromSource.id && ex.memory.toTarget.id == memTransporter.toTarget.id)).length == 0) {
                     let newName = spawner.transporter(memTransporter)
                 }

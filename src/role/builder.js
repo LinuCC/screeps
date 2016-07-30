@@ -20,7 +20,8 @@ const roleBuilder = {
                 }
             }
             else {
-                if(target = this.getRepairTarget(creep)) {
+                let target = this.getRepairTarget(creep)
+                if(target) {
                     if(creep.repair(target) == ERR_NOT_IN_RANGE) {
                         creep.moveTo(target);
                     }

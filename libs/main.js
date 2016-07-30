@@ -383,7 +383,8 @@ module.exports =
 																					creep.moveTo(targets[0]);
 																	}
 													} else {
-																	if (target = this.getRepairTarget(creep)) {
+																	var target = this.getRepairTarget(creep);
+																	if (target) {
 																					if (creep.repair(target) == ERR_NOT_IN_RANGE) {
 																									creep.moveTo(target);
 																					}
@@ -686,13 +687,14 @@ module.exports =
 	            return creep.memory.role == 'excavator';
 	        });
 	        if (spawn.memory.excavators) {
+	            var memExcavator = null;
 	            var _iteratorNormalCompletion = true;
 	            var _didIteratorError = false;
 	            var _iteratorError = undefined;
 
 	            try {
-	                for (var _iterator = spawn.memory.excavators[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-	                    memExcavator = _step.value;
+	                var _loop = function _loop() {
+	                    var memExcavator = _step.value;
 
 	                    if (_.filter(excavators, function (ex) {
 	                        return ex.memory.fromSource == memExcavator.fromSource && ex.memory.toTarget == memExcavator.toTarget;
@@ -700,6 +702,10 @@ module.exports =
 	                        //console.log("Wanna spawn new excavator!");
 	                        var newName = spawner.excavator(memExcavator.fromSource, memExcavator.toTarget);
 	                    }
+	                };
+
+	                for (var _iterator = spawn.memory.excavators[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	                    _loop();
 	                }
 	            } catch (err) {
 	                _didIteratorError = true;
@@ -721,19 +727,24 @@ module.exports =
 	            return creep.memory.role == 'transporter';
 	        });
 	        if (spawn.memory.transporters) {
+	            var memTransporter = null;
 	            var _iteratorNormalCompletion2 = true;
 	            var _didIteratorError2 = false;
 	            var _iteratorError2 = undefined;
 
 	            try {
-	                for (var _iterator2 = spawn.memory.transporters[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-	                    memTransporter = _step2.value;
+	                var _loop2 = function _loop2() {
+	                    var memTransporter = _step2.value;
 
 	                    if (_.filter(transporters, function (ex) {
 	                        return ex.memory.fromSource.id == memTransporter.fromSource.id && ex.memory.toTarget.id == memTransporter.toTarget.id;
 	                    }).length == 0) {
-	                        var _newName = spawner.transporter(memTransporter);
+	                        var newName = spawner.transporter(memTransporter);
 	                    }
+	                };
+
+	                for (var _iterator2 = spawn.memory.transporters[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+	                    _loop2();
 	                }
 	            } catch (err) {
 	                _didIteratorError2 = true;
@@ -755,7 +766,7 @@ module.exports =
 	            return creep.memory.role == 'upgrader';
 	        });
 	        if (upgraders.length < spawn.memory.upgraderSize) {
-	            var _newName2 = spawner.upgrader();
+	            var newName = spawner.upgrader();
 	            //console.log('Spawning new upgrader: ' + newName);
 	        }
 
@@ -763,7 +774,7 @@ module.exports =
 	            return creep.memory.role == 'builder';
 	        });
 	        if (builders.length < spawn.memory.builderSize) {
-	            var _newName3 = spawner.builder();
+	            var _newName = spawner.builder();
 	            //console.log('Spawning new builder: ' + newName);
 	        }
 
@@ -771,7 +782,7 @@ module.exports =
 	            return creep.memory.role == 'repairer';
 	        });
 	        if (repairers.length < spawn.memory.repairerSize) {
-	            var _newName4 = spawner.repairer();
+	            var _newName2 = spawner.repairer();
 	            //console.log('Spawning new builder: ' + newName);
 	        }
 	    },
