@@ -8,7 +8,7 @@
  * mod.thing == 'a thing'; // true
  */
 
-helper = require('./helper')
+const helper = require('./helper')
 
 module.exports = {
     defendRoom(room) {

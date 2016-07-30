@@ -100,7 +100,7 @@ module.exports =
 	 * mod.thing == 'a thing'; // true
 	 */
 
-	helper = __webpack_require__(2);
+	var helper = __webpack_require__(2);
 
 	module.exports = {
 	    defendRoom: function defendRoom(room) {
