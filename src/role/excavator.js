@@ -36,6 +36,7 @@ const roleExcavator = {
                 }
             }
             else {
+                let prioStructure
                 if(prioStructure = role.buildPriority()) {
                     if(creep.build(prioStructure) == ERR_NOT_IN_RANGE) {
                         creep.moveTo(prioStructure);

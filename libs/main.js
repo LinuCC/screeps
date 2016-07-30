@@ -224,6 +224,7 @@ module.exports =
 	                    creep.moveTo(void_extension);
 	                }
 	            } else {
+	                var prioStructure = void 0;
 	                if (prioStructure = role.buildPriority()) {
 	                    if (creep.build(prioStructure) == ERR_NOT_IN_RANGE) {
 	                        creep.moveTo(prioStructure);
@@ -343,6 +344,7 @@ module.exports =
 	                // Do nothing *SadPanda*
 	            }
 	        } else {
+	            var prioStructure = void 0;
 	            if (prioStructure = role.buildPriority()) {
 	                if (creep.build(prioStructure) == ERR_NOT_IN_RANGE) {
 	                    creep.moveTo(prioStructure);
@@ -483,6 +485,7 @@ module.exports =
 	                    creep.moveTo(void_extension);
 	                }
 	            } else {
+	                var prioStructure = void 0;
 	                if (prioStructure = role.buildPriority()) {
 	                    if (creep.build(prioStructure) == ERR_NOT_IN_RANGE) {
 	                        creep.moveTo(prioStructure);
