@@ -1290,7 +1290,8 @@ module.exports =
 	                    creep.moveTo(void_extension);
 	                }
 	            } else {
-	                var prioStructure = void 0;
+	                var prioStructure = void 0,
+	                    tower = void 0;
 	                if (prioStructure = role.buildPriority()) {
 	                    if (creep.build(prioStructure) == ERR_NOT_IN_RANGE) {
 	                        creep.moveTo(prioStructure);
