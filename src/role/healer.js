@@ -26,15 +26,15 @@ const roleHealer = {
     else {
       let targets = creep.pos.findInRange(
           FIND_MY_CREEPS, 1,
-          {filter: (creep)=> ((creep.maxHits - creep.hits) > 0)}
+          {filter: (creep)=> ((creep.hitsMax - creep.hits) > 0)}
       )
       if(!(targets.length > 0)) {
-        let targets = creep.pos.findInRange(
+        targets = creep.pos.findInRange(
             FIND_MY_CREEPS, 2,
-            {filter: (creep)=> ((creep.maxHits - creep.hits) > 0)}
+            {filter: (creep)=> ((creep.hitsMax - creep.hits) > 0)}
         )
       }
-      targets = _.orderBy(targets, (c)=> (c.maxHits - c.hits), 'asc')
+      targets = _.sortByOrder(targets, (c)=> (c.maxHits - c.hits), 'asc')
       if(targets.length > 0) {
         creep.heal(targets[0])
       }

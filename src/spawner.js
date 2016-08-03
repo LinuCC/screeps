@@ -23,8 +23,11 @@ const spawner = {
     rangedFighter: function() {
         return Game.spawns['Underground Traaains'].createCreep( [MOVE, MOVE, MOVE, MOVE, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK], 'RangedFighter' + this.newCreepIndex(), {role: 'rangedFighter'})
     },
-    healer: ()=>
-        return Game.spawns['Underground Traaains'].createCreep( [HEAL, HEAL, HEAL, HEAL, MOVE, MOVE, MOVE, MOVE], 'Healer' + this.newCreepIndex(), {role: 'healer'})
+    healer: ()=> {
+      return Game.spawns['Underground Traaains'].createCreep( [HEAL, HEAL, HEAL, HEAL, MOVE, MOVE, MOVE, MOVE], 'Healer' + this.newCreepIndex(), {role: 'healer'})
+    },
+    assimilator: ()=> {
+      return Game.spawns['Underground Traaains'].createCreep( [CLAIM, CLAIM, CLAIM, MOVE, MOVE, MOVE], 'Assi' + this.newCreepIndex(), {role: 'assimilator'})
     },
 
     transporter: function({fromSource, toTarget}) {
