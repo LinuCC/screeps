@@ -22,15 +22,17 @@ const roleHarvester = {
         }
       }
       else {
-        var sources = creep.room.find(FIND_SOURCES);
-        let harvestResult = creep.harvest(sources[1])
-        if(harvestResult == ERR_NOT_IN_RANGE) {
-          creep.moveTo(sources[1]);
-        }
-        else if(harvestResult == ERR_NOT_ENOUGH_RESOURCES) {
-          let container = this.findNonVoidEnergyContainer(creep.room)
+        let container = this.findNonVoidEnergyContainer(creep.room)
+        if(container) {
           if(creep.withdraw(container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
             creep.moveTo(container)
+          }
+        }
+        else {
+          var sources = creep.room.find(FIND_SOURCES);
+          let harvestResult = creep.harvest(sources[1])
+          if(harvestResult == ERR_NOT_IN_RANGE) {
+            creep.moveTo(sources[1]);
           }
         }
       }

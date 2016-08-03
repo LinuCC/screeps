@@ -18,7 +18,7 @@ var spawnCreepWatcher = {
         if(spawn.memory.excavators) {
           let memExcavator = null
             for(let memExcavator of spawn.memory.excavators) {
-                if(_.filter(excavators, (ex)=> (ex.memory.fromSource == memExcavator.fromSource).length == 0) {
+                if(_.filter(excavators, (ex)=> (ex.memory.fromSource == memExcavator.fromSource)).length == 0) {
                     //console.log("Wanna spawn new excavator!");
                     let newName = spawner.excavator(memExcavator.fromSource)
                 }
