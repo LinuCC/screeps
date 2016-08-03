@@ -14,7 +14,7 @@ const roleExcavator = {
       if(
         gPos.x == creep.pos.x &&
         gPos.y == creep.pos.y &&
-        gPos.room == creep.room.name
+        gPos.roomName == creep.room.name
       ) {
         const source = Game.getObjectById(creep.memory.fromSource)
         let res = creep.harvest(source)

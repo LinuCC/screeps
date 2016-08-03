@@ -1294,7 +1294,7 @@ module.exports =
 	  run: function run(creep) {
 	    var gPos = this.getExcavationPosition(creep);
 	    if (gPos) {
-	      if (gPos.x == creep.pos.x && gPos.y == creep.pos.y && gPos.room == creep.room.name) {
+	      if (gPos.x == creep.pos.x && gPos.y == creep.pos.y && gPos.roomName == creep.room.name) {
 	        var source = Game.getObjectById(creep.memory.fromSource);
 	        var res = creep.harvest(source);
 	        switch (res) {
@@ -1533,10 +1533,10 @@ module.exports =
 	                    var memExcavator = _step.value;
 
 	                    if (_.filter(excavators, function (ex) {
-	                        return ex.memory.fromSource == memExcavator.fromSource && ex.memory.toTarget == memExcavator.toTarget;
+	                        return ex.memory.fromSource == memExcavator.fromSource;
 	                    }).length == 0) {
 	                        //console.log("Wanna spawn new excavator!");
-	                        var newName = spawner.excavator(memExcavator.fromSource, memExcavator.toTarget);
+	                        var newName = spawner.excavator(memExcavator.fromSource);
 	                    }
 	                };
 
@@ -1649,8 +1649,8 @@ module.exports =
 	    harvester: function harvester() {
 	        return Game.spawns['Underground Traaains'].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], 'Harvester' + this.newCreepIndex(), { role: 'harvester' });
 	    },
-	    excavator: function excavator(fromSource, toTarget) {
-	        return Game.spawns['Underground Traaains'].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, MOVE], 'Excavator' + this.newCreepIndex(), { role: 'excavator', fromSource: fromSource, toTarget: toTarget });
+	    excavator: function excavator(fromSource) {
+	        return Game.spawns['Underground Traaains'].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, MOVE], 'Excavator' + this.newCreepIndex(), { role: 'excavator', fromSource: fromSource });
 	    },
 	    upgrader: function upgrader() {
 	        return Game.spawns['Underground Traaains'].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE], 'Upgrader' + this.newCreepIndex(), { role: 'upgrader' });
