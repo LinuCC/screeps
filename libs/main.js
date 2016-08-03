@@ -253,10 +253,17 @@ module.exports =
 
 	var roleFighter = {
 	  run: function run(creep) {
-	    var flags = _.filter(Game.flags, { color: COLOR_RED });
-	    if (flags.length) {
-	      var flag = flags[0];
-	      creep.moveTo(flags[0]);
+	    var flag = void 0;
+	    if (creep.memory.flagName) {
+	      flag = Game.flags[creep.memory.flagName];
+	    } else {
+	      var flags = _.filter(Game.flags, { color: COLOR_RED });
+	      if (flags.length) {
+	        flag = flags[0];
+	      }
+	    }
+	    if (flag) {
+	      creep.moveTo(flag);
 	      if (creep.pos.inRangeTo(flag, 1)) {
 	        var _targets = flag.pos.look();
 	        if (_targets.length) {
@@ -265,7 +272,7 @@ module.exports =
 	      }
 	      var targets = creep.pos.findInRange(FIND_HOSTILE_CREEPS, 1);
 	      if (targets.length > 0) {
-	        creep.attack(target);
+	        creep.attack(targets[0]);
 	      }
 	    }
 	  }
@@ -1700,7 +1707,7 @@ module.exports =
 	        return Game.spawns['Underground Traaains'].createCreep([WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE], 'Repairer' + this.newCreepIndex(), { role: 'repairer' });
 	    },
 	    fighter: function fighter() {
-	        return Game.spawns['Underground Traaains'].createCreep([MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK], 'Fighter' + this.newCreepIndex(), { role: 'fighter' });
+	        return Game.spawns['Underground Traaains'].createCreep([MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK], 'Fighter' + this.newCreepIndex(), { role: 'fighter' });
 	    },
 	    rangedFighter: function rangedFighter() {
 	        return Game.spawns['Underground Traaains'].createCreep([MOVE, MOVE, MOVE, MOVE, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK], 'RangedFighter' + this.newCreepIndex(), { role: 'rangedFighter' });
