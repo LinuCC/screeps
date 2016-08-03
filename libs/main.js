@@ -730,6 +730,11 @@ module.exports =
 	        var toTarget = creep.memory.toTarget;
 	        var source = Game.getObjectById(creep.memory.fromSource.id);
 	        var target = Game.getObjectById(creep.memory.toTarget.id);
+	        var sp = creep.memory.sourcePos;
+	        var sourcePos = false;
+	        if (sp) {
+	            sourcePos = new RoomPosition(sp.x, sp.y, sp.roomName);
+	        }
 	        if (creep.carry.energy == creep.carryCapacity && creep.memory.transporting) {
 	            creep.say('To target');
 	            creep.memory.transporting = false;
@@ -743,18 +748,23 @@ module.exports =
 	                if (creep.harvest(source) == ERR_NOT_IN_RANGE) {
 	                    creep.moveTo(source, { reusePath: 20 });
 	                }
-	            } else if (fromSource.room) {
-	                creep.moveTo(new RoomPosition(25, 25, fromSource.room));
+	            } else if (sourcePos) {
+	                creep.moveTo(sourcePos);
 	            } else {
 	                creep.say('Source where?!');
 	            }
 	        } else {
-	            if (!target || !target.store) {
+	            if (!target) {
 	                creep.say('Target where?!');
 	                return;
-	            }
-	            if (target.store[RESOURCE_ENERGY] < target.storeCapacity) {
-	                if (creep.transfer(target, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+	            } else if (target.store !== undefined) {
+	                if (target.store[RESOURCE_ENERGY] < target.storeCapacity) {
+	                    if (creep.transfer(target, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+	                        creep.moveTo(target, { reusePath: 20 });
+	                    }
+	                }
+	            } else {
+	                if (creep.build(target) == ERR_NOT_IN_RANGE) {
 	                    creep.moveTo(target, { reusePath: 20 });
 	                }
 	            }
