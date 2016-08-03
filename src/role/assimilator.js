@@ -6,7 +6,7 @@ const roleAssimilator = {
       flag = Game.flags[creep.memory.flagName]
     }
     else {
-      let flags = _.filter(Game.flags, {color: COLOR_RED})
+      let flags = _.filter(Game.flags, {color: COLOR_PURPLE})
       if(flags.length) {
         flag = flags[0]
       }

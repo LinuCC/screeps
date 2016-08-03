@@ -1172,7 +1172,7 @@ module.exports =
 	    if (creep.memory.flagName) {
 	      flag = Game.flags[creep.memory.flagName];
 	    } else {
-	      var flags = _.filter(Game.flags, { color: COLOR_RED });
+	      var flags = _.filter(Game.flags, { color: COLOR_PURPLE });
 	      if (flags.length) {
 	        flag = flags[0];
 	      }
