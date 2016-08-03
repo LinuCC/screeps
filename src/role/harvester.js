@@ -12,13 +12,10 @@ const roleHarvester = {
       creep.memory.harvesting = true
     }
     if(creep.memory.harvesting) {
-      let void_extension, storage
-      if(
-        (void_extension = this.getFirstVoidExtension(creep.room)) &&
-        (storage = creep.room.find(FIND_MY_STRUCTURES, {filter: {structureType: STRUCTURE_STORAGE}})[0])
-      ) {
-        if(creep.withdraw(storage, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-          creep.moveTo(storage)
+      let container = this.findNonVoidEnergyContainer(creep.room)
+      if(container) {
+        if(creep.withdraw(container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+          creep.moveTo(container)
         }
       }
       else {

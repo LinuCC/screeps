@@ -1204,17 +1204,16 @@ module.exports =
 	      creep.memory.harvesting = true;
 	    }
 	    if (creep.memory.harvesting) {
-	      var void_extension = void 0,
-	          storage = void 0;
-	      if ((void_extension = this.getFirstVoidExtension(creep.room)) && (storage = creep.room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_STORAGE } })[0])) {
-	        if (creep.withdraw(storage, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-	          creep.moveTo(storage);
+	      var container = this.findNonVoidEnergyContainer(creep.room);
+	      if (container) {
+	        if (creep.withdraw(container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+	          creep.moveTo(container);
 	        }
 	      } else {
-	        var container = this.findNonVoidEnergyContainer(creep.room);
-	        if (container) {
-	          if (creep.withdraw(container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-	            creep.moveTo(container);
+	        var _container = this.findNonVoidEnergyContainer(creep.room);
+	        if (_container) {
+	          if (creep.withdraw(_container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+	            creep.moveTo(_container);
 	          }
 	        } else {
 	          var sources = creep.room.find(FIND_SOURCES);
@@ -1225,14 +1224,14 @@ module.exports =
 	        }
 	      }
 	    } else {
-	      var _void_extension = void 0;
+	      var void_extension = void 0;
 	      if (Game.spawns['Underground Traaains'].energy < 300) {
 	        if (creep.transfer(Game.spawns['Underground Traaains'], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
 	          creep.moveTo(Game.spawns['Underground Traaains']);
 	        }
-	      } else if (_void_extension = this.getFirstVoidExtension(creep.room)) {
-	        if (creep.transfer(_void_extension, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-	          creep.moveTo(_void_extension);
+	      } else if (void_extension = this.getFirstVoidExtension(creep.room)) {
+	        if (creep.transfer(void_extension, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+	          creep.moveTo(void_extension);
 	        }
 	      } else {
 	        var prioStructure = void 0;
