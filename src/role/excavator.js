@@ -2,84 +2,91 @@ const role = require('../role')
 
 /**
  * An Excavator should be defined by the following Memory-Vars:
- *   from - Id where to get the resources from
- *   to   - Id where to put the resources into
+ *   fromSource - Id where to get the resources from
  */
 
 const roleExcavator = {
 
-    /** @param {Creep} creep **/
-    run: function(creep) {
-        if(creep.carry.energy == creep.carryCapacity && creep.memory.harvesting) {
-            creep.memory.harvesting = false
+  /** @param {Creep} creep **/
+  run: function(creep) {
+    let gPos = this.getExcavationPosition(creep)
+    if(gPos) {
+      if(
+        gPos.x == creep.pos.x &&
+        gPos.y == creep.pos.y &&
+        gPos.room == creep.room.name
+      ) {
+        const source = Game.getObjectById(creep.memory.fromSource)
+        let res = creep.harvest(source)
+        switch(res) {
+          case OK:
+            break;
+          case ERR_INVALID_TARGET:
+            creep.say('invalid')
+          case ERR_NOT_IN_RANGE:
+            creep.say('range')
+          case ERR_NO_BODYPART:
+            creep.say('bodypart')
         }
-        else if(creep.carry.energy == 0 && !creep.memory.harvesting) {
-            creep.memory.harvesting = true
-        }
+      }
+      else {
+        creep.moveTo(gPos)
+      }
+    }
+    else {
+      creep.say('gPos?')
+    }
+  },
 
-	    if(creep.memory.harvesting) {
-            const source = Game.getObjectById(creep.memory.fromSource)
-            if(creep.harvest(source) == ERR_NOT_IN_RANGE) {
-                creep.moveTo(source);
-            }
+  getExcavationPosition(creep) {
+    if(creep.memory.excavationPosition) {
+      let pos = creep.memory.excavationPosition
+      return new RoomPosition(pos.x, pos.y, pos.roomName)
+    }
+    else {
+      let pos = this.calcExcavationPosition(creep)
+      if(pos) {
+        creep.memory.excavationPosition = {
+          x: pos.x, y: pos.y, roomName: pos.roomName
+        }
+        return pos
+      }
+      else {
+        return null
+      }
+      return null
+    }
+  },
+
+  calcExcavationPosition(creep) {
+    let source = Game.getObjectById(creep.memory.fromSource)
+    if(source) {
+      let containers = source.pos.findInRange(
+        FIND_STRUCTURES, 1, {filter: {structureType: STRUCTURE_CONTAINER}}
+      )
+      if(containers.length > 0) {
+        let container = containers[0]
+        return new RoomPosition(
+          container.pos.x, container.pos.y, container.room.name
+        )
+      }
+      else {
+        // Any adjacent walkable tile to the source is fine, get the position
+        // to the closest one. Just dont call it to often.
+        let path = creep.pos.findPathTo(source)
+        if(path && path.length) {
+          let pos = path.slice(-1)[0]
+          return new RoomPosition(pos.x, pos.y, source.room)
         }
         else {
-            let store = Game.getObjectById(creep.memory.toTarget)
-            let void_extension
-            if(store && store['store'] && store.store[RESOURCE_ENERGY] < store.storeCapacity) {
-                if(creep.transfer(store, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                    creep.moveTo(store);
-                }
-            }
-            else if(void_extension = this.getFirstVoidExtension(creep.room)) {
-                if(creep.transfer(void_extension, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                    creep.moveTo(void_extension)
-                }
-            }
-            else {
-                let prioStructure, tower
-                if(prioStructure = role.buildPriority()) {
-                    if(creep.build(prioStructure) == ERR_NOT_IN_RANGE) {
-                        creep.moveTo(prioStructure);
-                    }
-                }
-                else if(tower = this.getVoidTower(creep.room)) {
-                    if(creep.transfer(tower, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                        creep.moveTo(tower)
-                    }
-                }
-            }
-
+          return null
         }
-	},
-
-	filterNonVoidExtension(structure) {
-	    return structure.structureType == STRUCTURE_EXTENSION && structure.energy < 50
-	},
-
-	getFirstVoidExtension(room) {
-	    let void_extensions = room.find(FIND_MY_STRUCTURES, {filter: this.filterNonVoidExtension})
-	    if(void_extensions.length > 0) {
-            let void_extension = (Array.isArray(void_extensions)) ? void_extensions[0] : void_extensions
-            return void_extension
-	    }
-	    else {
-	        return null;
-	    }
-	},
-
-	getVoidTower(room) {
-	    let tower = room.find(FIND_MY_STRUCTURES, {filter: (structure)=> structure.structureType == STRUCTURE_TOWER && structure.energy < structure.energyCapacity})
-	    if(Array.isArray(tower)) {
-	        return tower[0]
-	    }
-	    else if(!tower) {
-	        return null
-	    }
-	    else {
-	        return tower
-	    }
-	}
+      }
+    }
+    else {
+      return null
+    }
+  },
 };
 
 module.exports = roleExcavator

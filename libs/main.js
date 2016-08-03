@@ -179,36 +179,62 @@ module.exports =
 	'use strict';
 
 	module.exports = {
-	    buildPriority: function buildPriority(creep) {
-	        if (Memory.buildPriority) {
-	            return Game.getObjectById(Memory.buildPriority);
-	        } else {
-	            return null;
-	        }
-	    },
-
-	    findNonVoidEnergyContainer: function findNonVoidEnergyContainer(creep) {
-	        var container = creep.pos.findClosestByPath(FIND_STRUCTURES, { filter: function filter(struc) {
-	                return struc.structureType == STRUCTURE_CONTAINER && struc.store[RESOURCE_ENERGY] > 0;
-	            } });
-	        return container;
-	    },
-	    getToDismantleStructure: function getToDismantleStructure(creep) {
-	        var structures = creep.room.memory.dismantleQueue;
-	        if (Array.isArray(structures)) {
-	            var structureId = structures[0];
-	            if (structure = Game.getObjectById(structureId)) {
-	                return structure;
-	            } else {
-	                // Remove structure from Queue since it doesnt exist anymore
-	                console.log('Finished dismantling structure.');
-	                creep.room.memory.dismantleQueue.shift();
-	                return this.getToDismantleStructure(creep);
-	            }
-	        } else {
-	            return null;
-	        }
+	  buildPriority: function buildPriority(creep) {
+	    if (Memory.buildPriority) {
+	      return Game.getObjectById(Memory.buildPriority);
+	    } else {
+	      return null;
 	    }
+	  },
+
+	  findNonVoidEnergyContainer: function findNonVoidEnergyContainer(creep) {
+	    var container = creep.pos.findClosestByPath(FIND_STRUCTURES, { filter: function filter(struc) {
+	        return struc.structureType == STRUCTURE_CONTAINER && struc.store[RESOURCE_ENERGY] > 0;
+	      } });
+	    return container;
+	  },
+	  getToDismantleStructure: function getToDismantleStructure(creep) {
+	    var structures = creep.room.memory.dismantleQueue;
+	    if (Array.isArray(structures)) {
+	      var structureId = structures[0];
+	      if (structure = Game.getObjectById(structureId)) {
+	        return structure;
+	      } else {
+	        // Remove structure from Queue since it doesnt exist anymore
+	        console.log('Finished dismantling structure.');
+	        creep.room.memory.dismantleQueue.shift();
+	        return this.getToDismantleStructure(creep);
+	      }
+	    } else {
+	      return null;
+	    }
+	  },
+	  getStorageTarget: function getStorageTarget(creep) {
+	    var void_extension = void 0;
+	    if (Game.spawns['Underground Traaains'].energy < 300) {
+	      if (creep.transfer(Game.spawns['Underground Traaains'], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+	        creep.moveTo(Game.spawns['Underground Traaains']);
+	      }
+	    } else if (void_extension = this.getFirstVoidExtension(creep.room)) {
+	      if (creep.transfer(void_extension, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+	        creep.moveTo(void_extension);
+	      }
+	    } else {
+	      var prioStructure = void 0;
+	      var tower = void 0;
+	      if (prioStructure = role.buildPriority()) {
+	        if (creep.build(prioStructure) == ERR_NOT_IN_RANGE) {
+	          creep.moveTo(prioStructure);
+	        }
+	      } else if (tower = this.getVoidTower(creep.room)) {
+	        if (creep.transfer(tower, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+	          creep.moveTo(tower);
+	        }
+	      } else if (creep.upgradeController(creep.room.controller) == ERR_NOT_IN_RANGE) {
+	        creep.moveTo(creep.room.controller);
+	      }
+	    }
+	  }
 	};
 
 /***/ },
@@ -1259,76 +1285,75 @@ module.exports =
 
 	/**
 	 * An Excavator should be defined by the following Memory-Vars:
-	 *   from - Id where to get the resources from
-	 *   to   - Id where to put the resources into
+	 *   fromSource - Id where to get the resources from
 	 */
 
 	var roleExcavator = {
 
-	    /** @param {Creep} creep **/
-	    run: function run(creep) {
-	        if (creep.carry.energy == creep.carryCapacity && creep.memory.harvesting) {
-	            creep.memory.harvesting = false;
-	        } else if (creep.carry.energy == 0 && !creep.memory.harvesting) {
-	            creep.memory.harvesting = true;
+	  /** @param {Creep} creep **/
+	  run: function run(creep) {
+	    var gPos = this.getExcavationPosition(creep);
+	    if (gPos) {
+	      if (gPos.x == creep.pos.x && gPos.y == creep.pos.y && gPos.room == creep.room.name) {
+	        var source = Game.getObjectById(creep.memory.fromSource);
+	        var res = creep.harvest(source);
+	        switch (res) {
+	          case OK:
+	            break;
+	          case ERR_INVALID_TARGET:
+	            creep.say('invalid');
+	          case ERR_NOT_IN_RANGE:
+	            creep.say('range');
+	          case ERR_NO_BODYPART:
+	            creep.say('bodypart');
 	        }
-
-	        if (creep.memory.harvesting) {
-	            var source = Game.getObjectById(creep.memory.fromSource);
-	            if (creep.harvest(source) == ERR_NOT_IN_RANGE) {
-	                creep.moveTo(source);
-	            }
-	        } else {
-	            var store = Game.getObjectById(creep.memory.toTarget);
-	            var void_extension = void 0;
-	            if (store && store['store'] && store.store[RESOURCE_ENERGY] < store.storeCapacity) {
-	                if (creep.transfer(store, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-	                    creep.moveTo(store);
-	                }
-	            } else if (void_extension = this.getFirstVoidExtension(creep.room)) {
-	                if (creep.transfer(void_extension, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-	                    creep.moveTo(void_extension);
-	                }
-	            } else {
-	                var prioStructure = void 0,
-	                    tower = void 0;
-	                if (prioStructure = role.buildPriority()) {
-	                    if (creep.build(prioStructure) == ERR_NOT_IN_RANGE) {
-	                        creep.moveTo(prioStructure);
-	                    }
-	                } else if (tower = this.getVoidTower(creep.room)) {
-	                    if (creep.transfer(tower, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-	                        creep.moveTo(tower);
-	                    }
-	                }
-	            }
-	        }
-	    },
-
-	    filterNonVoidExtension: function filterNonVoidExtension(structure) {
-	        return structure.structureType == STRUCTURE_EXTENSION && structure.energy < 50;
-	    },
-	    getFirstVoidExtension: function getFirstVoidExtension(room) {
-	        var void_extensions = room.find(FIND_MY_STRUCTURES, { filter: this.filterNonVoidExtension });
-	        if (void_extensions.length > 0) {
-	            var void_extension = Array.isArray(void_extensions) ? void_extensions[0] : void_extensions;
-	            return void_extension;
-	        } else {
-	            return null;
-	        }
-	    },
-	    getVoidTower: function getVoidTower(room) {
-	        var tower = room.find(FIND_MY_STRUCTURES, { filter: function filter(structure) {
-	                return structure.structureType == STRUCTURE_TOWER && structure.energy < structure.energyCapacity;
-	            } });
-	        if (Array.isArray(tower)) {
-	            return tower[0];
-	        } else if (!tower) {
-	            return null;
-	        } else {
-	            return tower;
-	        }
+	      } else {
+	        creep.moveTo(gPos);
+	      }
+	    } else {
+	      creep.say('gPos?');
 	    }
+	  },
+
+	  getExcavationPosition: function getExcavationPosition(creep) {
+	    if (creep.memory.excavationPosition) {
+	      var pos = creep.memory.excavationPosition;
+	      return new RoomPosition(pos.x, pos.y, pos.roomName);
+	    } else {
+	      var _pos = this.calcExcavationPosition(creep);
+	      if (_pos) {
+	        creep.memory.excavationPosition = {
+	          x: _pos.x, y: _pos.y, roomName: _pos.roomName
+	        };
+	        return _pos;
+	      } else {
+	        return null;
+	      }
+	      return null;
+	    }
+	  },
+	  calcExcavationPosition: function calcExcavationPosition(creep) {
+	    var source = Game.getObjectById(creep.memory.fromSource);
+	    if (source) {
+	      var containers = source.pos.findInRange(FIND_STRUCTURES, 1, { filter: { structureType: STRUCTURE_CONTAINER } });
+	      if (containers.length > 0) {
+	        var container = containers[0];
+	        return new RoomPosition(container.pos.x, container.pos.y, container.room.name);
+	      } else {
+	        // Any adjacent walkable tile to the source is fine, get the position
+	        // to the closest one. Just dont call it to often.
+	        var path = creep.pos.findPathTo(source);
+	        if (path && path.length) {
+	          var pos = path.slice(-1)[0];
+	          return new RoomPosition(pos.x, pos.y, source.room);
+	        } else {
+	          return null;
+	        }
+	      }
+	    } else {
+	      return null;
+	    }
+	  }
 	};
 
 	module.exports = roleExcavator;
