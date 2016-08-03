@@ -7,8 +7,10 @@ const roleRepairer = require('./role/repairer')
 const roleTransporter = require('./role/transporter')
 const spawnCreepWatcher = require('./spawn/creepWatcher')
 
-// import roleMaintainer from './role/maintainer'
+import roleMaintainer from './role/maintainer'
 import roleFighter from './role/fighter'
+import roleHealer from './role/healer'
+import roleRangedFighter from './role/rangedFighter'
 import 'babel-preset-es2017/polyfill'
 
 // Maximum range for a remote mine, assuming 100% effectiveness: 190 squares
@@ -33,6 +35,9 @@ module.exports.loop = ()=> {
         else if(creep.memory.role == 'upgrader') {
             roleUpgrader.run(creep)
         }
+        else if(creep.memory.role == 'maintainer') {
+          roleMaintainer.run(creep)
+        }
         else if(creep.memory.role == 'builder') {
             roleBuilder.run(creep)
         }
@@ -44,6 +49,15 @@ module.exports.loop = ()=> {
         }
         else if(creep.memory.role == 'fighter') {
             roleFighter.run(creep)
+        }
+        else if(creep.memory.role == 'rangedFighter') {
+            roleRangedFighter.run(creep)
+        }
+        else if(creep.memory.role == 'healer') {
+            roleHealer.run(creep)
+        }
+        else {
+          console.log("No role for ${creep.name}!")
         }
     }
 };
