@@ -47,25 +47,26 @@ module.exports =
 
 	'use strict';
 
-	var _fighter = __webpack_require__(1);
+	var _maintainer = __webpack_require__(1);
+
+	var _maintainer2 = _interopRequireDefault(_maintainer);
+
+	var _fighter = __webpack_require__(3);
 
 	var _fighter2 = _interopRequireDefault(_fighter);
 
-	__webpack_require__(2);
+	__webpack_require__(4);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	var defense = __webpack_require__(53);
-	var roleHarvester = __webpack_require__(55);
-	var roleUpgrader = __webpack_require__(57);
-	var roleBuilder = __webpack_require__(58);
-	var roleExcavator = __webpack_require__(59);
-	var roleRepairer = __webpack_require__(60);
-	var roleTransporter = __webpack_require__(61);
-	var spawnCreepWatcher = __webpack_require__(62);
-
-	// import roleMaintainer from './role/maintainer'
-
+	var defense = __webpack_require__(55);
+	var roleHarvester = __webpack_require__(57);
+	var roleUpgrader = __webpack_require__(58);
+	var roleBuilder = __webpack_require__(59);
+	var roleExcavator = __webpack_require__(60);
+	var roleRepairer = __webpack_require__(61);
+	var roleTransporter = __webpack_require__(62);
+	var spawnCreepWatcher = __webpack_require__(63);
 
 	// Maximum range for a remote mine, assuming 100% effectiveness: 190 squares
 
@@ -86,6 +87,8 @@ module.exports =
 	            roleTransporter.run(creep);
 	        } else if (creep.memory.role == 'upgrader') {
 	            roleUpgrader.run(creep);
+	        } else if (creep.memory.role == 'maintainer') {
+	            _maintainer2.default.run(creep);
 	        } else if (creep.memory.role == 'builder') {
 	            roleBuilder.run(creep);
 	        } else if (creep.memory.role == 'excavator') {
@@ -100,6 +103,150 @@ module.exports =
 
 /***/ },
 /* 1 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var role = __webpack_require__(2);
+
+	var maintainer = {
+
+	  /** @param {Creep} creep **/
+	  run: function run(creep) {
+	    if (creep.memory.repairing) {
+	      var target = void 0;
+	      if (target = this.getRepairTarget(creep)) {
+	        if (creep.repair(target) == ERR_NOT_IN_RANGE) {
+	          creep.moveTo(target);
+	        }
+	      }
+	    } else {
+	      var container = void 0;
+	      if (container = role.findNonVoidEnergyContainer(creep)) {
+	        if (creep.withdraw(container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+	          creep.moveTo(container);
+	        }
+	      } else {
+	        var sources = creep.room.find(FIND_SOURCES);
+	        if (creep.harvest(sources[1]) == ERR_NOT_IN_RANGE) {
+	          creep.moveTo(sources[1]);
+	        }
+	      }
+	    }
+	  },
+
+	  getRepairTarget: function getRepairTarget(creep) {
+	    if (creep.memory.repairTarget) {
+	      // Target has full health, dont try to continue repairing it
+	      var structure = Game.getObjectById(creep.memory.repairTarget);
+	      if (structure.hits >= structure.hitsMax) {
+	        creep.memory.repairTarget = false;
+	        return null;
+	      } else {
+	        return structure;
+	      }
+	    } else {
+	      // Search for a target to repair and try to repair it
+	      var targets = creep.room.find(FIND_STRUCTURES, {
+	        filter: function filter(struc) {
+	          return struc.hits < struc.hitsMax * 0.9 && (struc.structureType == STRUCTURE_WALL && creep.room.memory.wallHitsMax > struc.hits || struc.structureType == STRUCTURE_RAMPART && creep.room.memory.rampartHitsMax > struc.hits || struc.structureType != STRUCTURE_WALL) && creep.room.memory.dismantleQueue.indexOf(struc.id) == -1;
+	        }
+	      });
+	      if (targets && targets.length) {
+
+	        targets = targets.sort(function (a, b) {
+	          return a.hits - b.hits;
+	        });
+	        if (Array.isArray(targets)) {
+
+	          creep.memory.repairTarget = targets[0].id;
+	          return targets[0];
+	        } else {
+	          return null;
+	        }
+	      } else {
+	        return null;
+	      }
+	    }
+	  },
+
+	  findWork: function findWork() {},
+
+	  findLackingTarget: function findLackingTarget() {
+	    if (extension_lacking) {} else if (spawn_lacking) {} else if (tower_lacking) {}
+	  }
+
+	};
+
+	module.exports = maintainer;
+
+/***/ },
+/* 2 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	module.exports = {
+	  buildPriority: function buildPriority(creep) {
+	    if (Memory.buildPriority) {
+	      return Game.getObjectById(Memory.buildPriority);
+	    } else {
+	      return null;
+	    }
+	  },
+
+	  findNonVoidEnergyContainer: function findNonVoidEnergyContainer(creep) {
+	    var container = creep.pos.findClosestByPath(FIND_STRUCTURES, { filter: function filter(struc) {
+	        return struc.structureType == STRUCTURE_CONTAINER && struc.store[RESOURCE_ENERGY] > 0;
+	      } });
+	    return container;
+	  },
+	  getToDismantleStructure: function getToDismantleStructure(creep) {
+	    var structures = creep.room.memory.dismantleQueue;
+	    if (Array.isArray(structures)) {
+	      var structureId = structures[0];
+	      if (structure = Game.getObjectById(structureId)) {
+	        return structure;
+	      } else {
+	        // Remove structure from Queue since it doesnt exist anymore
+	        console.log('Finished dismantling structure.');
+	        creep.room.memory.dismantleQueue.shift();
+	        return this.getToDismantleStructure(creep);
+	      }
+	    } else {
+	      return null;
+	    }
+	  },
+	  getStorageTarget: function getStorageTarget(creep) {
+	    var void_extension = void 0;
+	    if (Game.spawns['Underground Traaains'].energy < 300) {
+	      if (creep.transfer(Game.spawns['Underground Traaains'], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+	        creep.moveTo(Game.spawns['Underground Traaains']);
+	      }
+	    } else if (void_extension = this.getFirstVoidExtension(creep.room)) {
+	      if (creep.transfer(void_extension, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+	        creep.moveTo(void_extension);
+	      }
+	    } else {
+	      var prioStructure = void 0;
+	      var tower = void 0;
+	      if (prioStructure = role.buildPriority()) {
+	        if (creep.build(prioStructure) == ERR_NOT_IN_RANGE) {
+	          creep.moveTo(prioStructure);
+	        }
+	      } else if (tower = this.getVoidTower(creep.room)) {
+	        if (creep.transfer(tower, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+	          creep.moveTo(tower);
+	        }
+	      } else if (creep.upgradeController(creep.room.controller) == ERR_NOT_IN_RANGE) {
+	        creep.moveTo(creep.room.controller);
+	      }
+	    }
+	  }
+	};
+
+/***/ },
+/* 3 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -110,9 +257,15 @@ module.exports =
 	    if (flags.length) {
 	      var flag = flags[0];
 	      creep.moveTo(flags[0]);
-	      var targets = flag.pos.look();
-	      if (targets.length) {
-	        creep.attack(targets[0]);
+	      if (creep.pos.inRangeTo(flag, 1)) {
+	        var _targets = flag.pos.look();
+	        if (_targets.length) {
+	          creep.attack(_targets[0]);
+	        }
+	      }
+	      var targets = creep.pos.findInRange(FIND_HOSTILE_CREEPS, 1);
+	      if (targets.length > 0) {
+	        creep.attack(target);
 	      }
 	    }
 	  }
@@ -121,31 +274,31 @@ module.exports =
 	module.exports = roleFighter;
 
 /***/ },
-/* 2 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// ES2017 w/ Node 5
-	__webpack_require__(3);
-	__webpack_require__(38);
-	__webpack_require__(40);
-	__webpack_require__(47);
-	__webpack_require__(51);
-
-
-/***/ },
-/* 3 */
-/***/ function(module, exports, __webpack_require__) {
-
-	__webpack_require__(4);
-	module.exports = __webpack_require__(7).Object.entries;
-
-/***/ },
 /* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
+	// ES2017 w/ Node 5
+	__webpack_require__(5);
+	__webpack_require__(40);
+	__webpack_require__(42);
+	__webpack_require__(49);
+	__webpack_require__(53);
+
+
+/***/ },
+/* 5 */
+/***/ function(module, exports, __webpack_require__) {
+
+	__webpack_require__(6);
+	module.exports = __webpack_require__(9).Object.entries;
+
+/***/ },
+/* 6 */
+/***/ function(module, exports, __webpack_require__) {
+
 	// https://github.com/tc39/proposal-object-values-entries
-	var $export  = __webpack_require__(5)
-	  , $entries = __webpack_require__(23)(true);
+	var $export  = __webpack_require__(7)
+	  , $entries = __webpack_require__(25)(true);
 
 	$export($export.S, 'Object', {
 	  entries: function entries(it){
@@ -154,14 +307,14 @@ module.exports =
 	});
 
 /***/ },
-/* 5 */
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var global    = __webpack_require__(6)
-	  , core      = __webpack_require__(7)
-	  , hide      = __webpack_require__(8)
-	  , redefine  = __webpack_require__(18)
-	  , ctx       = __webpack_require__(21)
+	var global    = __webpack_require__(8)
+	  , core      = __webpack_require__(9)
+	  , hide      = __webpack_require__(10)
+	  , redefine  = __webpack_require__(20)
+	  , ctx       = __webpack_require__(23)
 	  , PROTOTYPE = 'prototype';
 
 	var $export = function(type, name, source){
@@ -202,7 +355,7 @@ module.exports =
 	module.exports = $export;
 
 /***/ },
-/* 6 */
+/* 8 */
 /***/ function(module, exports) {
 
 	// https://github.com/zloirock/core-js/issues/86#issuecomment-115759028
@@ -211,19 +364,19 @@ module.exports =
 	if(typeof __g == 'number')__g = global; // eslint-disable-line no-undef
 
 /***/ },
-/* 7 */
+/* 9 */
 /***/ function(module, exports) {
 
 	var core = module.exports = {version: '2.4.0'};
 	if(typeof __e == 'number')__e = core; // eslint-disable-line no-undef
 
 /***/ },
-/* 8 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var dP         = __webpack_require__(9)
-	  , createDesc = __webpack_require__(17);
-	module.exports = __webpack_require__(13) ? function(object, key, value){
+	var dP         = __webpack_require__(11)
+	  , createDesc = __webpack_require__(19);
+	module.exports = __webpack_require__(15) ? function(object, key, value){
 	  return dP.f(object, key, createDesc(1, value));
 	} : function(object, key, value){
 	  object[key] = value;
@@ -231,15 +384,15 @@ module.exports =
 	};
 
 /***/ },
-/* 9 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var anObject       = __webpack_require__(10)
-	  , IE8_DOM_DEFINE = __webpack_require__(12)
-	  , toPrimitive    = __webpack_require__(16)
+	var anObject       = __webpack_require__(12)
+	  , IE8_DOM_DEFINE = __webpack_require__(14)
+	  , toPrimitive    = __webpack_require__(18)
 	  , dP             = Object.defineProperty;
 
-	exports.f = __webpack_require__(13) ? Object.defineProperty : function defineProperty(O, P, Attributes){
+	exports.f = __webpack_require__(15) ? Object.defineProperty : function defineProperty(O, P, Attributes){
 	  anObject(O);
 	  P = toPrimitive(P, true);
 	  anObject(Attributes);
@@ -252,17 +405,17 @@ module.exports =
 	};
 
 /***/ },
-/* 10 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var isObject = __webpack_require__(11);
+	var isObject = __webpack_require__(13);
 	module.exports = function(it){
 	  if(!isObject(it))throw TypeError(it + ' is not an object!');
 	  return it;
 	};
 
 /***/ },
-/* 11 */
+/* 13 */
 /***/ function(module, exports) {
 
 	module.exports = function(it){
@@ -270,24 +423,24 @@ module.exports =
 	};
 
 /***/ },
-/* 12 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = !__webpack_require__(13) && !__webpack_require__(14)(function(){
-	  return Object.defineProperty(__webpack_require__(15)('div'), 'a', {get: function(){ return 7; }}).a != 7;
+	module.exports = !__webpack_require__(15) && !__webpack_require__(16)(function(){
+	  return Object.defineProperty(__webpack_require__(17)('div'), 'a', {get: function(){ return 7; }}).a != 7;
 	});
 
 /***/ },
-/* 13 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Thank's IE8 for his funny defineProperty
-	module.exports = !__webpack_require__(14)(function(){
+	module.exports = !__webpack_require__(16)(function(){
 	  return Object.defineProperty({}, 'a', {get: function(){ return 7; }}).a != 7;
 	});
 
 /***/ },
-/* 14 */
+/* 16 */
 /***/ function(module, exports) {
 
 	module.exports = function(exec){
@@ -299,11 +452,11 @@ module.exports =
 	};
 
 /***/ },
-/* 15 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var isObject = __webpack_require__(11)
-	  , document = __webpack_require__(6).document
+	var isObject = __webpack_require__(13)
+	  , document = __webpack_require__(8).document
 	  // in old IE typeof document.createElement is 'object'
 	  , is = isObject(document) && isObject(document.createElement);
 	module.exports = function(it){
@@ -311,11 +464,11 @@ module.exports =
 	};
 
 /***/ },
-/* 16 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// 7.1.1 ToPrimitive(input [, PreferredType])
-	var isObject = __webpack_require__(11);
+	var isObject = __webpack_require__(13);
 	// instead of the ES6 spec version, we didn't implement @@toPrimitive case
 	// and the second argument - flag - preferred type is a string
 	module.exports = function(it, S){
@@ -328,7 +481,7 @@ module.exports =
 	};
 
 /***/ },
-/* 17 */
+/* 19 */
 /***/ function(module, exports) {
 
 	module.exports = function(bitmap, value){
@@ -341,18 +494,18 @@ module.exports =
 	};
 
 /***/ },
-/* 18 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var global    = __webpack_require__(6)
-	  , hide      = __webpack_require__(8)
-	  , has       = __webpack_require__(19)
-	  , SRC       = __webpack_require__(20)('src')
+	var global    = __webpack_require__(8)
+	  , hide      = __webpack_require__(10)
+	  , has       = __webpack_require__(21)
+	  , SRC       = __webpack_require__(22)('src')
 	  , TO_STRING = 'toString'
 	  , $toString = Function[TO_STRING]
 	  , TPL       = ('' + $toString).split(TO_STRING);
 
-	__webpack_require__(7).inspectSource = function(it){
+	__webpack_require__(9).inspectSource = function(it){
 	  return $toString.call(it);
 	};
 
@@ -378,7 +531,7 @@ module.exports =
 	});
 
 /***/ },
-/* 19 */
+/* 21 */
 /***/ function(module, exports) {
 
 	var hasOwnProperty = {}.hasOwnProperty;
@@ -387,7 +540,7 @@ module.exports =
 	};
 
 /***/ },
-/* 20 */
+/* 22 */
 /***/ function(module, exports) {
 
 	var id = 0
@@ -397,11 +550,11 @@ module.exports =
 	};
 
 /***/ },
-/* 21 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// optional / simple context binding
-	var aFunction = __webpack_require__(22);
+	var aFunction = __webpack_require__(24);
 	module.exports = function(fn, that, length){
 	  aFunction(fn);
 	  if(that === undefined)return fn;
@@ -422,7 +575,7 @@ module.exports =
 	};
 
 /***/ },
-/* 22 */
+/* 24 */
 /***/ function(module, exports) {
 
 	module.exports = function(it){
@@ -431,12 +584,12 @@ module.exports =
 	};
 
 /***/ },
-/* 23 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var getKeys   = __webpack_require__(24)
-	  , toIObject = __webpack_require__(26)
-	  , isEnum    = __webpack_require__(37).f;
+	var getKeys   = __webpack_require__(26)
+	  , toIObject = __webpack_require__(28)
+	  , isEnum    = __webpack_require__(39).f;
 	module.exports = function(isEntries){
 	  return function(it){
 	    var O      = toIObject(it)
@@ -452,25 +605,25 @@ module.exports =
 	};
 
 /***/ },
-/* 24 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// 19.1.2.14 / 15.2.3.14 Object.keys(O)
-	var $keys       = __webpack_require__(25)
-	  , enumBugKeys = __webpack_require__(36);
+	var $keys       = __webpack_require__(27)
+	  , enumBugKeys = __webpack_require__(38);
 
 	module.exports = Object.keys || function keys(O){
 	  return $keys(O, enumBugKeys);
 	};
 
 /***/ },
-/* 25 */
+/* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var has          = __webpack_require__(19)
-	  , toIObject    = __webpack_require__(26)
-	  , arrayIndexOf = __webpack_require__(30)(false)
-	  , IE_PROTO     = __webpack_require__(34)('IE_PROTO');
+	var has          = __webpack_require__(21)
+	  , toIObject    = __webpack_require__(28)
+	  , arrayIndexOf = __webpack_require__(32)(false)
+	  , IE_PROTO     = __webpack_require__(36)('IE_PROTO');
 
 	module.exports = function(object, names){
 	  var O      = toIObject(object)
@@ -486,28 +639,28 @@ module.exports =
 	};
 
 /***/ },
-/* 26 */
+/* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// to indexed object, toObject with fallback for non-array-like ES3 strings
-	var IObject = __webpack_require__(27)
-	  , defined = __webpack_require__(29);
+	var IObject = __webpack_require__(29)
+	  , defined = __webpack_require__(31);
 	module.exports = function(it){
 	  return IObject(defined(it));
 	};
 
 /***/ },
-/* 27 */
+/* 29 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// fallback for non-array-like ES3 and non-enumerable old V8 strings
-	var cof = __webpack_require__(28);
+	var cof = __webpack_require__(30);
 	module.exports = Object('z').propertyIsEnumerable(0) ? Object : function(it){
 	  return cof(it) == 'String' ? it.split('') : Object(it);
 	};
 
 /***/ },
-/* 28 */
+/* 30 */
 /***/ function(module, exports) {
 
 	var toString = {}.toString;
@@ -517,7 +670,7 @@ module.exports =
 	};
 
 /***/ },
-/* 29 */
+/* 31 */
 /***/ function(module, exports) {
 
 	// 7.2.1 RequireObjectCoercible(argument)
@@ -527,14 +680,14 @@ module.exports =
 	};
 
 /***/ },
-/* 30 */
+/* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// false -> Array#indexOf
 	// true  -> Array#includes
-	var toIObject = __webpack_require__(26)
-	  , toLength  = __webpack_require__(31)
-	  , toIndex   = __webpack_require__(33);
+	var toIObject = __webpack_require__(28)
+	  , toLength  = __webpack_require__(33)
+	  , toIndex   = __webpack_require__(35);
 	module.exports = function(IS_INCLUDES){
 	  return function($this, el, fromIndex){
 	    var O      = toIObject($this)
@@ -553,18 +706,18 @@ module.exports =
 	};
 
 /***/ },
-/* 31 */
+/* 33 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// 7.1.15 ToLength
-	var toInteger = __webpack_require__(32)
+	var toInteger = __webpack_require__(34)
 	  , min       = Math.min;
 	module.exports = function(it){
 	  return it > 0 ? min(toInteger(it), 0x1fffffffffffff) : 0; // pow(2, 53) - 1 == 9007199254740991
 	};
 
 /***/ },
-/* 32 */
+/* 34 */
 /***/ function(module, exports) {
 
 	// 7.1.4 ToInteger
@@ -575,10 +728,10 @@ module.exports =
 	};
 
 /***/ },
-/* 33 */
+/* 35 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var toInteger = __webpack_require__(32)
+	var toInteger = __webpack_require__(34)
 	  , max       = Math.max
 	  , min       = Math.min;
 	module.exports = function(index, length){
@@ -587,20 +740,20 @@ module.exports =
 	};
 
 /***/ },
-/* 34 */
+/* 36 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var shared = __webpack_require__(35)('keys')
-	  , uid    = __webpack_require__(20);
+	var shared = __webpack_require__(37)('keys')
+	  , uid    = __webpack_require__(22);
 	module.exports = function(key){
 	  return shared[key] || (shared[key] = uid(key));
 	};
 
 /***/ },
-/* 35 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var global = __webpack_require__(6)
+	var global = __webpack_require__(8)
 	  , SHARED = '__core-js_shared__'
 	  , store  = global[SHARED] || (global[SHARED] = {});
 	module.exports = function(key){
@@ -608,7 +761,7 @@ module.exports =
 	};
 
 /***/ },
-/* 36 */
+/* 38 */
 /***/ function(module, exports) {
 
 	// IE 8- don't enum bug keys
@@ -617,25 +770,25 @@ module.exports =
 	).split(',');
 
 /***/ },
-/* 37 */
+/* 39 */
 /***/ function(module, exports) {
 
 	exports.f = {}.propertyIsEnumerable;
 
 /***/ },
-/* 38 */
+/* 40 */
 /***/ function(module, exports, __webpack_require__) {
 
-	__webpack_require__(39);
-	module.exports = __webpack_require__(7).Object.values;
+	__webpack_require__(41);
+	module.exports = __webpack_require__(9).Object.values;
 
 /***/ },
-/* 39 */
+/* 41 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// https://github.com/tc39/proposal-object-values-entries
-	var $export = __webpack_require__(5)
-	  , $values = __webpack_require__(23)(false);
+	var $export = __webpack_require__(7)
+	  , $values = __webpack_require__(25)(false);
 
 	$export($export.S, 'Object', {
 	  values: function values(it){
@@ -644,22 +797,22 @@ module.exports =
 	});
 
 /***/ },
-/* 40 */
+/* 42 */
 /***/ function(module, exports, __webpack_require__) {
 
-	__webpack_require__(41);
-	module.exports = __webpack_require__(7).Object.getOwnPropertyDescriptors;
+	__webpack_require__(43);
+	module.exports = __webpack_require__(9).Object.getOwnPropertyDescriptors;
 
 /***/ },
-/* 41 */
+/* 43 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// https://github.com/tc39/proposal-object-getownpropertydescriptors
-	var $export        = __webpack_require__(5)
-	  , ownKeys        = __webpack_require__(42)
-	  , toIObject      = __webpack_require__(26)
-	  , gOPD           = __webpack_require__(45)
-	  , createProperty = __webpack_require__(46);
+	var $export        = __webpack_require__(7)
+	  , ownKeys        = __webpack_require__(44)
+	  , toIObject      = __webpack_require__(28)
+	  , gOPD           = __webpack_require__(47)
+	  , createProperty = __webpack_require__(48);
 
 	$export($export.S, 'Object', {
 	  getOwnPropertyDescriptors: function getOwnPropertyDescriptors(object){
@@ -675,14 +828,14 @@ module.exports =
 	});
 
 /***/ },
-/* 42 */
+/* 44 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// all object keys, includes non-enumerable and symbols
-	var gOPN     = __webpack_require__(43)
-	  , gOPS     = __webpack_require__(44)
-	  , anObject = __webpack_require__(10)
-	  , Reflect  = __webpack_require__(6).Reflect;
+	var gOPN     = __webpack_require__(45)
+	  , gOPS     = __webpack_require__(46)
+	  , anObject = __webpack_require__(12)
+	  , Reflect  = __webpack_require__(8).Reflect;
 	module.exports = Reflect && Reflect.ownKeys || function ownKeys(it){
 	  var keys       = gOPN.f(anObject(it))
 	    , getSymbols = gOPS.f;
@@ -690,36 +843,36 @@ module.exports =
 	};
 
 /***/ },
-/* 43 */
+/* 45 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// 19.1.2.7 / 15.2.3.4 Object.getOwnPropertyNames(O)
-	var $keys      = __webpack_require__(25)
-	  , hiddenKeys = __webpack_require__(36).concat('length', 'prototype');
+	var $keys      = __webpack_require__(27)
+	  , hiddenKeys = __webpack_require__(38).concat('length', 'prototype');
 
 	exports.f = Object.getOwnPropertyNames || function getOwnPropertyNames(O){
 	  return $keys(O, hiddenKeys);
 	};
 
 /***/ },
-/* 44 */
+/* 46 */
 /***/ function(module, exports) {
 
 	exports.f = Object.getOwnPropertySymbols;
 
 /***/ },
-/* 45 */
+/* 47 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var pIE            = __webpack_require__(37)
-	  , createDesc     = __webpack_require__(17)
-	  , toIObject      = __webpack_require__(26)
-	  , toPrimitive    = __webpack_require__(16)
-	  , has            = __webpack_require__(19)
-	  , IE8_DOM_DEFINE = __webpack_require__(12)
+	var pIE            = __webpack_require__(39)
+	  , createDesc     = __webpack_require__(19)
+	  , toIObject      = __webpack_require__(28)
+	  , toPrimitive    = __webpack_require__(18)
+	  , has            = __webpack_require__(21)
+	  , IE8_DOM_DEFINE = __webpack_require__(14)
 	  , gOPD           = Object.getOwnPropertyDescriptor;
 
-	exports.f = __webpack_require__(13) ? gOPD : function getOwnPropertyDescriptor(O, P){
+	exports.f = __webpack_require__(15) ? gOPD : function getOwnPropertyDescriptor(O, P){
 	  O = toIObject(O);
 	  P = toPrimitive(P, true);
 	  if(IE8_DOM_DEFINE)try {
@@ -729,12 +882,12 @@ module.exports =
 	};
 
 /***/ },
-/* 46 */
+/* 48 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var $defineProperty = __webpack_require__(9)
-	  , createDesc      = __webpack_require__(17);
+	var $defineProperty = __webpack_require__(11)
+	  , createDesc      = __webpack_require__(19);
 
 	module.exports = function(object, index, value){
 	  if(index in object)$defineProperty.f(object, index, createDesc(0, value));
@@ -742,21 +895,21 @@ module.exports =
 	};
 
 /***/ },
-/* 47 */
+/* 49 */
 /***/ function(module, exports, __webpack_require__) {
 
-	__webpack_require__(48);
-	module.exports = __webpack_require__(7).String.padStart;
+	__webpack_require__(50);
+	module.exports = __webpack_require__(9).String.padStart;
 
 
 /***/ },
-/* 48 */
+/* 50 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	// https://github.com/tc39/proposal-string-pad-start-end
-	var $export = __webpack_require__(5)
-	  , $pad    = __webpack_require__(49);
+	var $export = __webpack_require__(7)
+	  , $pad    = __webpack_require__(51);
 
 	$export($export.P, 'String', {
 	  padStart: function padStart(maxLength /*, fillString = ' ' */){
@@ -765,13 +918,13 @@ module.exports =
 	});
 
 /***/ },
-/* 49 */
+/* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// https://github.com/tc39/proposal-string-pad-start-end
-	var toLength = __webpack_require__(31)
-	  , repeat   = __webpack_require__(50)
-	  , defined  = __webpack_require__(29);
+	var toLength = __webpack_require__(33)
+	  , repeat   = __webpack_require__(52)
+	  , defined  = __webpack_require__(31);
 
 	module.exports = function(that, maxLength, fillString, left){
 	  var S            = String(defined(that))
@@ -787,12 +940,12 @@ module.exports =
 
 
 /***/ },
-/* 50 */
+/* 52 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var toInteger = __webpack_require__(32)
-	  , defined   = __webpack_require__(29);
+	var toInteger = __webpack_require__(34)
+	  , defined   = __webpack_require__(31);
 
 	module.exports = function repeat(count){
 	  var str = String(defined(this))
@@ -804,21 +957,21 @@ module.exports =
 	};
 
 /***/ },
-/* 51 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
-	__webpack_require__(52);
-	module.exports = __webpack_require__(7).String.padEnd;
+	__webpack_require__(54);
+	module.exports = __webpack_require__(9).String.padEnd;
 
 
 /***/ },
-/* 52 */
+/* 54 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	// https://github.com/tc39/proposal-string-pad-start-end
-	var $export = __webpack_require__(5)
-	  , $pad    = __webpack_require__(49);
+	var $export = __webpack_require__(7)
+	  , $pad    = __webpack_require__(51);
 
 	$export($export.P, 'String', {
 	  padEnd: function padEnd(maxLength /*, fillString = ' ' */){
@@ -827,7 +980,7 @@ module.exports =
 	});
 
 /***/ },
-/* 53 */
+/* 55 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -841,7 +994,7 @@ module.exports =
 	 * mod.thing == 'a thing'; // true
 	 */
 
-	var helper = __webpack_require__(54);
+	var helper = __webpack_require__(56);
 
 	module.exports = {
 	    defendRoom: function defendRoom(room) {
@@ -905,7 +1058,7 @@ module.exports =
 	};
 
 /***/ },
-/* 54 */
+/* 56 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -927,12 +1080,12 @@ module.exports =
 	};
 
 /***/ },
-/* 55 */
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var role = __webpack_require__(56);
+	var role = __webpack_require__(2);
 
 	var roleHarvester = {
 
@@ -1032,77 +1185,12 @@ module.exports =
 	module.exports = roleHarvester;
 
 /***/ },
-/* 56 */
-/***/ function(module, exports) {
-
-	'use strict';
-
-	module.exports = {
-	  buildPriority: function buildPriority(creep) {
-	    if (Memory.buildPriority) {
-	      return Game.getObjectById(Memory.buildPriority);
-	    } else {
-	      return null;
-	    }
-	  },
-
-	  findNonVoidEnergyContainer: function findNonVoidEnergyContainer(creep) {
-	    var container = creep.pos.findClosestByPath(FIND_STRUCTURES, { filter: function filter(struc) {
-	        return struc.structureType == STRUCTURE_CONTAINER && struc.store[RESOURCE_ENERGY] > 0;
-	      } });
-	    return container;
-	  },
-	  getToDismantleStructure: function getToDismantleStructure(creep) {
-	    var structures = creep.room.memory.dismantleQueue;
-	    if (Array.isArray(structures)) {
-	      var structureId = structures[0];
-	      if (structure = Game.getObjectById(structureId)) {
-	        return structure;
-	      } else {
-	        // Remove structure from Queue since it doesnt exist anymore
-	        console.log('Finished dismantling structure.');
-	        creep.room.memory.dismantleQueue.shift();
-	        return this.getToDismantleStructure(creep);
-	      }
-	    } else {
-	      return null;
-	    }
-	  },
-	  getStorageTarget: function getStorageTarget(creep) {
-	    var void_extension = void 0;
-	    if (Game.spawns['Underground Traaains'].energy < 300) {
-	      if (creep.transfer(Game.spawns['Underground Traaains'], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-	        creep.moveTo(Game.spawns['Underground Traaains']);
-	      }
-	    } else if (void_extension = this.getFirstVoidExtension(creep.room)) {
-	      if (creep.transfer(void_extension, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-	        creep.moveTo(void_extension);
-	      }
-	    } else {
-	      var prioStructure = void 0;
-	      var tower = void 0;
-	      if (prioStructure = role.buildPriority()) {
-	        if (creep.build(prioStructure) == ERR_NOT_IN_RANGE) {
-	          creep.moveTo(prioStructure);
-	        }
-	      } else if (tower = this.getVoidTower(creep.room)) {
-	        if (creep.transfer(tower, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-	          creep.moveTo(tower);
-	        }
-	      } else if (creep.upgradeController(creep.room.controller) == ERR_NOT_IN_RANGE) {
-	        creep.moveTo(creep.room.controller);
-	      }
-	    }
-	  }
-	};
-
-/***/ },
-/* 57 */
+/* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var role = __webpack_require__(56);
+	var role = __webpack_require__(2);
 
 	var roleUpgrader = {
 
@@ -1139,12 +1227,12 @@ module.exports =
 	module.exports = roleUpgrader;
 
 /***/ },
-/* 58 */
+/* 59 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var role = __webpack_require__(56);
+	var role = __webpack_require__(2);
 
 	var roleBuilder = {
 
@@ -1226,12 +1314,12 @@ module.exports =
 	module.exports = roleBuilder;
 
 /***/ },
-/* 59 */
+/* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var role = __webpack_require__(56);
+	var role = __webpack_require__(2);
 
 	/**
 	 * An Excavator should be defined by the following Memory-Vars:
@@ -1309,12 +1397,12 @@ module.exports =
 	module.exports = roleExcavator;
 
 /***/ },
-/* 60 */
+/* 61 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var role = __webpack_require__(56);
+	var role = __webpack_require__(2);
 
 	var roleRepairer = {
 
@@ -1390,12 +1478,12 @@ module.exports =
 	module.exports = roleRepairer;
 
 /***/ },
-/* 61 */
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var role = __webpack_require__(56);
+	var role = __webpack_require__(2);
 
 	/**
 	 * An Transporter should be defined by the following Memory-Vars:
@@ -1449,12 +1537,12 @@ module.exports =
 	module.exports = roleTransporter;
 
 /***/ },
-/* 62 */
+/* 63 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var spawner = __webpack_require__(63);
+	var spawner = __webpack_require__(64);
 
 	var spawnCreepWatcher = {
 	    run: function run(spawn) {
@@ -1587,7 +1675,7 @@ module.exports =
 	module.exports = spawnCreepWatcher;
 
 /***/ },
-/* 63 */
+/* 64 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -1612,10 +1700,10 @@ module.exports =
 	        return Game.spawns['Underground Traaains'].createCreep([WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE], 'Repairer' + this.newCreepIndex(), { role: 'repairer' });
 	    },
 	    fighter: function fighter() {
-	        return Game.spawns['Underground Traaains'].createCreep([MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK], 'Builder' + this.newCreepIndex(), { role: 'fighter' });
+	        return Game.spawns['Underground Traaains'].createCreep([MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK], 'Fighter' + this.newCreepIndex(), { role: 'fighter' });
 	    },
 	    rangedFighter: function rangedFighter() {
-	        return Game.spawns['Underground Traaains'].createCreep([MOVE, MOVE, MOVE, MOVE, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK], 'Builder' + this.newCreepIndex(), { role: 'rangedFighter' });
+	        return Game.spawns['Underground Traaains'].createCreep([MOVE, MOVE, MOVE, MOVE, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK], 'RangedFighter' + this.newCreepIndex(), { role: 'rangedFighter' });
 	    },
 	    transporter: function transporter(_ref) {
 	        var fromSource = _ref.fromSource;
