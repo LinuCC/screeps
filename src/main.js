@@ -7,6 +7,8 @@ const roleRepairer = require('./role/repairer')
 const roleTransporter = require('./role/transporter')
 const spawnCreepWatcher = require('./spawn/creepWatcher')
 
+// import roleMaintainer from './role/maintainer'
+import roleFighter from './role/fighter'
 import 'babel-preset-es2017/polyfill'
 
 // Maximum range for a remote mine, assuming 100% effectiveness: 190 squares
@@ -39,6 +41,9 @@ module.exports.loop = ()=> {
         }
         else if(creep.memory.role == 'repairer') {
             roleRepairer.run(creep)
+        }
+        else if(creep.memory.role == 'fighter') {
+            roleFighter.run(creep)
         }
     }
 };
