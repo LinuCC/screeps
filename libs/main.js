@@ -280,7 +280,7 @@ module.exports =
 	          var sources = creep.room.find(FIND_SOURCES);
 	          let harvestResult = creep.harvest(sources[1]);
 	          if (harvestResult == ERR_NOT_IN_RANGE) {
-	            creep.moveTo(sources[1], { ignoreCreeps: true });
+	            creep.moveTo(sources[1]);
 	          }
 	        }
 	      }
@@ -307,7 +307,7 @@ module.exports =
 	            creep.moveTo(tower);
 	          }
 	        } else if (creep.upgradeController(creep.room.controller) == ERR_NOT_IN_RANGE) {
-	          creep.moveTo(creep.room.controller, { ignoreCreeps: true });
+	          creep.moveTo(creep.room.controller);
 	        }
 	      }
 	    }
@@ -861,7 +861,7 @@ module.exports =
 
 	    this.harvester = spawn => {
 	      if (spawn.name == "VV") {
-	        return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE], 'Harvester' + this.newCreepIndex(), { role: 'harvester' });
+	        return Game.spawns[spawn.name].createCreep([WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE], 'Harvester' + this.newCreepIndex(), { role: 'harvester' });
 	      } else {
 	        return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], 'Harvester' + this.newCreepIndex(), { role: 'harvester' });
 	      }
