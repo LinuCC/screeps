@@ -33,8 +33,7 @@ var spawnCreepWatcher = {
         }
 
         let transporters = _.filter(Game.creeps, (creep) => (
-          creep.memory.role == 'transporter' &&
-          creep.pos.roomName == spawn.pos.roomName
+          creep.memory.role == 'transporter'
         ));
         if(spawn.memory.transporters) {
             let memTransporter = null
