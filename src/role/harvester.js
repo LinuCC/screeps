@@ -29,7 +29,7 @@ const roleHarvester = {
           var sources = creep.room.find(FIND_SOURCES);
           let harvestResult = creep.harvest(sources[1])
           if(harvestResult == ERR_NOT_IN_RANGE) {
-            creep.moveTo(sources[1]);
+            creep.moveTo(sources[1], {ignoreCreeps: true});
           }
         }
       }
@@ -63,7 +63,7 @@ const roleHarvester = {
           }
         }
         else if(creep.upgradeController(creep.room.controller) == ERR_NOT_IN_RANGE) {
-          creep.moveTo(creep.room.controller);
+          creep.moveTo(creep.room.controller, {ignoreCreeps: true});
         }
       }
 
