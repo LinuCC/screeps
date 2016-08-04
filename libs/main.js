@@ -883,13 +883,14 @@ module.exports =
 	    transporter: function (_ref) {
 	        let fromSource = _ref.fromSource;
 	        let toTarget = _ref.toTarget;
+	        let sourcePos = _ref.sourcePos;
 
 	        const source = Game.getObjectById(fromSource);
 	        const target = Game.getObjectById(toTarget);
 
 	        // ADD CALCULATION (With `PathFinder`) FOR MODULES HERE
 
-	        return Game.spawns['Underground Traaains'].createCreep([WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], 'Transporter' + this.newCreepIndex(), { role: 'transporter', fromSource: fromSource, toTarget: toTarget });
+	        return Game.spawns['Underground Traaains'].createCreep([WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], 'Transporter' + this.newCreepIndex(), { role: 'transporter', fromSource: fromSource, toTarget: toTarget, sourcePos: sourcePos });
 	    },
 	    newCreepIndex: function () {
 	        let index = Memory.creepIndex;

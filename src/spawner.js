@@ -30,13 +30,13 @@ const spawner = {
       return Game.spawns['Underground Traaains'].createCreep( [CLAIM, CLAIM, CLAIM, MOVE, MOVE, MOVE], 'Assi' + this.newCreepIndex(), {role: 'assimilator'})
     },
 
-    transporter: function({fromSource, toTarget}) {
+    transporter: function({fromSource, toTarget, sourcePos}) {
         const source = Game.getObjectById(fromSource)
         const target = Game.getObjectById(toTarget)
 
         // ADD CALCULATION (With `PathFinder`) FOR MODULES HERE
 
-        return Game.spawns['Underground Traaains'].createCreep([WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], 'Transporter' + this.newCreepIndex(), {role: 'transporter', fromSource: fromSource, toTarget: toTarget})
+        return Game.spawns['Underground Traaains'].createCreep([WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], 'Transporter' + this.newCreepIndex(), {role: 'transporter', fromSource: fromSource, toTarget: toTarget, sourcePos: sourcePos})
     },
     newCreepIndex: function() {
         let index = Memory.creepIndex
