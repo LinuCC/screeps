@@ -36,9 +36,12 @@ const roleHarvester = {
     }
     else {
       let void_extension
-      if(Game.spawns['Underground Traaains'].energy < 300) {
-        if(creep.transfer(Game.spawns['Underground Traaains'], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-          creep.moveTo(Game.spawns['Underground Traaains']);
+      let spawns = Game.rooms[creep.pos.roomName].find(
+        FIND_MY_STRUCTURES, {filter: { structureType: STRUCTURE_SPAWN}}
+      )
+      if(spawns.length > 0 && spawns[0].energy < 300) {
+        if(creep.transfer(spawns[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+          creep.moveTo(spawns[0]);
         }
       }
       else if(void_extension = this.getFirstVoidExtension(creep.room)) {

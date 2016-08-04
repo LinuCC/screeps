@@ -1,55 +1,74 @@
-const spawner = require('../spawner')
+const Spawner = require('../spawner')
 
 var spawnCreepWatcher = {
     run: function(spawn) {
-        const harvesters = _.filter(Game.creeps, (creep) => creep.memory.role == 'harvester');
+        const spawner = new Spawner()
+        const harvesters = _.filter(Game.creeps, (creep) => (
+          creep.memory.role == 'harvester' &&
+          creep.pos.roomName == spawn.pos.roomName
+        ));
         if(harvesters.length < spawn.memory.harvesterSize) {
-            const res = spawner.harvester()
+            const res = spawner.harvester(spawn)
             if(res != ERR_NOT_ENOUGH_ENERGY && harvesters.length != 0) {
 
             }
             else {
-                spawner.rebootHarvester()
+                spawner.rebootHarvester(spawn)
                 console.log('Trying to spawn reboot-Harvester...')
             }
         }
 
-        let excavators = _.filter(Game.creeps, (creep) => creep.memory.role == 'excavator');
+        let excavators = _.filter(Game.creeps, (creep) => (
+          creep.memory.role == 'excavator' &&
+          creep.pos.roomName == spawn.pos.roomName
+        ));
         if(spawn.memory.excavators) {
           let memExcavator = null
             for(let memExcavator of spawn.memory.excavators) {
                 if(_.filter(excavators, (ex)=> (ex.memory.fromSource == memExcavator.fromSource)).length == 0) {
                     //console.log("Wanna spawn new excavator!");
-                    let newName = spawner.excavator(memExcavator.fromSource)
+                    let newName = spawner.excavator(spawn, memExcavator.fromSource)
                 }
             }
         }
 
-        let transporters = _.filter(Game.creeps, (creep) => creep.memory.role == 'transporter');
+        let transporters = _.filter(Game.creeps, (creep) => (
+          creep.memory.role == 'transporter' &&
+          creep.pos.roomName == spawn.pos.roomName
+        ));
         if(spawn.memory.transporters) {
             let memTransporter = null
             for(let memTransporter of spawn.memory.transporters) {
                 if(_.filter(transporters, (ex)=> (ex.memory.fromSource.id == memTransporter.fromSource.id && ex.memory.toTarget.id == memTransporter.toTarget.id)).length == 0) {
-                    let newName = spawner.transporter(memTransporter)
+                    let newName = spawner.transporter(spawn, memTransporter)
                 }
             }
         }
 
-        const upgraders = _.filter(Game.creeps, (creep) => creep.memory.role == 'upgrader');
+        const upgraders = _.filter(Game.creeps, (creep) => (
+          creep.memory.role == 'upgrader' &&
+          creep.pos.roomName == spawn.pos.roomName
+        ));
         if(upgraders.length < spawn.memory.upgraderSize) {
-            const newName = spawner.upgrader();
+            const newName = spawner.upgrader(spawn);
             //console.log('Spawning new upgrader: ' + newName);
         }
 
-        let builders = _.filter(Game.creeps, (creep) => creep.memory.role == 'builder');
+        let builders = _.filter(Game.creeps, (creep) => (
+          creep.memory.role == 'builder' &&
+          creep.pos.roomName == spawn.pos.roomName
+        ));
         if(builders.length < spawn.memory.builderSize) {
-            const newName = spawner.builder();
+            const newName = spawner.builder(spawn);
             //console.log('Spawning new builder: ' + newName);
         }
 
-        let repairers = _.filter(Game.creeps, (creep) => creep.memory.role == 'repairer');
+        let repairers = _.filter(Game.creeps, (creep) => (
+          creep.memory.role == 'repairer' &&
+          creep.pos.roomName == spawn.pos.roomName
+        ));
         if(repairers.length < spawn.memory.repairerSize) {
-            const newName = spawner.repairer();
+            const newName = spawner.repairer(spawn);
             //console.log('Spawning new builder: ' + newName);
         }
     },
