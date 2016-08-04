@@ -88,3 +88,7 @@ class PriorityQueue {
     }
   }
 }
+
+global.lol = PriorityQueue
+
+module.exports = PriorityQueue

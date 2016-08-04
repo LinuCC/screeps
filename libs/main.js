@@ -851,66 +851,74 @@ module.exports =
 	'use strict';
 
 	class Spawner {
-	    constructor() {
-	        this.rebootHarvester = spawn => {
-	            return Game.spawns[spawn.name].createCreep([WORK, CARRY, CARRY, MOVE, MOVE], 'Harvester' + this.newCreepIndex(), { role: 'harvester' });
-	        };
+	  constructor() {
+	    this.rebootHarvester = spawn => {
+	      return Game.spawns[spawn.name].createCreep([WORK, CARRY, CARRY, MOVE, MOVE], 'Harvester' + this.newCreepIndex(), { role: 'harvester' });
+	    };
 
-	        this.harvester = spawn => {
-	            return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], 'Harvester' + this.newCreepIndex(), { role: 'harvester' });
-	        };
+	    this.harvester = spawn => {
+	      if (spawn.name == "VV") {
+	        return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE], 'Harvester' + this.newCreepIndex(), { role: 'harvester' });
+	      } else {
+	        return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], 'Harvester' + this.newCreepIndex(), { role: 'harvester' });
+	      }
+	    };
 
-	        this.excavator = (spawn, fromSource) => {
-	            return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, MOVE], 'Excavator' + this.newCreepIndex(), { role: 'excavator', fromSource: fromSource });
-	        };
+	    this.excavator = (spawn, fromSource) => {
+	      return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, MOVE], 'Excavator' + this.newCreepIndex(), { role: 'excavator', fromSource: fromSource });
+	    };
 
-	        this.upgrader = spawn => {
-	            return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE], 'Upgrader' + this.newCreepIndex(), { role: 'upgrader' });
-	        };
+	    this.upgrader = spawn => {
+	      return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE], 'Upgrader' + this.newCreepIndex(), { role: 'upgrader' });
+	    };
 
-	        this.builder = spawn => {
-	            return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], 'Builder' + this.newCreepIndex(), { role: 'builder' });
-	        };
+	    this.builder = spawn => {
+	      if (spawn.name == "VV") {
+	        return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE], 'Builder' + this.newCreepIndex(), { role: 'builder' });
+	      } else {
+	        return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], 'Builder' + this.newCreepIndex(), { role: 'builder' });
+	      }
+	    };
 
-	        this.repairer = spawn => {
-	            return Game.spawns[spawn.name].createCreep([WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE], 'Repairer' + this.newCreepIndex(), { role: 'repairer' });
-	        };
+	    this.repairer = spawn => {
+	      return Game.spawns[spawn.name].createCreep([WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE], 'Repairer' + this.newCreepIndex(), { role: 'repairer' });
+	    };
 
-	        this.fighter = spawn => {
-	            return Game.spawns[spawn.name].createCreep([MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK], 'Fighter' + this.newCreepIndex(), { role: 'fighter' });
-	        };
+	    this.fighter = spawn => {
+	      return Game.spawns[spawn.name].createCreep([MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK], 'Fighter' + this.newCreepIndex(), { role: 'fighter' });
+	    };
 
-	        this.rangedFighter = spawn => {
-	            return Game.spawns[spawn.name].createCreep([MOVE, MOVE, MOVE, MOVE, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK], 'RangedFighter' + this.newCreepIndex(), { role: 'rangedFighter' });
-	        };
+	    this.rangedFighter = spawn => {
+	      return Game.spawns[spawn.name].createCreep([MOVE, MOVE, MOVE, MOVE, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK], 'RangedFighter' + this.newCreepIndex(), { role: 'rangedFighter' });
+	    };
 
-	        this.healer = spawn => {
-	            return Game.spawns[spawn.name].createCreep([HEAL, HEAL, HEAL, HEAL, MOVE, MOVE, MOVE, MOVE], 'Healer' + this.newCreepIndex(), { role: 'healer' });
-	        };
+	    this.healer = spawn => {
+	      return Game.spawns[spawn.name].createCreep([HEAL, HEAL, HEAL, HEAL, MOVE, MOVE, MOVE, MOVE], 'Healer' + this.newCreepIndex(), { role: 'healer' });
+	    };
 
-	        this.assimilator = spawn => {
-	            return Game.spawns[spawn.name].createCreep([CLAIM, CLAIM, CLAIM, MOVE, MOVE, MOVE], 'Assi' + this.newCreepIndex(), { role: 'assimilator' });
-	        };
+	    this.assimilator = spawn => {
+	      return Game.spawns[spawn.name].createCreep([CLAIM, CLAIM, CLAIM, MOVE, MOVE, MOVE], 'Assi' + this.newCreepIndex(), { role: 'assimilator' });
+	    };
 
-	        this.transporter = (spawn, _ref) => {
-	            let fromSource = _ref.fromSource;
-	            let toTarget = _ref.toTarget;
-	            let sourcePos = _ref.sourcePos;
+	    this.transporter = (spawn, _ref) => {
+	      let fromSource = _ref.fromSource;
+	      let toTarget = _ref.toTarget;
+	      let sourcePos = _ref.sourcePos;
 
-	            const source = Game.getObjectById(fromSource);
-	            const target = Game.getObjectById(toTarget);
+	      const source = Game.getObjectById(fromSource);
+	      const target = Game.getObjectById(toTarget);
 
-	            // ADD CALCULATION (With `PathFinder`) FOR MODULES HERE
+	      // ADD CALCULATION (With `PathFinder`) FOR MODULES HERE
 
-	            return Game.spawns[spawn.name].createCreep([WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], 'Transporter' + this.newCreepIndex(), { role: 'transporter', fromSource: fromSource, toTarget: toTarget, sourcePos: sourcePos });
-	        };
+	      return Game.spawns[spawn.name].createCreep([WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], 'Transporter' + this.newCreepIndex(), { role: 'transporter', fromSource: fromSource, toTarget: toTarget, sourcePos: sourcePos });
+	    };
 
-	        this.newCreepIndex = function () {
-	            let index = Memory.creepIndex;
-	            Memory.creepIndex += 1;
-	            return index;
-	        };
-	    }
+	    this.newCreepIndex = function () {
+	      let index = Memory.creepIndex;
+	      Memory.creepIndex += 1;
+	      return index;
+	    };
+	  }
 
 	};
 
@@ -1140,7 +1148,7 @@ module.exports =
 /* 17 */
 /***/ function(module, exports) {
 
-	"use strict";
+	/* WEBPACK VAR INJECTION */(function(global) {"use strict";
 
 	/**
 	 * Reimplementation of
@@ -1227,6 +1235,11 @@ module.exports =
 	  }
 
 	}
+
+	global.lol = PriorityQueue;
+
+	module.exports = PriorityQueue;
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
 /* 18 */
