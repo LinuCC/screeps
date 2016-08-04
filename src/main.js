@@ -11,6 +11,7 @@ import roleFighter from './role/fighter'
 import roleHealer from './role/healer'
 import roleRangedFighter from './role/rangedFighter'
 import roleAssimilator from './role/assimilator'
+import PriorityQueue from './priorityQueue'
 import 'babel-preset-es2017/polyfill'
 
 // Maximum range for a remote mine, assuming 100% effectiveness: 190 squares

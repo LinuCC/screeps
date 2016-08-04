@@ -99,7 +99,11 @@ module.exports =
 
 	var _assimilator2 = _interopRequireDefault(_assimilator);
 
-	__webpack_require__(17);
+	var _priorityQueue = __webpack_require__(17);
+
+	var _priorityQueue2 = _interopRequireDefault(_priorityQueue);
+
+	__webpack_require__(18);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -107,15 +111,15 @@ module.exports =
 
 	PathFinder.use(true);
 
-	module.exports.loop = function () {
+	module.exports.loop = () => {
 
-	    for (var name in Game.spawns) {
+	    for (let name in Game.spawns) {
 	        _creepWatcher2.default.run(Game.spawns[name]);
 	        _defense2.default.defendRoom(Game.spawns[name].room);
 	    }
 
-	    for (var _name in Game.creeps) {
-	        var creep = Game.creeps[_name];
+	    for (let name in Game.creeps) {
+	        let creep = Game.creeps[name];
 	        if (creep.memory.role == 'harvester') {
 	            _harvester2.default.run(creep);
 	        } else if (creep.memory.role == 'transporter') {
@@ -159,12 +163,10 @@ module.exports =
 	 * mod.thing == 'a thing'; // true
 	 */
 
-	var helper = __webpack_require__(2);
+	const helper = __webpack_require__(2);
 
 	module.exports = {
-	    defendRoom: function defendRoom(room) {
-	        var _this = this;
-
+	    defendRoom(room) {
 	        var hostiles = room.find(FIND_HOSTILE_CREEPS);
 	        if (hostiles.length > 0) {
 	            try {
@@ -172,21 +174,16 @@ module.exports =
 	            } catch (e) {
 	                Game.notify(e.stack);
 	            }
-	            var username = hostiles[0].owner.username;
+	            const username = hostiles[0].owner.username;
 	            //Game.notify(`User ${username} spotted in room ${room.name}`);
-	            var towers = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_TOWER } });
-	            towers.forEach(function (tower) {
-	                return tower.attack(_this.mostValuableTarget(hostiles, tower));
-	            });
+	            const towers = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_TOWER } });
+	            towers.forEach(tower => tower.attack(this.mostValuableTarget(hostiles, tower)));
 	        }
 	    },
-	    mostValuableTarget: function mostValuableTarget(hostiles, tower) {
-	        var _this2 = this;
 
-	        var values = _.map(hostiles, function (hostile) {
-	            return { id: hostile.id, value: _this2.calculateTargetValue(hostile, tower) };
-	        });
-	        var target = _.last(_.sortBy(values, 'value'));
+	    mostValuableTarget(hostiles, tower) {
+	        const values = _.map(hostiles, hostile => ({ id: hostile.id, value: this.calculateTargetValue(hostile, tower) }));
+	        const target = _.last(_.sortBy(values, 'value'));
 	        Memory.inspectMe = target;
 	        console.log(target.value);
 	        if (target.value > -800) {
@@ -195,31 +192,33 @@ module.exports =
 	            return null;
 	        }
 	    },
-	    calculateTargetValue: function calculateTargetValue(hostile, tower) {
-	        var position = hostile.pos;
-	        var room = Game.rooms[hostile.pos.roomName];
-	        var surroundingCreepData = room.lookForAtArea(LOOK_CREEPS, position.y - 1, position.x - 1, position.y + 1, position.x + 1, true);
-	        var surroundingCreeps = _.map(surroundingCreepData, function (d) {
-	            return d.creep;
-	        });
-	        var surroundingHealers = _.filter(surroundingCreeps, this.filterHealer);
+
+	    calculateTargetValue(hostile, tower) {
+	        const position = hostile.pos;
+	        const room = Game.rooms[hostile.pos.roomName];
+	        const surroundingCreepData = room.lookForAtArea(LOOK_CREEPS, position.y - 1, position.x - 1, position.y + 1, position.x + 1, true);
+	        const surroundingCreeps = _.map(surroundingCreepData, d => d.creep);
+	        let surroundingHealers = _.filter(surroundingCreeps, this.filterHealer);
 	        //console.log(surroundingCreeps.length)
 	        console.log(surroundingHealers.length);
 
-	        var range = position.getRangeTo(tower);
+	        const range = position.getRangeTo(tower);
 
 	        // Dont allow baiting all energy from the tower
-	        var specialMod = range > 10 && tower.energy < 750 || range > 8 && tower.energy < 650 ? -1000 : 0;
+	        const specialMod = range > 10 && tower.energy < 750 || range > 8 && tower.energy < 650 ? -1000 : 0;
 
 	        return -range * (range * 0.5) + surroundingHealers.length * (-30 + range * 0.9) + specialMod;
 	    },
-	    filterHealer: function filterHealer(creep) {
+
+	    filterHealer(creep) {
 	        console.log(creep);
 	        return creep.getActiveBodyparts(HEAL) > 0;
 	    },
-	    lulz: function lulz() {
+
+	    lulz() {
 	        helper.randomProperty(Game.creeps).say("Go away!", true);
 	    }
+
 	};
 
 /***/ },
@@ -238,7 +237,7 @@ module.exports =
 	 */
 
 	module.exports = {
-	    randomProperty: function randomProperty(obj) {
+	    randomProperty: function (obj) {
 	        var keys = Object.keys(obj);
 	        return obj[keys[keys.length * Math.random() << 0]];
 	    }
@@ -250,12 +249,12 @@ module.exports =
 
 	'use strict';
 
-	var role = __webpack_require__(4);
+	const role = __webpack_require__(4);
 
-	var roleHarvester = {
+	const roleHarvester = {
 
 	  /** @param {Creep} creep **/
-	  run: function run(creep) {
+	  run: function (creep) {
 
 	    if (creep.carry.energy == creep.carryCapacity && creep.memory.harvesting) {
 	      creep.memory.harvesting = false;
@@ -263,27 +262,27 @@ module.exports =
 	      creep.memory.harvesting = true;
 	    }
 	    if (creep.memory.harvesting) {
-	      var container = this.findNonVoidEnergyContainer(creep.room);
+	      let container = this.findNonVoidEnergyContainer(creep.room);
 	      if (container) {
 	        if (creep.withdraw(container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
 	          creep.moveTo(container);
 	        }
 	      } else {
-	        var _container = this.findNonVoidEnergyContainer(creep.room);
-	        if (_container) {
-	          if (creep.withdraw(_container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-	            creep.moveTo(_container);
+	        let container = this.findNonVoidEnergyContainer(creep.room);
+	        if (container) {
+	          if (creep.withdraw(container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+	            creep.moveTo(container);
 	          }
 	        } else {
 	          var sources = creep.room.find(FIND_SOURCES);
-	          var harvestResult = creep.harvest(sources[1]);
+	          let harvestResult = creep.harvest(sources[1]);
 	          if (harvestResult == ERR_NOT_IN_RANGE) {
 	            creep.moveTo(sources[1]);
 	          }
 	        }
 	      }
 	    } else {
-	      var void_extension = void 0;
+	      let void_extension;
 	      if (Game.spawns['Underground Traaains'].energy < 300) {
 	        if (creep.transfer(Game.spawns['Underground Traaains'], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
 	          creep.moveTo(Game.spawns['Underground Traaains']);
@@ -293,8 +292,8 @@ module.exports =
 	          creep.moveTo(void_extension);
 	        }
 	      } else {
-	        var prioStructure = void 0;
-	        var tower = void 0;
+	        let prioStructure;
+	        let tower;
 	        if (prioStructure = role.buildPriority()) {
 	          if (creep.build(prioStructure) == ERR_NOT_IN_RANGE) {
 	            creep.moveTo(prioStructure);
@@ -310,32 +309,31 @@ module.exports =
 	    }
 	  },
 
-	  filterNonVoidExtension: function filterNonVoidExtension(structure) {
+	  filterNonVoidExtension(structure) {
 	    return structure.structureType == STRUCTURE_EXTENSION && structure.energy < 50;
 	  },
-	  findNonVoidEnergyContainer: function findNonVoidEnergyContainer(room) {
-	    var containers = room.find(FIND_STRUCTURES, { filter: function filter(struc) {
-	        return struc.structureType == STRUCTURE_CONTAINER && struc.store[RESOURCE_ENERGY] > 0;
-	      } });
+
+	  findNonVoidEnergyContainer(room) {
+	    let containers = room.find(FIND_STRUCTURES, { filter: struc => struc.structureType == STRUCTURE_CONTAINER && struc.store[RESOURCE_ENERGY] > 0 });
 	    if (containers.length) {
 	      return containers[0];
 	    } else {
 	      return null;
 	    }
 	  },
-	  getFirstVoidExtension: function getFirstVoidExtension(room) {
-	    var void_extensions = room.find(FIND_MY_STRUCTURES, { filter: this.filterNonVoidExtension });
+
+	  getFirstVoidExtension(room) {
+	    let void_extensions = room.find(FIND_MY_STRUCTURES, { filter: this.filterNonVoidExtension });
 	    if (void_extensions.length > 0) {
-	      var void_extension = Array.isArray(void_extensions) ? void_extensions[0] : void_extensions;
+	      let void_extension = Array.isArray(void_extensions) ? void_extensions[0] : void_extensions;
 	      return void_extension;
 	    } else {
 	      return null;
 	    }
 	  },
-	  getVoidTower: function getVoidTower(room) {
-	    var tower = room.find(FIND_MY_STRUCTURES, { filter: function filter(structure) {
-	        return structure.structureType == STRUCTURE_TOWER && structure.energy < structure.energyCapacity;
-	      } });
+
+	  getVoidTower(room) {
+	    let tower = room.find(FIND_MY_STRUCTURES, { filter: structure => structure.structureType == STRUCTURE_TOWER && structure.energy < structure.energyCapacity });
 	    if (Array.isArray(tower)) {
 	      return tower[0];
 	    } else if (!tower) {
@@ -355,7 +353,7 @@ module.exports =
 	'use strict';
 
 	module.exports = {
-	  buildPriority: function buildPriority(creep) {
+	  buildPriority: function (creep) {
 	    if (Memory.buildPriority) {
 	      return Game.getObjectById(Memory.buildPriority);
 	    } else {
@@ -363,16 +361,15 @@ module.exports =
 	    }
 	  },
 
-	  findNonVoidEnergyContainer: function findNonVoidEnergyContainer(creep) {
-	    var container = creep.pos.findClosestByPath(FIND_STRUCTURES, { filter: function filter(struc) {
-	        return struc.structureType == STRUCTURE_CONTAINER && struc.store[RESOURCE_ENERGY] > 0;
-	      } });
+	  findNonVoidEnergyContainer(creep) {
+	    let container = creep.pos.findClosestByPath(FIND_STRUCTURES, { filter: struc => struc.structureType == STRUCTURE_CONTAINER && struc.store[RESOURCE_ENERGY] > 0 });
 	    return container;
 	  },
-	  getToDismantleStructure: function getToDismantleStructure(creep) {
-	    var structures = creep.room.memory.dismantleQueue;
+
+	  getToDismantleStructure(creep) {
+	    const structures = creep.room.memory.dismantleQueue;
 	    if (Array.isArray(structures)) {
-	      var structureId = structures[0];
+	      const structureId = structures[0];
 	      if (structure = Game.getObjectById(structureId)) {
 	        return structure;
 	      } else {
@@ -385,8 +382,9 @@ module.exports =
 	      return null;
 	    }
 	  },
-	  getStorageTarget: function getStorageTarget(creep) {
-	    var void_extension = void 0;
+
+	  getStorageTarget(creep) {
+	    let void_extension;
 	    if (Game.spawns['Underground Traaains'].energy < 300) {
 	      if (creep.transfer(Game.spawns['Underground Traaains'], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
 	        creep.moveTo(Game.spawns['Underground Traaains']);
@@ -396,8 +394,8 @@ module.exports =
 	        creep.moveTo(void_extension);
 	      }
 	    } else {
-	      var prioStructure = void 0;
-	      var tower = void 0;
+	      let prioStructure;
+	      let tower;
 	      if (prioStructure = role.buildPriority()) {
 	        if (creep.build(prioStructure) == ERR_NOT_IN_RANGE) {
 	          creep.moveTo(prioStructure);
@@ -419,12 +417,12 @@ module.exports =
 
 	'use strict';
 
-	var role = __webpack_require__(4);
+	const role = __webpack_require__(4);
 
 	var roleUpgrader = {
 
 	    /** @param {Creep} creep **/
-	    run: function run(creep) {
+	    run: function (creep) {
 	        if (creep.carry.energy == creep.carryCapacity && creep.memory.harvesting) {
 	            creep.memory.harvesting = false;
 	        } else if (creep.carry.energy == 0 && !creep.memory.harvesting) {
@@ -432,7 +430,7 @@ module.exports =
 	        }
 
 	        if (creep.memory.harvesting) {
-	            var container = void 0;
+	            let container;
 	            if (container = role.findNonVoidEnergyContainer(creep)) {
 	                if (creep.withdraw(container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
 	                    creep.moveTo(container);
@@ -441,7 +439,7 @@ module.exports =
 	                // Do nothing *SadPanda*
 	            }
 	        } else {
-	            var prioStructure = void 0;
+	            let prioStructure;
 	            if (prioStructure = role.buildPriority()) {
 	                if (creep.build(prioStructure) == ERR_NOT_IN_RANGE) {
 	                    creep.moveTo(prioStructure);
@@ -461,12 +459,12 @@ module.exports =
 
 	'use strict';
 
-	var role = __webpack_require__(4);
+	const role = __webpack_require__(4);
 
-	var roleBuilder = {
+	const roleBuilder = {
 
 					/** @param {Creep} creep **/
-					run: function run(creep) {
+					run: function (creep) {
 
 									if (creep.memory.building && creep.carry.energy == 0) {
 													creep.memory.building = false;
@@ -482,7 +480,7 @@ module.exports =
 																					creep.moveTo(targets[0]);
 																	}
 													} else {
-																	var target = this.getRepairTarget(creep);
+																	let target = this.getRepairTarget(creep);
 																	if (target) {
 																					if (creep.repair(target) == ERR_NOT_IN_RANGE) {
 																									creep.moveTo(target);
@@ -504,10 +502,10 @@ module.exports =
 									}
 					},
 
-					getRepairTarget: function getRepairTarget(creep) {
+					getRepairTarget: function (creep) {
 									if (creep.memory.repairTarget) {
 													// Target has full health, dont try to continue repairing it
-													var structure = Game.getObjectById(creep.memory.repairTarget);
+													let structure = Game.getObjectById(creep.memory.repairTarget);
 													if (structure.hits >= structure.hitsMax) {
 																	creep.memory.repairTarget = false;
 																	return null;
@@ -516,16 +514,12 @@ module.exports =
 													}
 									} else {
 													// Search for a target to repair and try to repair it
-													var targets = creep.room.find(FIND_MY_STRUCTURES, {
-																	filter: function filter(object) {
-																					return object.hits < object.hitsMax * 0.8;
-																	}
+													let targets = creep.room.find(FIND_MY_STRUCTURES, {
+																	filter: object => object.hits < object.hitsMax * 0.8
 													});
 													if (targets && targets.length) {
 
-																	targets = targets.sort(function (a, b) {
-																					return a.hits - b.hits;
-																	});
+																	targets = targets.sort((a, b) => a.hits - b.hits);
 																	if (Array.isArray(targets)) {
 
 																					creep.memory.repairTarget = targets[0].id;
@@ -548,22 +542,22 @@ module.exports =
 
 	'use strict';
 
-	var role = __webpack_require__(4);
+	const role = __webpack_require__(4);
 
 	/**
 	 * An Excavator should be defined by the following Memory-Vars:
 	 *   fromSource - Id where to get the resources from
 	 */
 
-	var roleExcavator = {
+	const roleExcavator = {
 
 	  /** @param {Creep} creep **/
-	  run: function run(creep) {
-	    var gPos = this.getExcavationPosition(creep);
+	  run: function (creep) {
+	    let gPos = this.getExcavationPosition(creep);
 	    if (gPos) {
 	      if (gPos.x == creep.pos.x && gPos.y == creep.pos.y && gPos.roomName == creep.room.name) {
-	        var source = Game.getObjectById(creep.memory.fromSource);
-	        var res = creep.harvest(source);
+	        const source = Game.getObjectById(creep.memory.fromSource);
+	        let res = creep.harvest(source);
 	        switch (res) {
 	          case OK:
 	            break;
@@ -582,36 +576,37 @@ module.exports =
 	    }
 	  },
 
-	  getExcavationPosition: function getExcavationPosition(creep) {
+	  getExcavationPosition(creep) {
 	    if (creep.memory.excavationPosition) {
-	      var pos = creep.memory.excavationPosition;
+	      let pos = creep.memory.excavationPosition;
 	      return new RoomPosition(pos.x, pos.y, pos.roomName);
 	    } else {
-	      var _pos = this.calcExcavationPosition(creep);
-	      if (_pos) {
+	      let pos = this.calcExcavationPosition(creep);
+	      if (pos) {
 	        creep.memory.excavationPosition = {
-	          x: _pos.x, y: _pos.y, roomName: _pos.roomName
+	          x: pos.x, y: pos.y, roomName: pos.roomName
 	        };
-	        return _pos;
+	        return pos;
 	      } else {
 	        return null;
 	      }
 	      return null;
 	    }
 	  },
-	  calcExcavationPosition: function calcExcavationPosition(creep) {
-	    var source = Game.getObjectById(creep.memory.fromSource);
+
+	  calcExcavationPosition(creep) {
+	    let source = Game.getObjectById(creep.memory.fromSource);
 	    if (source) {
-	      var containers = source.pos.findInRange(FIND_STRUCTURES, 1, { filter: { structureType: STRUCTURE_CONTAINER } });
+	      let containers = source.pos.findInRange(FIND_STRUCTURES, 1, { filter: { structureType: STRUCTURE_CONTAINER } });
 	      if (containers.length > 0) {
-	        var container = containers[0];
+	        let container = containers[0];
 	        return new RoomPosition(container.pos.x, container.pos.y, container.room.name);
 	      } else {
 	        // Any adjacent walkable tile to the source is fine, get the position
 	        // to the closest one. Just dont call it to often.
-	        var path = creep.pos.findPathTo(source);
+	        let path = creep.pos.findPathTo(source);
 	        if (path && path.length) {
-	          var pos = path.slice(-1)[0];
+	          let pos = path.slice(-1)[0];
 	          return new RoomPosition(pos.x, pos.y, source.room);
 	        } else {
 	          return null;
@@ -631,12 +626,12 @@ module.exports =
 
 	'use strict';
 
-	var role = __webpack_require__(4);
+	const role = __webpack_require__(4);
 
-	var roleRepairer = {
+	const roleRepairer = {
 
 	    /** @param {Creep} creep **/
-	    run: function run(creep) {
+	    run: function (creep) {
 
 	        if (creep.memory.repairing && creep.carry.energy == 0) {
 	            creep.memory.repairing = false;
@@ -647,14 +642,14 @@ module.exports =
 	        }
 
 	        if (creep.memory.repairing) {
-	            var target = void 0;
+	            let target;
 	            if (target = this.getRepairTarget(creep)) {
 	                if (creep.repair(target) == ERR_NOT_IN_RANGE) {
 	                    creep.moveTo(target);
 	                }
 	            }
 	        } else {
-	            var container = void 0;
+	            let container;
 	            if (container = role.findNonVoidEnergyContainer(creep)) {
 	                if (creep.withdraw(container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
 	                    creep.moveTo(container);
@@ -668,10 +663,10 @@ module.exports =
 	        }
 	    },
 
-	    getRepairTarget: function getRepairTarget(creep) {
+	    getRepairTarget: function (creep) {
 	        if (creep.memory.repairTarget) {
 	            // Target has full health, dont try to continue repairing it
-	            var structure = Game.getObjectById(creep.memory.repairTarget);
+	            let structure = Game.getObjectById(creep.memory.repairTarget);
 	            if (structure.hits >= structure.hitsMax) {
 	                creep.memory.repairTarget = false;
 	                return null;
@@ -680,16 +675,12 @@ module.exports =
 	            }
 	        } else {
 	            // Search for a target to repair and try to repair it
-	            var targets = creep.room.find(FIND_STRUCTURES, {
-	                filter: function filter(struc) {
-	                    return struc.hits < struc.hitsMax * 0.9 && (struc.structureType == STRUCTURE_WALL && creep.room.memory.wallHitsMax > struc.hits || struc.structureType == STRUCTURE_RAMPART && creep.room.memory.rampartHitsMax > struc.hits || struc.structureType != STRUCTURE_WALL) && creep.room.memory.dismantleQueue.indexOf(struc.id) == -1;
-	                }
+	            let targets = creep.room.find(FIND_STRUCTURES, {
+	                filter: struc => struc.hits < struc.hitsMax * 0.9 && (struc.structureType == STRUCTURE_WALL && creep.room.memory.wallHitsMax > struc.hits || struc.structureType == STRUCTURE_RAMPART && creep.room.memory.rampartHitsMax > struc.hits || struc.structureType != STRUCTURE_WALL) && creep.room.memory.dismantleQueue.indexOf(struc.id) == -1
 	            });
 	            if (targets && targets.length) {
 
-	                targets = targets.sort(function (a, b) {
-	                    return a.hits - b.hits;
-	                });
+	                targets = targets.sort((a, b) => a.hits - b.hits);
 	                if (Array.isArray(targets)) {
 
 	                    creep.memory.repairTarget = targets[0].id;
@@ -712,7 +703,7 @@ module.exports =
 
 	'use strict';
 
-	var role = __webpack_require__(4);
+	const role = __webpack_require__(4);
 
 	/**
 	 * An Transporter should be defined by the following Memory-Vars:
@@ -722,16 +713,16 @@ module.exports =
 	 *
 	 */
 
-	var roleTransporter = {
+	const roleTransporter = {
 
 	    /** @param {Creep} creep **/
-	    run: function run(creep) {
-	        var fromSource = creep.memory.fromSource;
-	        var toTarget = creep.memory.toTarget;
-	        var source = Game.getObjectById(creep.memory.fromSource.id);
-	        var target = Game.getObjectById(creep.memory.toTarget.id);
-	        var sp = creep.memory.sourcePos;
-	        var sourcePos = false;
+	    run: function (creep) {
+	        const fromSource = creep.memory.fromSource;
+	        const toTarget = creep.memory.toTarget;
+	        const source = Game.getObjectById(creep.memory.fromSource.id);
+	        const target = Game.getObjectById(creep.memory.toTarget.id);
+	        const sp = creep.memory.sourcePos;
+	        let sourcePos = false;
 	        if (sp) {
 	            sourcePos = new RoomPosition(sp.x, sp.y, sp.roomName);
 	        }
@@ -760,12 +751,12 @@ module.exports =
 	            } else if (target.store !== undefined) {
 	                if (target.store[RESOURCE_ENERGY] < target.storeCapacity) {
 	                    if (creep.transfer(target, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-	                        creep.moveTo(target, { reusePath: 20 });
+	                        creep.moveTo(target);
 	                    }
 	                }
 	            } else {
 	                if (creep.build(target) == ERR_NOT_IN_RANGE) {
-	                    creep.moveTo(target, { reusePath: 20 });
+	                    creep.moveTo(target);
 	                }
 	            }
 	        }
@@ -781,127 +772,61 @@ module.exports =
 
 	'use strict';
 
-	var spawner = __webpack_require__(11);
+	const spawner = __webpack_require__(11);
 
 	var spawnCreepWatcher = {
-	    run: function run(spawn) {
-	        var harvesters = _.filter(Game.creeps, function (creep) {
-	            return creep.memory.role == 'harvester';
-	        });
+	    run: function (spawn) {
+	        const harvesters = _.filter(Game.creeps, creep => creep.memory.role == 'harvester');
 	        if (harvesters.length < spawn.memory.harvesterSize) {
-	            var res = spawner.harvester();
+	            const res = spawner.harvester();
 	            if (res != ERR_NOT_ENOUGH_ENERGY && harvesters.length != 0) {} else {
 	                spawner.rebootHarvester();
 	                console.log('Trying to spawn reboot-Harvester...');
 	            }
 	        }
 
-	        var excavators = _.filter(Game.creeps, function (creep) {
-	            return creep.memory.role == 'excavator';
-	        });
+	        let excavators = _.filter(Game.creeps, creep => creep.memory.role == 'excavator');
 	        if (spawn.memory.excavators) {
-	            var memExcavator = null;
-	            var _iteratorNormalCompletion = true;
-	            var _didIteratorError = false;
-	            var _iteratorError = undefined;
-
-	            try {
-	                var _loop = function _loop() {
-	                    var memExcavator = _step.value;
-
-	                    if (_.filter(excavators, function (ex) {
-	                        return ex.memory.fromSource == memExcavator.fromSource;
-	                    }).length == 0) {
-	                        //console.log("Wanna spawn new excavator!");
-	                        var newName = spawner.excavator(memExcavator.fromSource);
-	                    }
-	                };
-
-	                for (var _iterator = spawn.memory.excavators[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-	                    _loop();
-	                }
-	            } catch (err) {
-	                _didIteratorError = true;
-	                _iteratorError = err;
-	            } finally {
-	                try {
-	                    if (!_iteratorNormalCompletion && _iterator.return) {
-	                        _iterator.return();
-	                    }
-	                } finally {
-	                    if (_didIteratorError) {
-	                        throw _iteratorError;
-	                    }
+	            let memExcavator = null;
+	            for (let memExcavator of spawn.memory.excavators) {
+	                if (_.filter(excavators, ex => ex.memory.fromSource == memExcavator.fromSource).length == 0) {
+	                    //console.log("Wanna spawn new excavator!");
+	                    let newName = spawner.excavator(memExcavator.fromSource);
 	                }
 	            }
 	        }
 
-	        var transporters = _.filter(Game.creeps, function (creep) {
-	            return creep.memory.role == 'transporter';
-	        });
+	        let transporters = _.filter(Game.creeps, creep => creep.memory.role == 'transporter');
 	        if (spawn.memory.transporters) {
-	            var memTransporter = null;
-	            var _iteratorNormalCompletion2 = true;
-	            var _didIteratorError2 = false;
-	            var _iteratorError2 = undefined;
-
-	            try {
-	                var _loop2 = function _loop2() {
-	                    var memTransporter = _step2.value;
-
-	                    if (_.filter(transporters, function (ex) {
-	                        return ex.memory.fromSource.id == memTransporter.fromSource.id && ex.memory.toTarget.id == memTransporter.toTarget.id;
-	                    }).length == 0) {
-	                        var newName = spawner.transporter(memTransporter);
-	                    }
-	                };
-
-	                for (var _iterator2 = spawn.memory.transporters[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-	                    _loop2();
-	                }
-	            } catch (err) {
-	                _didIteratorError2 = true;
-	                _iteratorError2 = err;
-	            } finally {
-	                try {
-	                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
-	                        _iterator2.return();
-	                    }
-	                } finally {
-	                    if (_didIteratorError2) {
-	                        throw _iteratorError2;
-	                    }
+	            let memTransporter = null;
+	            for (let memTransporter of spawn.memory.transporters) {
+	                if (_.filter(transporters, ex => ex.memory.fromSource.id == memTransporter.fromSource.id && ex.memory.toTarget.id == memTransporter.toTarget.id).length == 0) {
+	                    let newName = spawner.transporter(memTransporter);
 	                }
 	            }
 	        }
 
-	        var upgraders = _.filter(Game.creeps, function (creep) {
-	            return creep.memory.role == 'upgrader';
-	        });
+	        const upgraders = _.filter(Game.creeps, creep => creep.memory.role == 'upgrader');
 	        if (upgraders.length < spawn.memory.upgraderSize) {
-	            var newName = spawner.upgrader();
+	            const newName = spawner.upgrader();
 	            //console.log('Spawning new upgrader: ' + newName);
 	        }
 
-	        var builders = _.filter(Game.creeps, function (creep) {
-	            return creep.memory.role == 'builder';
-	        });
+	        let builders = _.filter(Game.creeps, creep => creep.memory.role == 'builder');
 	        if (builders.length < spawn.memory.builderSize) {
-	            var _newName = spawner.builder();
+	            const newName = spawner.builder();
 	            //console.log('Spawning new builder: ' + newName);
 	        }
 
-	        var repairers = _.filter(Game.creeps, function (creep) {
-	            return creep.memory.role == 'repairer';
-	        });
+	        let repairers = _.filter(Game.creeps, creep => creep.memory.role == 'repairer');
 	        if (repairers.length < spawn.memory.repairerSize) {
-	            var _newName2 = spawner.repairer();
+	            const newName = spawner.repairer();
 	            //console.log('Spawning new builder: ' + newName);
 	        }
 	    },
 
 	    // TODO Put this somewhere else
-	    cleanupMemory: function cleanupMemory() {
+	    cleanupMemory: function () {
 	        for (var name in Memory.creeps) {
 	            if (!Game.creeps[name]) {
 	                delete Memory.creeps[name];
@@ -919,51 +844,51 @@ module.exports =
 
 	'use strict';
 
-	var spawner = {
-	    rebootHarvester: function rebootHarvester() {
+	const spawner = {
+	    rebootHarvester: function () {
 	        return Game.spawns['Underground Traaains'].createCreep([WORK, CARRY, CARRY, MOVE, MOVE], 'Harvester' + this.newCreepIndex(), { role: 'harvester' });
 	    },
-	    harvester: function harvester() {
+	    harvester: function () {
 	        return Game.spawns['Underground Traaains'].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], 'Harvester' + this.newCreepIndex(), { role: 'harvester' });
 	    },
-	    excavator: function excavator(fromSource) {
+	    excavator: function (fromSource) {
 	        return Game.spawns['Underground Traaains'].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, MOVE], 'Excavator' + this.newCreepIndex(), { role: 'excavator', fromSource: fromSource });
 	    },
-	    upgrader: function upgrader() {
+	    upgrader: function () {
 	        return Game.spawns['Underground Traaains'].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE], 'Upgrader' + this.newCreepIndex(), { role: 'upgrader' });
 	    },
-	    builder: function builder() {
+	    builder: function () {
 	        return Game.spawns['Underground Traaains'].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], 'Builder' + this.newCreepIndex(), { role: 'builder' });
 	    },
-	    repairer: function repairer() {
+	    repairer: function () {
 	        return Game.spawns['Underground Traaains'].createCreep([WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE], 'Repairer' + this.newCreepIndex(), { role: 'repairer' });
 	    },
-	    fighter: function fighter() {
+	    fighter: function () {
 	        return Game.spawns['Underground Traaains'].createCreep([MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK], 'Fighter' + this.newCreepIndex(), { role: 'fighter' });
 	    },
-	    rangedFighter: function rangedFighter() {
+	    rangedFighter: function () {
 	        return Game.spawns['Underground Traaains'].createCreep([MOVE, MOVE, MOVE, MOVE, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK], 'RangedFighter' + this.newCreepIndex(), { role: 'rangedFighter' });
 	    },
-	    healer: function healer() {
+	    healer: () => {
 	        return Game.spawns['Underground Traaains'].createCreep([HEAL, HEAL, HEAL, HEAL, MOVE, MOVE, MOVE, MOVE], 'Healer' + undefined.newCreepIndex(), { role: 'healer' });
 	    },
-	    assimilator: function assimilator() {
+	    assimilator: () => {
 	        return Game.spawns['Underground Traaains'].createCreep([CLAIM, CLAIM, CLAIM, MOVE, MOVE, MOVE], 'Assi' + undefined.newCreepIndex(), { role: 'assimilator' });
 	    },
 
-	    transporter: function transporter(_ref) {
-	        var fromSource = _ref.fromSource;
-	        var toTarget = _ref.toTarget;
+	    transporter: function (_ref) {
+	        let fromSource = _ref.fromSource;
+	        let toTarget = _ref.toTarget;
 
-	        var source = Game.getObjectById(fromSource);
-	        var target = Game.getObjectById(toTarget);
+	        const source = Game.getObjectById(fromSource);
+	        const target = Game.getObjectById(toTarget);
 
 	        // ADD CALCULATION (With `PathFinder`) FOR MODULES HERE
 
 	        return Game.spawns['Underground Traaains'].createCreep([WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], 'Transporter' + this.newCreepIndex(), { role: 'transporter', fromSource: fromSource, toTarget: toTarget });
 	    },
-	    newCreepIndex: function newCreepIndex() {
-	        var index = Memory.creepIndex;
+	    newCreepIndex: function () {
+	        let index = Memory.creepIndex;
 	        Memory.creepIndex += 1;
 	        return index;
 	    }
@@ -977,21 +902,21 @@ module.exports =
 
 	'use strict';
 
-	var role = __webpack_require__(4);
+	const role = __webpack_require__(4);
 
-	var maintainer = {
+	const maintainer = {
 
 	  /** @param {Creep} creep **/
-	  run: function run(creep) {
+	  run: function (creep) {
 	    if (creep.memory.repairing) {
-	      var target = void 0;
+	      let target;
 	      if (target = this.getRepairTarget(creep)) {
 	        if (creep.repair(target) == ERR_NOT_IN_RANGE) {
 	          creep.moveTo(target);
 	        }
 	      }
 	    } else {
-	      var container = void 0;
+	      let container;
 	      if (container = role.findNonVoidEnergyContainer(creep)) {
 	        if (creep.withdraw(container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
 	          creep.moveTo(container);
@@ -1005,10 +930,10 @@ module.exports =
 	    }
 	  },
 
-	  getRepairTarget: function getRepairTarget(creep) {
+	  getRepairTarget: function (creep) {
 	    if (creep.memory.repairTarget) {
 	      // Target has full health, dont try to continue repairing it
-	      var structure = Game.getObjectById(creep.memory.repairTarget);
+	      let structure = Game.getObjectById(creep.memory.repairTarget);
 	      if (structure.hits >= structure.hitsMax) {
 	        creep.memory.repairTarget = false;
 	        return null;
@@ -1017,16 +942,12 @@ module.exports =
 	      }
 	    } else {
 	      // Search for a target to repair and try to repair it
-	      var targets = creep.room.find(FIND_STRUCTURES, {
-	        filter: function filter(struc) {
-	          return struc.hits < struc.hitsMax * 0.9 && (struc.structureType == STRUCTURE_WALL && creep.room.memory.wallHitsMax > struc.hits || struc.structureType == STRUCTURE_RAMPART && creep.room.memory.rampartHitsMax > struc.hits || struc.structureType != STRUCTURE_WALL) && creep.room.memory.dismantleQueue.indexOf(struc.id) == -1;
-	        }
+	      let targets = creep.room.find(FIND_STRUCTURES, {
+	        filter: struc => struc.hits < struc.hitsMax * 0.9 && (struc.structureType == STRUCTURE_WALL && creep.room.memory.wallHitsMax > struc.hits || struc.structureType == STRUCTURE_RAMPART && creep.room.memory.rampartHitsMax > struc.hits || struc.structureType != STRUCTURE_WALL) && creep.room.memory.dismantleQueue.indexOf(struc.id) == -1
 	      });
 	      if (targets && targets.length) {
 
-	        targets = targets.sort(function (a, b) {
-	          return a.hits - b.hits;
-	        });
+	        targets = targets.sort((a, b) => a.hits - b.hits);
 	        if (Array.isArray(targets)) {
 
 	          creep.memory.repairTarget = targets[0].id;
@@ -1040,9 +961,9 @@ module.exports =
 	    }
 	  },
 
-	  findWork: function findWork() {},
+	  findWork: () => {},
 
-	  findLackingTarget: function findLackingTarget() {
+	  findLackingTarget: () => {
 	    if (extension_lacking) {} else if (spawn_lacking) {} else if (tower_lacking) {}
 	  }
 
@@ -1056,13 +977,13 @@ module.exports =
 
 	"use strict";
 
-	var roleFighter = {
-	  run: function run(creep) {
-	    var flag = void 0;
+	const roleFighter = {
+	  run: creep => {
+	    let flag;
 	    if (creep.memory.flagName) {
 	      flag = Game.flags[creep.memory.flagName];
 	    } else {
-	      var flags = _.filter(Game.flags, { color: COLOR_RED });
+	      let flags = _.filter(Game.flags, { color: COLOR_RED });
 	      if (flags.length) {
 	        flag = flags[0];
 	      }
@@ -1070,12 +991,12 @@ module.exports =
 	    if (flag) {
 	      creep.moveTo(flag);
 	      if (creep.pos.inRangeTo(flag, 1)) {
-	        var _targets = flag.pos.look();
-	        if (_targets.length) {
-	          creep.attack(_targets[0]);
+	        let targets = flag.pos.look();
+	        if (targets.length) {
+	          creep.attack(targets[0]);
 	        }
 	      }
-	      var targets = creep.pos.findInRange(FIND_HOSTILE_CREEPS, 1);
+	      let targets = creep.pos.findInRange(FIND_HOSTILE_CREEPS, 1);
 	      if (targets.length > 0) {
 	        creep.attack(targets[0]);
 	      }
@@ -1091,13 +1012,13 @@ module.exports =
 
 	'use strict';
 
-	var roleHealer = {
-	  run: function run(creep) {
-	    var flag = void 0;
+	const roleHealer = {
+	  run: creep => {
+	    let flag;
 	    if (creep.memory.flagName) {
 	      flag = Game.flags[creep.memory.flagName];
 	    } else {
-	      var flags = _.filter(Game.flags, { color: COLOR_RED });
+	      let flags = _.filter(Game.flags, { color: COLOR_RED });
 	      if (flags.length) {
 	        flag = flags[0];
 	      }
@@ -1105,7 +1026,7 @@ module.exports =
 	    if (flag) {
 	      creep.moveTo(flag);
 	      if (creep.pos.inRangeTo(flag, 3)) {
-	        var targets = flag.pos.look();
+	        let targets = flag.pos.look();
 	        if (targets.length) {
 	          creep.heal(targets[0]);
 	        }
@@ -1115,19 +1036,13 @@ module.exports =
 	    if (creep.hits < creep.hitsMax) {
 	      creep.heal(creep);
 	    } else {
-	      var _targets = creep.pos.findInRange(FIND_MY_CREEPS, 1, { filter: function filter(creep) {
-	          return creep.hitsMax - creep.hits > 0;
-	        } });
-	      if (!(_targets.length > 0)) {
-	        _targets = creep.pos.findInRange(FIND_MY_CREEPS, 2, { filter: function filter(creep) {
-	            return creep.hitsMax - creep.hits > 0;
-	          } });
+	      let targets = creep.pos.findInRange(FIND_MY_CREEPS, 1, { filter: creep => creep.hitsMax - creep.hits > 0 });
+	      if (!(targets.length > 0)) {
+	        targets = creep.pos.findInRange(FIND_MY_CREEPS, 2, { filter: creep => creep.hitsMax - creep.hits > 0 });
 	      }
-	      _targets = _.sortByOrder(_targets, function (c) {
-	        return c.maxHits - c.hits;
-	      }, 'asc');
-	      if (_targets.length > 0) {
-	        creep.heal(_targets[0]);
+	      targets = _.sortByOrder(targets, c => c.maxHits - c.hits, 'asc');
+	      if (targets.length > 0) {
+	        creep.heal(targets[0]);
 	      }
 	    }
 	  }
@@ -1141,13 +1056,13 @@ module.exports =
 
 	"use strict";
 
-	var roleRangedFighter = {
-	  run: function run(creep) {
-	    var flag = void 0;
+	const roleRangedFighter = {
+	  run: creep => {
+	    let flag;
 	    if (creep.memory.flagName) {
 	      flag = Game.flags[creep.memory.flagName];
 	    } else {
-	      var flags = _.filter(Game.flags, { color: COLOR_RED });
+	      let flags = _.filter(Game.flags, { color: COLOR_RED });
 	      if (flags.length) {
 	        flag = flags[0];
 	      }
@@ -1155,13 +1070,13 @@ module.exports =
 	    if (flag) {
 	      creep.moveTo(flag);
 	      if (creep.pos.inRangeTo(flag, 3)) {
-	        var _targets = flag.pos.look();
-	        if (_targets.length) {
-	          creep.attack(_targets[0]);
+	        let targets = flag.pos.look();
+	        if (targets.length) {
+	          creep.attack(targets[0]);
 	        }
 	      }
 	    }
-	    var targets = creep.pos.findInRange(FIND_HOSTILE_CREEPS, 3);
+	    let targets = creep.pos.findInRange(FIND_HOSTILE_CREEPS, 3);
 	    if (targets.length > 0) {
 	      creep.attack(targets[0]);
 	    }
@@ -1176,13 +1091,13 @@ module.exports =
 
 	"use strict";
 
-	var roleAssimilator = {
-	  run: function run(creep) {
-	    var flag = void 0;
+	const roleAssimilator = {
+	  run: creep => {
+	    let flag;
 	    if (creep.memory.flagName) {
 	      flag = Game.flags[creep.memory.flagName];
 	    } else {
-	      var flags = _.filter(Game.flags, { color: COLOR_PURPLE });
+	      let flags = _.filter(Game.flags, { color: COLOR_PURPLE });
 	      if (flags.length) {
 	        flag = flags[0];
 	      }
@@ -1190,7 +1105,7 @@ module.exports =
 	    if (flag) {
 	      creep.moveTo(flag);
 	      if (creep.pos.inRangeTo(flag, 0)) {
-	        var targets = creep.pos.findInRange(FIND_STRUCTURES, 1, { filter: { structureType: STRUCTURE_CONTROLLER } });
+	        let targets = creep.pos.findInRange(FIND_STRUCTURES, 1, { filter: { structureType: STRUCTURE_CONTROLLER } });
 	        if (targets.length) {
 	          creep.claimController(targets[0]);
 	        }
@@ -1203,30 +1118,122 @@ module.exports =
 
 /***/ },
 /* 17 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ function(module, exports) {
 
-	// ES2017 w/ Node 5
-	__webpack_require__(18);
-	__webpack_require__(53);
-	__webpack_require__(55);
-	__webpack_require__(62);
-	__webpack_require__(66);
+	"use strict";
 
+	/**
+	 * Reimplementation of
+	 * https://github.com/adamhooper/js-priority-queue/blob/master/src/PriorityQueue/BinaryHeapStrategy.coffee
+	 */
+
+	class PriorityQueue {
+	  constructor() {
+	    this.constructor = (room, initialValues) => {
+	      this.length = 0;
+	      this.data = initialValues;
+	      this.heapify();
+	    };
+
+	    this._heapify = () => {
+	      if (this.data.length > 0) {
+	        for (i in [...Array(this.data.length).keys()]) {
+	          this._bubbleUp(i);
+	        }
+	      }
+	    };
+
+	    this.queue = value => {
+	      this.data.push(value);
+	      this._bubbleUp(this.data.length - 1);
+	    };
+
+	    this.dequeue = () => {
+	      let ret = this.data[0];
+	      let last = this.data.pop();
+	      if (this.data.length > 0) {
+	        this.data[0] = last;
+	        this._bubbleDown(0);
+	      }
+	      return ret;
+	    };
+
+	    this.peek = () => {
+	      return this.data[0];
+	    };
+
+	    this.clear = () => {
+	      this.length = 0;
+	      this.data.length = 0;
+	    };
+
+	    this._bubbleUp = pos => {
+	      while (pos > 0) {
+	        let parent = pos - 1 >>> 1;
+	        if (this.comparator(this.data[pos], this.data[parent]) < 0) {
+	          let x = this.data[parent];
+	          this.data[parent] = this.data[pos];
+	          this.data[pos] = x;
+	          pos = parent;
+	        } else {
+	          break;
+	        }
+	      }
+	    };
+
+	    this._bubbleDown = pos => {
+	      let last = this.data.length - 1;
+
+	      while (true) {
+	        let left = (pos << 1) + 1;
+	        let right = left + 1;
+	        let minIndex = pos;
+	        if (left <= last && this.comparator(this.data[left], this.data[minIndex]) < 0) {
+	          minIndex = left;
+	        }
+	        if (right <= last && this.comparator(this.data[right], this.data[minIndex]) < 0) {
+	          minIndex = right;
+	        }
+
+	        if (minIndex != pos) {
+	          let x = this.data[minIndex];
+	          this.data[minIndex] = this.data[pos];
+	          this.data[pos] = x;
+	        } else {
+	          break;
+	        }
+	      }
+	    };
+	  }
+
+	}
 
 /***/ },
 /* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
+	// ES2017 w/ Node 5
 	__webpack_require__(19);
-	module.exports = __webpack_require__(22).Object.entries;
+	__webpack_require__(54);
+	__webpack_require__(56);
+	__webpack_require__(63);
+	__webpack_require__(67);
+
 
 /***/ },
 /* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
+	__webpack_require__(20);
+	module.exports = __webpack_require__(23).Object.entries;
+
+/***/ },
+/* 20 */
+/***/ function(module, exports, __webpack_require__) {
+
 	// https://github.com/tc39/proposal-object-values-entries
-	var $export  = __webpack_require__(20)
-	  , $entries = __webpack_require__(38)(true);
+	var $export  = __webpack_require__(21)
+	  , $entries = __webpack_require__(39)(true);
 
 	$export($export.S, 'Object', {
 	  entries: function entries(it){
@@ -1235,14 +1242,14 @@ module.exports =
 	});
 
 /***/ },
-/* 20 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var global    = __webpack_require__(21)
-	  , core      = __webpack_require__(22)
-	  , hide      = __webpack_require__(23)
-	  , redefine  = __webpack_require__(33)
-	  , ctx       = __webpack_require__(36)
+	var global    = __webpack_require__(22)
+	  , core      = __webpack_require__(23)
+	  , hide      = __webpack_require__(24)
+	  , redefine  = __webpack_require__(34)
+	  , ctx       = __webpack_require__(37)
 	  , PROTOTYPE = 'prototype';
 
 	var $export = function(type, name, source){
@@ -1283,7 +1290,7 @@ module.exports =
 	module.exports = $export;
 
 /***/ },
-/* 21 */
+/* 22 */
 /***/ function(module, exports) {
 
 	// https://github.com/zloirock/core-js/issues/86#issuecomment-115759028
@@ -1292,19 +1299,19 @@ module.exports =
 	if(typeof __g == 'number')__g = global; // eslint-disable-line no-undef
 
 /***/ },
-/* 22 */
+/* 23 */
 /***/ function(module, exports) {
 
 	var core = module.exports = {version: '2.4.0'};
 	if(typeof __e == 'number')__e = core; // eslint-disable-line no-undef
 
 /***/ },
-/* 23 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var dP         = __webpack_require__(24)
-	  , createDesc = __webpack_require__(32);
-	module.exports = __webpack_require__(28) ? function(object, key, value){
+	var dP         = __webpack_require__(25)
+	  , createDesc = __webpack_require__(33);
+	module.exports = __webpack_require__(29) ? function(object, key, value){
 	  return dP.f(object, key, createDesc(1, value));
 	} : function(object, key, value){
 	  object[key] = value;
@@ -1312,15 +1319,15 @@ module.exports =
 	};
 
 /***/ },
-/* 24 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var anObject       = __webpack_require__(25)
-	  , IE8_DOM_DEFINE = __webpack_require__(27)
-	  , toPrimitive    = __webpack_require__(31)
+	var anObject       = __webpack_require__(26)
+	  , IE8_DOM_DEFINE = __webpack_require__(28)
+	  , toPrimitive    = __webpack_require__(32)
 	  , dP             = Object.defineProperty;
 
-	exports.f = __webpack_require__(28) ? Object.defineProperty : function defineProperty(O, P, Attributes){
+	exports.f = __webpack_require__(29) ? Object.defineProperty : function defineProperty(O, P, Attributes){
 	  anObject(O);
 	  P = toPrimitive(P, true);
 	  anObject(Attributes);
@@ -1333,17 +1340,17 @@ module.exports =
 	};
 
 /***/ },
-/* 25 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var isObject = __webpack_require__(26);
+	var isObject = __webpack_require__(27);
 	module.exports = function(it){
 	  if(!isObject(it))throw TypeError(it + ' is not an object!');
 	  return it;
 	};
 
 /***/ },
-/* 26 */
+/* 27 */
 /***/ function(module, exports) {
 
 	module.exports = function(it){
@@ -1351,24 +1358,24 @@ module.exports =
 	};
 
 /***/ },
-/* 27 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = !__webpack_require__(28) && !__webpack_require__(29)(function(){
-	  return Object.defineProperty(__webpack_require__(30)('div'), 'a', {get: function(){ return 7; }}).a != 7;
-	});
-
-/***/ },
 /* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
-	// Thank's IE8 for his funny defineProperty
-	module.exports = !__webpack_require__(29)(function(){
-	  return Object.defineProperty({}, 'a', {get: function(){ return 7; }}).a != 7;
+	module.exports = !__webpack_require__(29) && !__webpack_require__(30)(function(){
+	  return Object.defineProperty(__webpack_require__(31)('div'), 'a', {get: function(){ return 7; }}).a != 7;
 	});
 
 /***/ },
 /* 29 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// Thank's IE8 for his funny defineProperty
+	module.exports = !__webpack_require__(30)(function(){
+	  return Object.defineProperty({}, 'a', {get: function(){ return 7; }}).a != 7;
+	});
+
+/***/ },
+/* 30 */
 /***/ function(module, exports) {
 
 	module.exports = function(exec){
@@ -1380,11 +1387,11 @@ module.exports =
 	};
 
 /***/ },
-/* 30 */
+/* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var isObject = __webpack_require__(26)
-	  , document = __webpack_require__(21).document
+	var isObject = __webpack_require__(27)
+	  , document = __webpack_require__(22).document
 	  // in old IE typeof document.createElement is 'object'
 	  , is = isObject(document) && isObject(document.createElement);
 	module.exports = function(it){
@@ -1392,11 +1399,11 @@ module.exports =
 	};
 
 /***/ },
-/* 31 */
+/* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// 7.1.1 ToPrimitive(input [, PreferredType])
-	var isObject = __webpack_require__(26);
+	var isObject = __webpack_require__(27);
 	// instead of the ES6 spec version, we didn't implement @@toPrimitive case
 	// and the second argument - flag - preferred type is a string
 	module.exports = function(it, S){
@@ -1409,7 +1416,7 @@ module.exports =
 	};
 
 /***/ },
-/* 32 */
+/* 33 */
 /***/ function(module, exports) {
 
 	module.exports = function(bitmap, value){
@@ -1422,18 +1429,18 @@ module.exports =
 	};
 
 /***/ },
-/* 33 */
+/* 34 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var global    = __webpack_require__(21)
-	  , hide      = __webpack_require__(23)
-	  , has       = __webpack_require__(34)
-	  , SRC       = __webpack_require__(35)('src')
+	var global    = __webpack_require__(22)
+	  , hide      = __webpack_require__(24)
+	  , has       = __webpack_require__(35)
+	  , SRC       = __webpack_require__(36)('src')
 	  , TO_STRING = 'toString'
 	  , $toString = Function[TO_STRING]
 	  , TPL       = ('' + $toString).split(TO_STRING);
 
-	__webpack_require__(22).inspectSource = function(it){
+	__webpack_require__(23).inspectSource = function(it){
 	  return $toString.call(it);
 	};
 
@@ -1459,7 +1466,7 @@ module.exports =
 	});
 
 /***/ },
-/* 34 */
+/* 35 */
 /***/ function(module, exports) {
 
 	var hasOwnProperty = {}.hasOwnProperty;
@@ -1468,7 +1475,7 @@ module.exports =
 	};
 
 /***/ },
-/* 35 */
+/* 36 */
 /***/ function(module, exports) {
 
 	var id = 0
@@ -1478,11 +1485,11 @@ module.exports =
 	};
 
 /***/ },
-/* 36 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// optional / simple context binding
-	var aFunction = __webpack_require__(37);
+	var aFunction = __webpack_require__(38);
 	module.exports = function(fn, that, length){
 	  aFunction(fn);
 	  if(that === undefined)return fn;
@@ -1503,7 +1510,7 @@ module.exports =
 	};
 
 /***/ },
-/* 37 */
+/* 38 */
 /***/ function(module, exports) {
 
 	module.exports = function(it){
@@ -1512,12 +1519,12 @@ module.exports =
 	};
 
 /***/ },
-/* 38 */
+/* 39 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var getKeys   = __webpack_require__(39)
-	  , toIObject = __webpack_require__(41)
-	  , isEnum    = __webpack_require__(52).f;
+	var getKeys   = __webpack_require__(40)
+	  , toIObject = __webpack_require__(42)
+	  , isEnum    = __webpack_require__(53).f;
 	module.exports = function(isEntries){
 	  return function(it){
 	    var O      = toIObject(it)
@@ -1533,25 +1540,25 @@ module.exports =
 	};
 
 /***/ },
-/* 39 */
+/* 40 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// 19.1.2.14 / 15.2.3.14 Object.keys(O)
-	var $keys       = __webpack_require__(40)
-	  , enumBugKeys = __webpack_require__(51);
+	var $keys       = __webpack_require__(41)
+	  , enumBugKeys = __webpack_require__(52);
 
 	module.exports = Object.keys || function keys(O){
 	  return $keys(O, enumBugKeys);
 	};
 
 /***/ },
-/* 40 */
+/* 41 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var has          = __webpack_require__(34)
-	  , toIObject    = __webpack_require__(41)
-	  , arrayIndexOf = __webpack_require__(45)(false)
-	  , IE_PROTO     = __webpack_require__(49)('IE_PROTO');
+	var has          = __webpack_require__(35)
+	  , toIObject    = __webpack_require__(42)
+	  , arrayIndexOf = __webpack_require__(46)(false)
+	  , IE_PROTO     = __webpack_require__(50)('IE_PROTO');
 
 	module.exports = function(object, names){
 	  var O      = toIObject(object)
@@ -1567,28 +1574,28 @@ module.exports =
 	};
 
 /***/ },
-/* 41 */
+/* 42 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// to indexed object, toObject with fallback for non-array-like ES3 strings
-	var IObject = __webpack_require__(42)
-	  , defined = __webpack_require__(44);
+	var IObject = __webpack_require__(43)
+	  , defined = __webpack_require__(45);
 	module.exports = function(it){
 	  return IObject(defined(it));
 	};
 
 /***/ },
-/* 42 */
+/* 43 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// fallback for non-array-like ES3 and non-enumerable old V8 strings
-	var cof = __webpack_require__(43);
+	var cof = __webpack_require__(44);
 	module.exports = Object('z').propertyIsEnumerable(0) ? Object : function(it){
 	  return cof(it) == 'String' ? it.split('') : Object(it);
 	};
 
 /***/ },
-/* 43 */
+/* 44 */
 /***/ function(module, exports) {
 
 	var toString = {}.toString;
@@ -1598,7 +1605,7 @@ module.exports =
 	};
 
 /***/ },
-/* 44 */
+/* 45 */
 /***/ function(module, exports) {
 
 	// 7.2.1 RequireObjectCoercible(argument)
@@ -1608,14 +1615,14 @@ module.exports =
 	};
 
 /***/ },
-/* 45 */
+/* 46 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// false -> Array#indexOf
 	// true  -> Array#includes
-	var toIObject = __webpack_require__(41)
-	  , toLength  = __webpack_require__(46)
-	  , toIndex   = __webpack_require__(48);
+	var toIObject = __webpack_require__(42)
+	  , toLength  = __webpack_require__(47)
+	  , toIndex   = __webpack_require__(49);
 	module.exports = function(IS_INCLUDES){
 	  return function($this, el, fromIndex){
 	    var O      = toIObject($this)
@@ -1634,18 +1641,18 @@ module.exports =
 	};
 
 /***/ },
-/* 46 */
+/* 47 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// 7.1.15 ToLength
-	var toInteger = __webpack_require__(47)
+	var toInteger = __webpack_require__(48)
 	  , min       = Math.min;
 	module.exports = function(it){
 	  return it > 0 ? min(toInteger(it), 0x1fffffffffffff) : 0; // pow(2, 53) - 1 == 9007199254740991
 	};
 
 /***/ },
-/* 47 */
+/* 48 */
 /***/ function(module, exports) {
 
 	// 7.1.4 ToInteger
@@ -1656,10 +1663,10 @@ module.exports =
 	};
 
 /***/ },
-/* 48 */
+/* 49 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var toInteger = __webpack_require__(47)
+	var toInteger = __webpack_require__(48)
 	  , max       = Math.max
 	  , min       = Math.min;
 	module.exports = function(index, length){
@@ -1668,20 +1675,20 @@ module.exports =
 	};
 
 /***/ },
-/* 49 */
+/* 50 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var shared = __webpack_require__(50)('keys')
-	  , uid    = __webpack_require__(35);
+	var shared = __webpack_require__(51)('keys')
+	  , uid    = __webpack_require__(36);
 	module.exports = function(key){
 	  return shared[key] || (shared[key] = uid(key));
 	};
 
 /***/ },
-/* 50 */
+/* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var global = __webpack_require__(21)
+	var global = __webpack_require__(22)
 	  , SHARED = '__core-js_shared__'
 	  , store  = global[SHARED] || (global[SHARED] = {});
 	module.exports = function(key){
@@ -1689,7 +1696,7 @@ module.exports =
 	};
 
 /***/ },
-/* 51 */
+/* 52 */
 /***/ function(module, exports) {
 
 	// IE 8- don't enum bug keys
@@ -1698,25 +1705,25 @@ module.exports =
 	).split(',');
 
 /***/ },
-/* 52 */
+/* 53 */
 /***/ function(module, exports) {
 
 	exports.f = {}.propertyIsEnumerable;
 
 /***/ },
-/* 53 */
-/***/ function(module, exports, __webpack_require__) {
-
-	__webpack_require__(54);
-	module.exports = __webpack_require__(22).Object.values;
-
-/***/ },
 /* 54 */
 /***/ function(module, exports, __webpack_require__) {
 
+	__webpack_require__(55);
+	module.exports = __webpack_require__(23).Object.values;
+
+/***/ },
+/* 55 */
+/***/ function(module, exports, __webpack_require__) {
+
 	// https://github.com/tc39/proposal-object-values-entries
-	var $export = __webpack_require__(20)
-	  , $values = __webpack_require__(38)(false);
+	var $export = __webpack_require__(21)
+	  , $values = __webpack_require__(39)(false);
 
 	$export($export.S, 'Object', {
 	  values: function values(it){
@@ -1725,22 +1732,22 @@ module.exports =
 	});
 
 /***/ },
-/* 55 */
-/***/ function(module, exports, __webpack_require__) {
-
-	__webpack_require__(56);
-	module.exports = __webpack_require__(22).Object.getOwnPropertyDescriptors;
-
-/***/ },
 /* 56 */
 /***/ function(module, exports, __webpack_require__) {
 
+	__webpack_require__(57);
+	module.exports = __webpack_require__(23).Object.getOwnPropertyDescriptors;
+
+/***/ },
+/* 57 */
+/***/ function(module, exports, __webpack_require__) {
+
 	// https://github.com/tc39/proposal-object-getownpropertydescriptors
-	var $export        = __webpack_require__(20)
-	  , ownKeys        = __webpack_require__(57)
-	  , toIObject      = __webpack_require__(41)
-	  , gOPD           = __webpack_require__(60)
-	  , createProperty = __webpack_require__(61);
+	var $export        = __webpack_require__(21)
+	  , ownKeys        = __webpack_require__(58)
+	  , toIObject      = __webpack_require__(42)
+	  , gOPD           = __webpack_require__(61)
+	  , createProperty = __webpack_require__(62);
 
 	$export($export.S, 'Object', {
 	  getOwnPropertyDescriptors: function getOwnPropertyDescriptors(object){
@@ -1756,14 +1763,14 @@ module.exports =
 	});
 
 /***/ },
-/* 57 */
+/* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// all object keys, includes non-enumerable and symbols
-	var gOPN     = __webpack_require__(58)
-	  , gOPS     = __webpack_require__(59)
-	  , anObject = __webpack_require__(25)
-	  , Reflect  = __webpack_require__(21).Reflect;
+	var gOPN     = __webpack_require__(59)
+	  , gOPS     = __webpack_require__(60)
+	  , anObject = __webpack_require__(26)
+	  , Reflect  = __webpack_require__(22).Reflect;
 	module.exports = Reflect && Reflect.ownKeys || function ownKeys(it){
 	  var keys       = gOPN.f(anObject(it))
 	    , getSymbols = gOPS.f;
@@ -1771,36 +1778,36 @@ module.exports =
 	};
 
 /***/ },
-/* 58 */
+/* 59 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// 19.1.2.7 / 15.2.3.4 Object.getOwnPropertyNames(O)
-	var $keys      = __webpack_require__(40)
-	  , hiddenKeys = __webpack_require__(51).concat('length', 'prototype');
+	var $keys      = __webpack_require__(41)
+	  , hiddenKeys = __webpack_require__(52).concat('length', 'prototype');
 
 	exports.f = Object.getOwnPropertyNames || function getOwnPropertyNames(O){
 	  return $keys(O, hiddenKeys);
 	};
 
 /***/ },
-/* 59 */
+/* 60 */
 /***/ function(module, exports) {
 
 	exports.f = Object.getOwnPropertySymbols;
 
 /***/ },
-/* 60 */
+/* 61 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var pIE            = __webpack_require__(52)
-	  , createDesc     = __webpack_require__(32)
-	  , toIObject      = __webpack_require__(41)
-	  , toPrimitive    = __webpack_require__(31)
-	  , has            = __webpack_require__(34)
-	  , IE8_DOM_DEFINE = __webpack_require__(27)
+	var pIE            = __webpack_require__(53)
+	  , createDesc     = __webpack_require__(33)
+	  , toIObject      = __webpack_require__(42)
+	  , toPrimitive    = __webpack_require__(32)
+	  , has            = __webpack_require__(35)
+	  , IE8_DOM_DEFINE = __webpack_require__(28)
 	  , gOPD           = Object.getOwnPropertyDescriptor;
 
-	exports.f = __webpack_require__(28) ? gOPD : function getOwnPropertyDescriptor(O, P){
+	exports.f = __webpack_require__(29) ? gOPD : function getOwnPropertyDescriptor(O, P){
 	  O = toIObject(O);
 	  P = toPrimitive(P, true);
 	  if(IE8_DOM_DEFINE)try {
@@ -1810,12 +1817,12 @@ module.exports =
 	};
 
 /***/ },
-/* 61 */
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var $defineProperty = __webpack_require__(24)
-	  , createDesc      = __webpack_require__(32);
+	var $defineProperty = __webpack_require__(25)
+	  , createDesc      = __webpack_require__(33);
 
 	module.exports = function(object, index, value){
 	  if(index in object)$defineProperty.f(object, index, createDesc(0, value));
@@ -1823,21 +1830,21 @@ module.exports =
 	};
 
 /***/ },
-/* 62 */
+/* 63 */
 /***/ function(module, exports, __webpack_require__) {
 
-	__webpack_require__(63);
-	module.exports = __webpack_require__(22).String.padStart;
+	__webpack_require__(64);
+	module.exports = __webpack_require__(23).String.padStart;
 
 
 /***/ },
-/* 63 */
+/* 64 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	// https://github.com/tc39/proposal-string-pad-start-end
-	var $export = __webpack_require__(20)
-	  , $pad    = __webpack_require__(64);
+	var $export = __webpack_require__(21)
+	  , $pad    = __webpack_require__(65);
 
 	$export($export.P, 'String', {
 	  padStart: function padStart(maxLength /*, fillString = ' ' */){
@@ -1846,13 +1853,13 @@ module.exports =
 	});
 
 /***/ },
-/* 64 */
+/* 65 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// https://github.com/tc39/proposal-string-pad-start-end
-	var toLength = __webpack_require__(46)
-	  , repeat   = __webpack_require__(65)
-	  , defined  = __webpack_require__(44);
+	var toLength = __webpack_require__(47)
+	  , repeat   = __webpack_require__(66)
+	  , defined  = __webpack_require__(45);
 
 	module.exports = function(that, maxLength, fillString, left){
 	  var S            = String(defined(that))
@@ -1868,12 +1875,12 @@ module.exports =
 
 
 /***/ },
-/* 65 */
+/* 66 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var toInteger = __webpack_require__(47)
-	  , defined   = __webpack_require__(44);
+	var toInteger = __webpack_require__(48)
+	  , defined   = __webpack_require__(45);
 
 	module.exports = function repeat(count){
 	  var str = String(defined(this))
@@ -1885,21 +1892,21 @@ module.exports =
 	};
 
 /***/ },
-/* 66 */
+/* 67 */
 /***/ function(module, exports, __webpack_require__) {
 
-	__webpack_require__(67);
-	module.exports = __webpack_require__(22).String.padEnd;
+	__webpack_require__(68);
+	module.exports = __webpack_require__(23).String.padEnd;
 
 
 /***/ },
-/* 67 */
+/* 68 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	// https://github.com/tc39/proposal-string-pad-start-end
-	var $export = __webpack_require__(20)
-	  , $pad    = __webpack_require__(64);
+	var $export = __webpack_require__(21)
+	  , $pad    = __webpack_require__(65);
 
 	$export($export.P, 'String', {
 	  padEnd: function padEnd(maxLength /*, fillString = ' ' */){

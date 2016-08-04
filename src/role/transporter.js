@@ -51,13 +51,13 @@ const roleTransporter = {
             else if(target.store !== undefined) {
               if(target.store[RESOURCE_ENERGY] < target.storeCapacity) {
                   if(creep.transfer(target, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                      creep.moveTo(target, {reusePath: 20});
+                      creep.moveTo(target);
                   }
               }
             }
             else {
               if(creep.build(target) == ERR_NOT_IN_RANGE) {
-                  creep.moveTo(target, {reusePath: 20});
+                  creep.moveTo(target);
               }
             }
         }

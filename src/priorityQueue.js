@@ -4,13 +4,13 @@
  */
 
 class PriorityQueue {
-  constructor: (room, initialValues)=> {
+  constructor = (room, initialValues) {
     this.length = 0
     this.data = initialValues
     this.heapify()
   }
 
-  _heapify: ()=> {
+  _heapify = ()=> {
     if(this.data.length > 0) {
       for(i in [...Array(this.data.length).keys()]) {
         this._bubbleUp(i)
@@ -18,12 +18,12 @@ class PriorityQueue {
     }
   }
 
-  queue: (value)=> {
+  queue = (value)=> {
     this.data.push(value)
     this._bubbleUp(this.data.length - 1)
   }
 
-  dequeue: ()=> {
+  dequeue = ()=> {
     let ret = this.data[0]
     let last = this.data.pop()
     if(this.data.length > 0) {
@@ -33,16 +33,16 @@ class PriorityQueue {
     return ret
   }
 
-  peek: ()=> {
+  peek = ()=> {
     return this.data[0]
   }
 
-  clear: ()=> {
+  clear = ()=> {
     this.length = 0
     this.data.length = 0
   }
 
-  _bubbleUp: (pos)=> {
+  _bubbleUp = (pos)=> {
     while(pos > 0) {
       let parent = (pos - 1) >>> 1
       if(this.comparator(this.data[pos], this.data[parent]) < 0) {
@@ -57,7 +57,7 @@ class PriorityQueue {
     }
   }
 
-  _bubbleDown: (pos)=> {
+  _bubbleDown = (pos)=> {
     let last = this.data.length - 1
 
     while(true) {
