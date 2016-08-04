@@ -45,7 +45,7 @@ module.exports =
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	'use strict';
+	/* WEBPACK VAR INJECTION */(function(global) {'use strict';
 
 	var _defense = __webpack_require__(1);
 
@@ -113,40 +113,43 @@ module.exports =
 
 	module.exports.loop = () => {
 
-	    for (let name in Game.spawns) {
-	        _creepWatcher2.default.run(Game.spawns[name]);
-	        _defense2.default.defendRoom(Game.spawns[name].room);
-	    }
+	  global.lol = _priorityQueue2.default;
 
-	    for (let name in Game.creeps) {
-	        let creep = Game.creeps[name];
-	        if (creep.memory.role == 'harvester') {
-	            _harvester2.default.run(creep);
-	        } else if (creep.memory.role == 'transporter') {
-	            _transporter2.default.run(creep);
-	        } else if (creep.memory.role == 'upgrader') {
-	            _upgrader2.default.run(creep);
-	        } else if (creep.memory.role == 'maintainer') {
-	            _maintainer2.default.run(creep);
-	        } else if (creep.memory.role == 'builder') {
-	            _builder2.default.run(creep);
-	        } else if (creep.memory.role == 'excavator') {
-	            _excavator2.default.run(creep);
-	        } else if (creep.memory.role == 'repairer') {
-	            _repairer2.default.run(creep);
-	        } else if (creep.memory.role == 'fighter') {
-	            _fighter2.default.run(creep);
-	        } else if (creep.memory.role == 'rangedFighter') {
-	            _rangedFighter2.default.run(creep);
-	        } else if (creep.memory.role == 'healer') {
-	            _healer2.default.run(creep);
-	        } else if (creep.memory.role == 'assimilator') {
-	            _assimilator2.default.run(creep);
-	        } else {
-	            console.log("No role for ${creep.name}!");
-	        }
+	  for (let name in Game.spawns) {
+	    _creepWatcher2.default.run(Game.spawns[name]);
+	    _defense2.default.defendRoom(Game.spawns[name].room);
+	  }
+
+	  for (let name in Game.creeps) {
+	    let creep = Game.creeps[name];
+	    if (creep.memory.role == 'harvester') {
+	      _harvester2.default.run(creep);
+	    } else if (creep.memory.role == 'transporter') {
+	      _transporter2.default.run(creep);
+	    } else if (creep.memory.role == 'upgrader') {
+	      _upgrader2.default.run(creep);
+	    } else if (creep.memory.role == 'maintainer') {
+	      _maintainer2.default.run(creep);
+	    } else if (creep.memory.role == 'builder') {
+	      _builder2.default.run(creep);
+	    } else if (creep.memory.role == 'excavator') {
+	      _excavator2.default.run(creep);
+	    } else if (creep.memory.role == 'repairer') {
+	      _repairer2.default.run(creep);
+	    } else if (creep.memory.role == 'fighter') {
+	      _fighter2.default.run(creep);
+	    } else if (creep.memory.role == 'rangedFighter') {
+	      _rangedFighter2.default.run(creep);
+	    } else if (creep.memory.role == 'healer') {
+	      _healer2.default.run(creep);
+	    } else if (creep.memory.role == 'assimilator') {
+	      _assimilator2.default.run(creep);
+	    } else {
+	      console.log("No role for ${creep.name}!");
 	    }
+	  }
 	};
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
 /* 1 */
@@ -802,7 +805,7 @@ module.exports =
 	            }
 	        }
 
-	        let transporters = _.filter(Game.creeps, creep => creep.memory.role == 'transporter' && creep.pos.roomName == spawn.pos.roomName);
+	        let transporters = _.filter(Game.creeps, creep => creep.memory.role == 'transporter');
 	        if (spawn.memory.transporters) {
 	            let memTransporter = null;
 	            for (let memTransporter of spawn.memory.transporters) {
@@ -932,6 +935,10 @@ module.exports =
 
 	const role = __webpack_require__(4);
 
+	/**
+	 * Transports, repairs.
+	 */
+
 	const maintainer = {
 
 	  /** @param {Creep} creep **/
@@ -992,7 +999,10 @@ module.exports =
 	  findWork: () => {},
 
 	  findLackingTarget: () => {
-	    if (extension_lacking) {} else if (spawn_lacking) {} else if (tower_lacking) {}
+
+	    if (extension_lacking) {}
+	    if (spawn_lacking) {}
+	    if (tower_lacking) {}
 	  }
 
 	};
@@ -1156,13 +1166,7 @@ module.exports =
 	 */
 
 	class PriorityQueue {
-	  constructor() {
-	    this.constructor = (room, initialValues) => {
-	      this.length = 0;
-	      this.data = initialValues;
-	      this.heapify();
-	    };
-
+	  constructor(room, initialValues) {
 	    this._heapify = () => {
 	      if (this.data.length > 0) {
 	        for (i in [...Array(this.data.length).keys()]) {
@@ -1232,6 +1236,11 @@ module.exports =
 	        }
 	      }
 	    };
+
+	    this.comparator = (a, b) => a.prio - b.prio;
+	    this.length = 0;
+	    this.data = initialValues;
+	    this._heapify();
 	  }
 
 	}

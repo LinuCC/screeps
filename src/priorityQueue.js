@@ -4,10 +4,11 @@
  */
 
 class PriorityQueue {
-  constructor = (room, initialValues)=> {
+  constructor(room, initialValues) {
+    this.comparator = (a, b)=> a.prio - b.prio
     this.length = 0
     this.data = initialValues
-    this.heapify()
+    this._heapify()
   }
 
   _heapify = ()=> {

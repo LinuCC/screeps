@@ -1,5 +1,9 @@
 const role = require('../role')
 
+/**
+ * Transports, repairs.
+ */
+
 const maintainer = {
 
   /** @param {Creep} creep **/
@@ -81,13 +85,14 @@ const maintainer = {
   },
 
   findLackingTarget: ()=> {
+
     if(extension_lacking) {
 
     }
-    else if(spawn_lacking) {
+    if(spawn_lacking) {
 
     }
-    else if(tower_lacking) {
+    if(tower_lacking) {
 
     }
   }
