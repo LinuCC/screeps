@@ -754,6 +754,10 @@ module.exports =
 	                        creep.moveTo(target);
 	                    }
 	                }
+	            } else if (target.structureType == STRUCTURE_CONTROLLER) {
+	                if (creep.upgradeController(target) == ERR_NOT_IN_RANGE) {
+	                    creep.moveTo(target);
+	                }
 	            } else {
 	                if (creep.build(target) == ERR_NOT_IN_RANGE) {
 	                    creep.moveTo(target);

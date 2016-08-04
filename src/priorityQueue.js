@@ -4,7 +4,7 @@
  */
 
 class PriorityQueue {
-  constructor = (room, initialValues) {
+  constructor = (room, initialValues)=> {
     this.length = 0
     this.data = initialValues
     this.heapify()
