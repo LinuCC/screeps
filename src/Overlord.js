@@ -38,7 +38,21 @@ class Overlord {
   }
 
   work = (queue)=> {
-
+    let storages = this.room.find(
+      FIND_STRUCTURES, {filter: this.filterNonVoidEnergyStorage}
+    )
+    if(storages.length > 0) {
+      let storage = storages
+      this.genStorageWorkTasks(container, queue)
+    }
+    let containers = this.room.find(
+      FIND_STRUCTURES, {filter: this.filterNonVoidEnergyContainers}
+    )
+    if(containers.length > 0) {
+      containers.forEach((container)=> {
+        this.genContainerWorkTasks(container, queue)
+      })
+    }
   }
 
   carry = (queue)=> {
@@ -48,7 +62,7 @@ class Overlord {
     )
     if(containers.length > 0) {
       containers.forEach((container)=> {
-        this.genContainerTasks(container, queue)
+        this.genSourceTasks(container, queue, CARRY)
       })
     }
   }
@@ -71,23 +85,38 @@ class Overlord {
     return {target: null, prio: null}
   }
 
-  genContainerTasks = (container, queue)=> {
-    let containerItems = _.filter(this.existingItems, (item)=> (
-      item.fromSource.id == container.id &&
+  /**
+   * Generates taskItems for the given source
+   *
+   * Checks how many items need to be generated to void the source and tries
+   * to find targets for every task of it.
+   * If a target cant be found for the resource, this task will not be
+   * generated.
+   */
+  genSourceTasks = (source, queue, taskType)=> {
+    let sourceItems = _.filter(this.existingItems, (item)=> (
+      item.fromSource.id == source.id &&
       item.stage == TYPE_SOURCE
     ))
     let existingDrawAmount = (
-      _.sum(containerItems, 'amount') * this.creepCarryAmount
+      _.sum(sourceItems, 'amount') * this.creepCarryAmount
     )
-    let stillStored = container.store[RESOURCE_ENERGY] - existingDrawAmount
+    let stillStored = source.store[RESOURCE_ENERGY] - existingDrawAmount
     while(stillStored > this.creepCarryAmount) {
-      let {target, prio} = this.findCarryTargetFor(container, RESOURCE_ENERGY)
-      if(target) {
+      let targetData = null
+      if(taskType == CARRY) {
+        targetData = this.findCarryTargetFor(source, RESOURCE_ENERGY)
+      }
+      else if(taskType == WORK) {
+        targetData = this.findWorkTargetFor(source, RESOURCE_ENERGY)
+      }
+      if(targetData && targetData.target) {
+        let {target, prio} = targetData
         console.log(
           `Adding target: ${JSON.stringify(target.pos)} at ${Game.time}`
         )
         this.addItem(
-          queue, container, target, RESOURCE_ENERGY, this.creepCarryAmount,
+          queue, source, target, RESOURCE_ENERGY, this.creepCarryAmount,
           prio
         )
         stillStored =- this.creepCarryAmount

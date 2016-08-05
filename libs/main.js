@@ -1321,14 +1321,26 @@ module.exports =
 	      }
 	    };
 
-	    this.work = queue => {};
+	    this.work = queue => {
+	      let storages = this.room.find(FIND_STRUCTURES, { filter: this.filterNonVoidEnergyStorage });
+	      if (storages.length > 0) {
+	        let storage = storages;
+	        this.genStorageWorkTasks(container, queue);
+	      }
+	      let containers = this.room.find(FIND_STRUCTURES, { filter: this.filterNonVoidEnergyContainers });
+	      if (containers.length > 0) {
+	        containers.forEach(container => {
+	          this.genContainerWorkTasks(container, queue);
+	        });
+	      }
+	    };
 
 	    this.carry = queue => {
 
 	      let containers = this.room.find(FIND_STRUCTURES, { filter: this.filterNonVoidEnergyContainers });
 	      if (containers.length > 0) {
 	        containers.forEach(container => {
-	          this.genContainerTasks(container, queue);
+	          this.genSourceTasks(container, queue, CARRY);
 	        });
 	      }
 	    };
@@ -1359,19 +1371,24 @@ module.exports =
 	      return { target: null, prio: null };
 	    };
 
-	    this.genContainerTasks = (container, queue) => {
-	      let containerItems = _.filter(this.existingItems, item => item.fromSource.id == container.id && item.stage == TYPE_SOURCE);
-	      let existingDrawAmount = _.sum(containerItems, 'amount') * this.creepCarryAmount;
-	      let stillStored = container.store[RESOURCE_ENERGY] - existingDrawAmount;
+	    this.genSourceTasks = (source, queue, taskType) => {
+	      let sourceItems = _.filter(this.existingItems, item => item.fromSource.id == source.id && item.stage == TYPE_SOURCE);
+	      let existingDrawAmount = _.sum(sourceItems, 'amount') * this.creepCarryAmount;
+	      let stillStored = source.store[RESOURCE_ENERGY] - existingDrawAmount;
 	      while (stillStored > this.creepCarryAmount) {
-	        var _findCarryTargetFor = this.findCarryTargetFor(container, RESOURCE_ENERGY);
+	        let targetData = null;
+	        if (taskType == CARRY) {
+	          targetData = this.findCarryTargetFor(source, RESOURCE_ENERGY);
+	        } else if (taskType == WORK) {
+	          targetData = this.findWorkTargetFor(source, RESOURCE_ENERGY);
+	        }
+	        if (targetData && targetData.target) {
+	          var _targetData = targetData;
+	          let target = _targetData.target;
+	          let prio = _targetData.prio;
 
-	        let target = _findCarryTargetFor.target;
-	        let prio = _findCarryTargetFor.prio;
-
-	        if (target) {
 	          console.log(`Adding target: ${ JSON.stringify(target.pos) } at ${ Game.time }`);
-	          this.addItem(queue, container, target, RESOURCE_ENERGY, this.creepCarryAmount, prio);
+	          this.addItem(queue, source, target, RESOURCE_ENERGY, this.creepCarryAmount, prio);
 	          stillStored = -this.creepCarryAmount;
 	        } else {
 	          break; // No suitable target found
@@ -1510,6 +1527,16 @@ module.exports =
 	    // Or just add an amount to every task and sum it that way
 	    this.creepCarryAmount = 150;
 	  }
+
+	  /**
+	   * Generates taskItems for the given source
+	   *
+	   * Checks how many items need to be generated to void the source and tries
+	   * to find targets for every task of it.
+	   * If a target cant be found for the resource, this task will not be
+	   * generated.
+	   */
+
 
 	  /**
 	   * Dont forget: Extensions can have 100 / 200 energyCapacity on higher levels
