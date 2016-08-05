@@ -1304,6 +1304,8 @@ module.exports =
 	const PRIO_SPAWN = 1000;
 	const PRIO_EXTENSION = 1100;
 	const PRIO_TOWER = 1200;
+	const PRIO_CONSTRUCTION = 1900;
+	const PRIO_STORAGE = 2000;
 
 	const PRIO_CONTAINER = 10000;
 
@@ -1324,13 +1326,13 @@ module.exports =
 	    this.work = queue => {
 	      let storages = this.room.find(FIND_STRUCTURES, { filter: this.filterNonVoidEnergyStorage });
 	      if (storages.length > 0) {
-	        let storage = storages;
-	        this.genStorageWorkTasks(container, queue);
+	        let storage = storages[0];
+	        this.genSourceTasks(storage, queue, WORK);
 	      }
 	      let containers = this.room.find(FIND_STRUCTURES, { filter: this.filterNonVoidEnergyContainers });
 	      if (containers.length > 0) {
 	        containers.forEach(container => {
-	          this.genContainerWorkTasks(container, queue);
+	          this.genSourceTasks(container, queue, WORK);
 	        });
 	      }
 	    };
@@ -1345,35 +1347,9 @@ module.exports =
 	      }
 	    };
 
-	    this.findCarryTargetFor = (source, resType) => {
-	      let void_extension;
-
-	      let spawn = this.findTargetSpawnFor(source, resType);
-	      if (spawn) {
-	        return { target: spawn, prio: PRIO_SPAWN };
-	      }
-
-	      let extension = this.findTargetExtensionFor(source, resType);
-	      if (extension) {
-	        return { target: extension, prio: PRIO_EXTENSION };
-	      }
-
-	      let tower = this.findTargetTowerFor(source, resType);
-	      if (tower) {
-	        return { target: tower, prio: PRIO_TOWER };
-	      }
-
-	      let storage = this.findTargetStorageFor(source, resType);
-	      if (storage) {
-	        return storage;
-	      }
-
-	      return { target: null, prio: null };
-	    };
-
 	    this.genSourceTasks = (source, queue, taskType) => {
-	      let sourceItems = _.filter(this.existingItems, item => item.fromSource.id == source.id && item.stage == TYPE_SOURCE);
-	      let existingDrawAmount = _.sum(sourceItems, 'amount') * this.creepCarryAmount;
+	      let sourceItems = _.filter(this.existingItems, item => item.fromSource.id == source.id && item.stage != TYPE_TARGET);
+	      let existingDrawAmount = _.sum(sourceItems, 'amount');
 	      let stillStored = source.store[RESOURCE_ENERGY] - existingDrawAmount;
 	      while (stillStored > this.creepCarryAmount) {
 	        let targetData = null;
@@ -1394,6 +1370,60 @@ module.exports =
 	          break; // No suitable target found
 	        }
 	      }
+	    };
+
+	    this.findWorkTargetFor = (source, resType) => {
+	      if (resType != RESOURCE_ENERGY) {
+	        return false;
+	      }
+
+	      let construction = this.findTargetConstructionFor(source, resType);
+	      if (construction) {
+	        return { target: construction, prio: PRIO_CONSTRUCTION };
+	      }
+
+	      let controller = this.findTargetControllerFor(source, resType);
+	      if (controller) {
+	        return { target: controller, prio: PRIO_CONTROLLER };
+	      }
+	    };
+
+	    this.findTargetConstructionFor = source => {
+	      let conSites = this.room.find(FIND_CONSTRUCTION_SITES);
+	      if (conSites.length) {
+	        return conSites[0];
+	      }
+	    };
+
+	    this.findTargetControllerFor = source => {
+	      let controllers = this.room.find(FIND_STRUCTURES, { filter: { structureType: STRUCTURE_CONTROLLER } });
+	      if (controllers.length) {
+	        return controller[0];
+	      }
+	    };
+
+	    this.findCarryTargetFor = (source, resType) => {
+	      let spawn = this.findTargetSpawnFor(source, resType);
+	      if (spawn) {
+	        return { target: spawn, prio: PRIO_SPAWN };
+	      }
+
+	      let extension = this.findTargetExtensionFor(source, resType);
+	      if (extension) {
+	        return { target: extension, prio: PRIO_EXTENSION };
+	      }
+
+	      let tower = this.findTargetTowerFor(source, resType);
+	      if (tower) {
+	        return { target: tower, prio: PRIO_TOWER };
+	      }
+
+	      let storage = this.findTargetStorageFor(source, resType);
+	      if (storage) {
+	        return { target: storage, prio: PRIO_STORAGE };
+	      }
+
+	      return { target: null, prio: null };
 	    };
 
 	    this.findTargetSpawnFor = (source, resType) => {
@@ -1468,6 +1498,8 @@ module.exports =
 	    };
 
 	    this.filterNonVoidEnergyContainers = object => object.structureType == STRUCTURE_CONTAINER && object.store[RESOURCE_ENERGY] > 200;
+
+	    this.filterNonVoidEnergyStorage = object => object.structureType == STRUCTURE_STORAGE && object.store[RESOURCE_ENERGY] > 1000;
 
 	    this.addItem = (queue, source, target, res, amount, priority) => {
 	      let itemId = _hiveMind2.default.push({
@@ -1612,7 +1644,7 @@ module.exports =
 	      }
 	      // Transporters should always have a WORK for on-the-fly repairs
 	      let workPartIndex = _.findIndex(parts, 'type', WORK);
-	      parts[workPartIndex].count = -1;
+	      parts[workPartIndex].count = (parts[workPartIndex] - 1) * 1.5;
 	      parts = _.sortBy(parts, 'count');
 
 	      this.zergling.memory.kind = [];
@@ -1664,6 +1696,9 @@ module.exports =
 	          memObject = _hiveMind2.default.data[this.zergling.memory.item.id].toTarget;break;
 	      }
 	      let object = Game.getObjectById(memObject.id);
+	      if (!object) {
+	        this.done();
+	      }
 	      let range = this.calcActionRange(type, object);
 	      if (object) {
 	        if (this.zergling.pos.inRangeTo(object, range)) {

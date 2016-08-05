@@ -11,6 +11,8 @@ const TYPE_TARGET = 1
 const PRIO_SPAWN = 1000
 const PRIO_EXTENSION = 1100
 const PRIO_TOWER = 1200
+const PRIO_CONSTRUCTION = 1900
+const PRIO_STORAGE = 2000
 
 const PRIO_CONTAINER = 10000
 
@@ -42,15 +44,15 @@ class Overlord {
       FIND_STRUCTURES, {filter: this.filterNonVoidEnergyStorage}
     )
     if(storages.length > 0) {
-      let storage = storages
-      this.genStorageWorkTasks(container, queue)
+      let storage = storages[0]
+      this.genSourceTasks(storage, queue, WORK)
     }
     let containers = this.room.find(
       FIND_STRUCTURES, {filter: this.filterNonVoidEnergyContainers}
     )
     if(containers.length > 0) {
       containers.forEach((container)=> {
-        this.genContainerWorkTasks(container, queue)
+        this.genSourceTasks(container, queue, WORK)
       })
     }
   }
@@ -67,24 +69,6 @@ class Overlord {
     }
   }
 
-  findCarryTargetFor = (source, resType)=> {
-    let void_extension
-
-    let spawn = this.findTargetSpawnFor(source, resType)
-    if(spawn) { return {target: spawn, prio: PRIO_SPAWN} }
-
-    let extension = this.findTargetExtensionFor(source, resType)
-    if(extension) { return {target: extension, prio: PRIO_EXTENSION} }
-
-    let tower = this.findTargetTowerFor(source, resType)
-    if(tower) { return {target: tower, prio: PRIO_TOWER} }
-
-    let storage = this.findTargetStorageFor(source, resType)
-    if(storage) { return storage }
-
-    return {target: null, prio: null}
-  }
-
   /**
    * Generates taskItems for the given source
    *
@@ -96,11 +80,9 @@ class Overlord {
   genSourceTasks = (source, queue, taskType)=> {
     let sourceItems = _.filter(this.existingItems, (item)=> (
       item.fromSource.id == source.id &&
-      item.stage == TYPE_SOURCE
+      item.stage != TYPE_TARGET
     ))
-    let existingDrawAmount = (
-      _.sum(sourceItems, 'amount') * this.creepCarryAmount
-    )
+    let existingDrawAmount = _.sum(sourceItems, 'amount')
     let stillStored = source.store[RESOURCE_ENERGY] - existingDrawAmount
     while(stillStored > this.creepCarryAmount) {
       let targetData = null
@@ -125,6 +107,44 @@ class Overlord {
         break // No suitable target found
       }
     }
+  }
+
+  findWorkTargetFor = (source, resType)=> {
+    if(resType != RESOURCE_ENERGY) { return false }
+
+    let construction = this.findTargetConstructionFor(source, resType)
+    if(construction) { return {target: construction, prio: PRIO_CONSTRUCTION} }
+
+    let controller = this.findTargetControllerFor(source, resType)
+    if(controller) { return {target: controller, prio: PRIO_CONTROLLER} }
+  }
+
+  findTargetConstructionFor = (source)=> {
+    let conSites = this.room.find(FIND_CONSTRUCTION_SITES)
+    if(conSites.length) { return conSites[0] }
+  }
+
+  findTargetControllerFor = (source)=> {
+    let controllers = this.room.find(
+      FIND_STRUCTURES, {filter: {structureType: STRUCTURE_CONTROLLER}}
+    )
+    if(controllers.length) { return controller[0] }
+  }
+
+  findCarryTargetFor = (source, resType)=> {
+    let spawn = this.findTargetSpawnFor(source, resType)
+    if(spawn) { return {target: spawn, prio: PRIO_SPAWN} }
+
+    let extension = this.findTargetExtensionFor(source, resType)
+    if(extension) { return {target: extension, prio: PRIO_EXTENSION} }
+
+    let tower = this.findTargetTowerFor(source, resType)
+    if(tower) { return {target: tower, prio: PRIO_TOWER} }
+
+    let storage = this.findTargetStorageFor(source, resType)
+    if(storage) { return {target: storage, prio: PRIO_STORAGE} }
+
+    return {target: null, prio: null}
   }
 
   findTargetSpawnFor = (source, resType)=> {
@@ -221,6 +241,11 @@ class Overlord {
   filterNonVoidEnergyContainers = (object)=> (
     object.structureType == STRUCTURE_CONTAINER &&
     object.store[RESOURCE_ENERGY] > 200
+  )
+
+  filterNonVoidEnergyStorage = (object)=> (
+    object.structureType == STRUCTURE_STORAGE &&
+    object.store[RESOURCE_ENERGY] > 1000
   )
 
   addItem = (queue, source, target, res, amount, priority)=> {

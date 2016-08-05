@@ -62,7 +62,7 @@ class Zergling {
     }
     // Transporters should always have a WORK for on-the-fly repairs
     let workPartIndex = _.findIndex(parts, 'type', WORK)
-    parts[workPartIndex].count =- 1
+    parts[workPartIndex].count = (parts[workPartIndex] - 1) * 1.5
     parts = _.sortBy(parts, 'count')
 
     this.zergling.memory.kind = []
@@ -119,6 +119,7 @@ class Zergling {
         memObject = hiveMind.data[this.zergling.memory.item.id].toTarget; break
     }
     let object = Game.getObjectById(memObject.id)
+    if(!object) { this.done() }
     let range = this.calcActionRange(type, object)
     if(object) {
       if(this.zergling.pos.inRangeTo(object, range)) {
