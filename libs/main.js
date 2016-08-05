@@ -1221,6 +1221,13 @@ module.exports =
 	      }
 	    };
 
+	    this.hasEntryWithId = id => {
+	      for (entry of this.data) {
+	        if (entry.id == id) return true;
+	      }
+	      return false;
+	    };
+
 	    this.comparator = (a, b) => a.prio - b.prio;
 	    this.length = 0;
 	    this.data = initialValues;
@@ -1252,6 +1259,7 @@ module.exports =
 
 	  push: function (data) {
 	    let id = this._generateId();
+	    data['id'] = id; // Makes it easier for other things to process the items
 	    this.data[id] = data;
 	    return id;
 	  },
@@ -1464,6 +1472,34 @@ module.exports =
 	      });
 	      queue.queue({ id: itemId, prio: priority });
 	      this.existingItems = _hiveMind2.default.allForRoom(this.room);
+	    };
+
+	    this.cleanupTasks = queues => {
+	      this.existingItems = _hiveMind2.default.allForRoom(this.room);
+	      let itemExists = null;
+	      for (let item of this.existingItems) {
+	        itemIsUsed = false;
+	        for (let queueName in queues) {
+	          if (queues[queueName].hasEntryWithId(item.id)) {
+	            itemIsUsed = true;break;
+	          }
+	        }
+	        if (itemIsUsed) {
+	          continue;
+	        }
+	        for (let creepName in Game.creeps) {
+	          let creep = Game.creeps[creepName];
+	          if (creep.memory.item && creep.memory.item.id == item.id) {
+	            itemIsUsed = true;break;
+	          }
+	        }
+	        if (itemIsUsed) {
+	          continue;
+	        }
+
+	        // Item-Id found nowhere
+	        _hiveMind2.default.remove(item.id);
+	      }
 	    };
 
 	    this.room = Game.rooms[roomName];

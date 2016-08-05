@@ -213,6 +213,31 @@ class Overlord {
     queue.queue({id: itemId, prio: priority})
     this.existingItems = hiveMind.allForRoom(this.room)
   }
+
+  cleanupTasks = (queues)=> {
+    this.existingItems = hiveMind.allForRoom(this.room)
+    let itemExists = null
+    for(let item of this.existingItems) {
+      itemIsUsed = false
+      for(let queueName in queues) {
+        if(queues[queueName].hasEntryWithId(item.id)) {
+          itemIsUsed = true; break
+        }
+      }
+      if(itemIsUsed) { continue }
+      for(let creepName in Game.creeps) {
+        let creep = Game.creeps[creepName]
+        if(creep.memory.item && creep.memory.item.id == item.id) {
+          itemIsUsed = true; break
+        }
+      }
+      if(itemIsUsed) { continue }
+
+      // Item-Id found nowhere
+      hiveMind.remove(item.id)
+    }
+  }
+
 }
 
 module.exports = Overlord

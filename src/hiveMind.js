@@ -10,6 +10,7 @@ const hiveMind = {
 
   push: function(data) {
     let id = this._generateId()
+    data['id'] = id // Makes it easier for other things to process the items
     this.data[id] = data
     return id
   },

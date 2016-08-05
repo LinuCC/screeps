@@ -88,6 +88,13 @@ class PriorityQueue {
       }
     }
   }
+
+  hasEntryWithId = (id)=> {
+    for(entry of this.data) {
+      if(entry.id == id) return true;
+    }
+    return false;
+  }
 }
 
 global.lol = PriorityQueue
