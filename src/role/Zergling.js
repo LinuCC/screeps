@@ -226,7 +226,7 @@ class Zergling {
     )
     if(structures.length) {
       let target = _.sortByOrder(structures, 'hits', 'asc')[0]
-      zergling.repair(target)
+      this.zergling.repair(target)
     }
   }
 }

@@ -53,6 +53,11 @@ class Spawner {
 
     return Game.spawns[spawn.name].createCreep([WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], 'Transporter' + this.newCreepIndex(), {role: 'transporter', fromSource: fromSource, toTarget: toTarget, sourcePos: sourcePos})
   }
+
+  zergling = (spawn)=> {
+    return Game.spawns[spawn.name].createCreep([WORK, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE], 'Zergling' + this.newCreepIndex(), {role: 'zergling'})
+  }
+
   newCreepIndex = function() {
     let index = Memory.creepIndex
     Memory.creepIndex += 1
