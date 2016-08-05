@@ -65,8 +65,8 @@ class Overlord {
     let tower = this.findTargetTowerFor(source, resType)
     if(tower) { return {target: tower, prio: PRIO_TOWER} }
 
-    // let storage = findTargetStorageFor(source, resType)
-    // if(storage) { return storage }
+    let storage = this.findTargetStorageFor(source, resType)
+    if(storage) { return storage }
 
     return {target: null, prio: null}
   }
@@ -165,6 +165,29 @@ class Overlord {
       }
     }
   }
+
+  findTargetStorageFor = (source, resType)=> {
+
+    let storages = this.room.find(
+      FIND_MY_STRUCTURES, {filter: (structure)=> (
+        structure.structureType == STRUCTURE_STORAGE &&
+        _.sum(structure.store) < structure.storeCapacity
+    )})
+    if(storages.length > 0) {
+      storages = _.sortByOrder(storages, 'energy', 'asc')
+      for(let storage of storages) {
+        let extensionItems = _.filter(this.existingItems, (item)=> (
+          item.toTarget.id == storage.id
+        ))
+        let existingAddAmount = extensionItems.length * this.creepCarryAmount
+        let ullage = (
+          storage.storeCapacity - (_.sum(storage.store) + existingAddAmount)
+        )
+        if(ullage > 0) { return storage }
+      }
+    }
+  }
+
 
   filterNonVoidEnergyContainers = (object)=> (
     object.structureType == STRUCTURE_CONTAINER &&

@@ -1343,8 +1343,10 @@ module.exports =
 	        return { target: tower, prio: PRIO_TOWER };
 	      }
 
-	      // let storage = findTargetStorageFor(source, resType)
-	      // if(storage) { return storage }
+	      let storage = this.findTargetStorageFor(source, resType);
+	      if (storage) {
+	        return storage;
+	      }
 
 	      return { target: null, prio: null };
 	    };
@@ -1421,6 +1423,22 @@ module.exports =
 	          let ullage = tower.energyCapacity - (tower.energy + existingAddAmount);
 	          if (ullage > 0) {
 	            return tower;
+	          }
+	        }
+	      }
+	    };
+
+	    this.findTargetStorageFor = (source, resType) => {
+
+	      let storages = this.room.find(FIND_MY_STRUCTURES, { filter: structure => structure.structureType == STRUCTURE_STORAGE && _.sum(structure.store) < structure.storeCapacity });
+	      if (storages.length > 0) {
+	        storages = _.sortByOrder(storages, 'energy', 'asc');
+	        for (let storage of storages) {
+	          let extensionItems = _.filter(this.existingItems, item => item.toTarget.id == storage.id);
+	          let existingAddAmount = extensionItems.length * this.creepCarryAmount;
+	          let ullage = storage.storeCapacity - (_.sum(storage.store) + existingAddAmount);
+	          if (ullage > 0) {
+	            return storage;
 	          }
 	        }
 	      }
