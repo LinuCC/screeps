@@ -15,7 +15,7 @@ const hiveMind = {
   },
 
   remove: function(id) {
-    this.data[id] = undefined
+    delete this.data[id]
   },
 
   allForRoom: function(room) {

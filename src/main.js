@@ -38,6 +38,12 @@ module.exports.loop = ()=> {
         room.memory.priorityQueues[queueName] = []
       }
     }
+    for(let creepName in Game.creeps) {
+      let creep = Game.creeps[creepName]
+      delete creep.memory.item
+      delete creep.memory.sourcing
+      delete creep.memory.kind
+    }
   }
 
   try {

@@ -142,6 +142,12 @@ module.exports =
 	        room.memory.priorityQueues[queueName] = [];
 	      }
 	    }
+	    for (let creepName in Game.creeps) {
+	      let creep = Game.creeps[creepName];
+	      delete creep.memory.item;
+	      delete creep.memory.sourcing;
+	      delete creep.memory.kind;
+	    }
 	  };
 
 	  try {
@@ -1251,7 +1257,7 @@ module.exports =
 	  },
 
 	  remove: function (id) {
-	    this.data[id] = undefined;
+	    delete this.data[id];
 	  },
 
 	  allForRoom: function (room) {
@@ -1515,6 +1521,9 @@ module.exports =
 	      } else {
 	        this.work();
 	      }
+	      if (!this.hasWorked) {
+	        this.repairSurroundings();
+	      }
 	    };
 
 	    this.calcKind = () => {
@@ -1558,10 +1567,6 @@ module.exports =
 	        this.workWith(TYPE_SOURCE);
 	      } else {
 	        this.workWith(TYPE_TARGET);
-	      }
-
-	      if (!this.hasWorked) {
-	        this.repairSurroundings();
 	      }
 	    };
 
@@ -1652,7 +1657,7 @@ module.exports =
 	        _hiveMind2.default.data[this.zergling.memory.item.id].stage = TYPE_TARGET;
 	        this.zergling.memory.sourcing = false;
 	      } else {
-	        _hiveMind2.default.data[this.zergling.memory.item.id].stage = null;
+	        _hiveMind2.default.remove(this.zergling.memory.item.id);
 	        this.zergling.memory.sourcing = null;
 	        this.zergling.memory.item = null;
 	      }

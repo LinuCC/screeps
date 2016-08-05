@@ -48,6 +48,9 @@ class Zergling {
     else {
       this.work()
     }
+    if(!this.hasWorked) {
+      this.repairSurroundings()
+    }
   }
 
   calcKind = ()=> {
@@ -95,10 +98,6 @@ class Zergling {
     }
     else {
       this.workWith(TYPE_TARGET)
-    }
-
-    if(!this.hasWorked) {
-      this.repairSurroundings()
     }
   }
 
@@ -192,7 +191,7 @@ class Zergling {
       this.zergling.memory.sourcing = false
     }
     else {
-      hiveMind.data[this.zergling.memory.item.id].stage = null
+      hiveMind.remove(this.zergling.memory.item.id)
       this.zergling.memory.sourcing = null
       this.zergling.memory.item = null
     }
