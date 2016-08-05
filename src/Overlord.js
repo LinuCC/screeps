@@ -83,7 +83,9 @@ class Overlord {
     while(stillStored > this.creepCarryAmount) {
       let {target, prio} = this.findCarryTargetFor(container, RESOURCE_ENERGY)
       if(target) {
-        console.log(`Adding target: ${JSON.stringify(target.pos)}`)
+        console.log(
+          `Adding target: ${JSON.stringify(target.pos)} at ${Game.time}`
+        )
         this.addItem(
           queue, container, target, RESOURCE_ENERGY, this.creepCarryAmount,
           prio

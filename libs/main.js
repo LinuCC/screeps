@@ -1370,7 +1370,7 @@ module.exports =
 	        let prio = _findCarryTargetFor.prio;
 
 	        if (target) {
-	          console.log(`Adding target: ${ JSON.stringify(target.pos) }`);
+	          console.log(`Adding target: ${ JSON.stringify(target.pos) } at ${ Game.time }`);
 	          this.addItem(queue, container, target, RESOURCE_ENERGY, this.creepCarryAmount, prio);
 	          stillStored = -this.creepCarryAmount;
 	        } else {
