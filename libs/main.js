@@ -1351,7 +1351,7 @@ module.exports =
 
 	    this.genContainerTasks = (container, queue) => {
 	      let containerItems = _.filter(this.existingItems, item => item.fromSource.id == container.id && item.stage == TYPE_SOURCE);
-	      let existingDrawAmount = _.sum(containerItems) * this.creepCarryAmount;
+	      let existingDrawAmount = _.sum(containerItems, 'amount') * this.creepCarryAmount;
 	      let stillStored = container.store[RESOURCE_ENERGY] - existingDrawAmount;
 	      while (stillStored > this.creepCarryAmount) {
 	        var _findCarryTargetFor = this.findCarryTargetFor(container, RESOURCE_ENERGY);

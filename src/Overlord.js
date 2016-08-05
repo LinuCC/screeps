@@ -76,7 +76,9 @@ class Overlord {
       item.fromSource.id == container.id &&
       item.stage == TYPE_SOURCE
     ))
-    let existingDrawAmount = _.sum(containerItems) * this.creepCarryAmount
+    let existingDrawAmount = (
+      _.sum(containerItems, 'amount') * this.creepCarryAmount
+    )
     let stillStored = container.store[RESOURCE_ENERGY] - existingDrawAmount
     while(stillStored > this.creepCarryAmount) {
       let {target, prio} = this.findCarryTargetFor(container, RESOURCE_ENERGY)
