@@ -4,7 +4,7 @@
  */
 
 class PriorityQueue {
-  constructor(room, initialValues) {
+  constructor(initialValues) {
     this.comparator = (a, b)=> a.prio - b.prio
     this.length = 0
     this.data = initialValues
@@ -13,7 +13,7 @@ class PriorityQueue {
 
   _heapify = ()=> {
     if(this.data.length > 0) {
-      for(i in [...Array(this.data.length).keys()]) {
+      for(let i in [...Array(this.data.length).keys()]) {
         this._bubbleUp(i)
       }
     }

@@ -37,7 +37,6 @@ module.exports = {
         ))
         const target = _.last(_.sortBy(values, 'value'))
         Memory.inspectMe = target
-        console.log(target.value)
         if(target.value > -800) {
             return Game.getObjectById(target.id)
         }
@@ -55,8 +54,6 @@ module.exports = {
         )
         const surroundingCreeps = _.map(surroundingCreepData, (d)=> d.creep)
         let surroundingHealers = _.filter(surroundingCreeps, this.filterHealer)
-        //console.log(surroundingCreeps.length)
-        console.log(surroundingHealers.length)
 
         const range = position.getRangeTo(tower)
 
@@ -74,7 +71,6 @@ module.exports = {
     },
 
     filterHealer(creep) {
-        console.log(creep)
         return creep.getActiveBodyparts(HEAL) > 0
     },
 

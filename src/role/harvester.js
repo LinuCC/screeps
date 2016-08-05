@@ -79,7 +79,7 @@ const roleHarvester = {
       FIND_STRUCTURES,
       { filter: (struc)=> (
         struc.structureType == STRUCTURE_CONTAINER &&
-          struc.store[RESOURCE_ENERGY] > 0
+          struc.store[RESOURCE_ENERGY] > 200
       )}
     )
     if(containers.length) {

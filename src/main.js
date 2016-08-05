@@ -6,64 +6,121 @@ import roleExcavator from './role/excavator'
 import roleRepairer from './role/repairer'
 import roleTransporter from './role/transporter'
 import spawnCreepWatcher from './spawn/creepWatcher'
-import roleMaintainer from './role/maintainer'
 import roleFighter from './role/fighter'
 import roleHealer from './role/healer'
 import roleRangedFighter from './role/rangedFighter'
 import roleAssimilator from './role/assimilator'
 import PriorityQueue from './priorityQueue'
+import hiveMind from './hiveMind'
+import Overlord from './Overlord'
+import Zergling from './role/Zergling'
+import Spawner from './spawner'
 import 'babel-preset-es2017/polyfill'
 
 // Maximum range for a remote mine, assuming 100% effectiveness: 190 squares
 
-PathFinder.use(true)
+// QueueData:
+// data[roomName][id]
 
 module.exports.loop = ()=> {
 
-  global.lol = PriorityQueue
+  hiveMind.init()
+  PathFinder.use(true)
 
-  for(let name in Game.spawns) {
-    spawnCreepWatcher.run(Game.spawns[name])
-    defense.defendRoom(Game.spawns[name].room)
+  global.Spawner = Spawner
+  global.resetHive = ()=> {
+    Memory.hiveMind = {}
+    Memory.hiveMindIndex = 0
+    for(let roomName in Game.rooms) {
+      let room = Game.rooms[roomName]
+      if(!room.memory.priorityQueues) { continue }
+      for(let queueName in room.memory.priorityQueues) {
+        room.memory.priorityQueues[queueName] = []
+      }
+    }
   }
 
-  for(let name in Game.creeps) {
-    let creep = Game.creeps[name];
-    if(creep.memory.role == 'harvester') {
-      roleHarvester.run(creep)
+  try {
+    for(let name in Game.spawns) {
+      spawnCreepWatcher.run(Game.spawns[name])
+      defense.defendRoom(Game.spawns[name].room)
     }
-    else if(creep.memory.role == 'transporter') {
-      roleTransporter.run(creep)
+
+    try {
+      for(let roomName in Game.rooms) {
+        let room = Game.rooms[roomName]
+        let priorityQueues = false
+        if(
+          room.memory.priorityQueues &&
+          Object.keys(room.memory.priorityQueues).length > 0
+        ) {
+          priorityQueues = _.mapValues(room.memory.priorityQueues, (queue)=> (
+            new PriorityQueue(queue)
+          ))
+        }
+        let overlord = new Overlord(roomName)
+        if(priorityQueues) {
+          overlord.update(priorityQueues)
+        }
+        let zerglings = room.find(FIND_MY_CREEPS, {filter: (c)=> (
+          c.memory.role == 'zergling'
+        )})
+        if(zerglings.length > 0) {
+          zerglings.forEach((zerglingCreep)=> {
+            let zergling = new Zergling(zerglingCreep)
+            zergling.run(priorityQueues)
+          })
+        }
+      }
     }
-    else if(creep.memory.role == 'upgrader') {
-      roleUpgrader.run(creep)
+    catch(e) {
+      console.log(`${e.name}: ${e.message} - ${e.stack}`);
     }
-    else if(creep.memory.role == 'maintainer') {
-      roleMaintainer.run(creep)
+
+    for(let name in Game.creeps) {
+      let creep = Game.creeps[name];
+      if(creep.memory.role == 'harvester') {
+        roleHarvester.run(creep)
+      }
+      else if(creep.memory.role == 'transporter') {
+        roleTransporter.run(creep)
+      }
+      else if(creep.memory.role == 'upgrader') {
+        roleUpgrader.run(creep)
+      }
+      else if(creep.memory.role == 'builder') {
+        roleBuilder.run(creep)
+      }
+      else if(creep.memory.role == 'excavator') {
+        roleExcavator.run(creep)
+      }
+      else if(creep.memory.role == 'repairer') {
+        roleRepairer.run(creep)
+      }
+      else if(creep.memory.role == 'fighter') {
+        roleFighter.run(creep)
+      }
+      else if(creep.memory.role == 'rangedFighter') {
+        roleRangedFighter.run(creep)
+      }
+      else if(creep.memory.role == 'healer') {
+        roleHealer.run(creep)
+      }
+      else if(creep.memory.role == 'assimilator') {
+        roleAssimilator.run(creep)
+      }
+      else if(creep.memory.role == 'zergling') {
+
+      }
+      else {
+        console.log("No role for ${creep.name}!")
+      }
     }
-    else if(creep.memory.role == 'builder') {
-      roleBuilder.run(creep)
-    }
-    else if(creep.memory.role == 'excavator') {
-      roleExcavator.run(creep)
-    }
-    else if(creep.memory.role == 'repairer') {
-      roleRepairer.run(creep)
-    }
-    else if(creep.memory.role == 'fighter') {
-      roleFighter.run(creep)
-    }
-    else if(creep.memory.role == 'rangedFighter') {
-      roleRangedFighter.run(creep)
-    }
-    else if(creep.memory.role == 'healer') {
-      roleHealer.run(creep)
-    }
-    else if(creep.memory.role == 'assimilator') {
-      roleAssimilator.run(creep)
-    }
-    else {
-      console.log("No role for ${creep.name}!")
-    }
+  }
+  catch(e) {
+    console.log(`${e.name}: ${e.message} - ${e.stack}`);
+  }
+  finally {
+    hiveMind.save()
   }
 };
