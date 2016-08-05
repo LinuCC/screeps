@@ -979,7 +979,7 @@ module.exports =
 	    };
 
 	    this.zergling = spawn => {
-	      return Game.spawns[spawn.name].createCreep([WORK, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE], 'Zergling' + this.newCreepIndex(), { role: 'zergling' });
+	      return Game.spawns[spawn.name].createCreep([WORK, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], 'Zergling' + this.newCreepIndex(), { role: 'zergling' });
 	    };
 
 	    this.newCreepIndex = function () {
@@ -1432,14 +1432,12 @@ module.exports =
 
 	      let storages = this.room.find(FIND_MY_STRUCTURES, { filter: structure => structure.structureType == STRUCTURE_STORAGE && _.sum(structure.store) < structure.storeCapacity });
 	      if (storages.length > 0) {
-	        storages = _.sortByOrder(storages, 'energy', 'asc');
-	        for (let storage of storages) {
-	          let extensionItems = _.filter(this.existingItems, item => item.toTarget.id == storage.id);
-	          let existingAddAmount = extensionItems.length * this.creepCarryAmount;
-	          let ullage = storage.storeCapacity - (_.sum(storage.store) + existingAddAmount);
-	          if (ullage > 0) {
-	            return storage;
-	          }
+	        let storage = storages[0];
+	        let storageItems = _.filter(this.existingItems, item => item.toTarget.id == storage.id);
+	        let existingAddAmount = storageItems.length * this.creepCarryAmount;
+	        let ullage = storage.storeCapacity - (_.sum(storage.store) + existingAddAmount);
+	        if (ullage > 0) {
+	          return storage;
 	        }
 	      }
 	    };

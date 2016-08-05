@@ -174,17 +174,15 @@ class Overlord {
         _.sum(structure.store) < structure.storeCapacity
     )})
     if(storages.length > 0) {
-      storages = _.sortByOrder(storages, 'energy', 'asc')
-      for(let storage of storages) {
-        let extensionItems = _.filter(this.existingItems, (item)=> (
-          item.toTarget.id == storage.id
-        ))
-        let existingAddAmount = extensionItems.length * this.creepCarryAmount
-        let ullage = (
-          storage.storeCapacity - (_.sum(storage.store) + existingAddAmount)
-        )
-        if(ullage > 0) { return storage }
-      }
+      let storage = storages[0]
+      let storageItems = _.filter(this.existingItems, (item)=> (
+        item.toTarget.id == storage.id
+      ))
+      let existingAddAmount = storageItems.length * this.creepCarryAmount
+      let ullage = (
+        storage.storeCapacity - (_.sum(storage.store) + existingAddAmount)
+      )
+      if(ullage > 0) { return storage }
     }
   }
 
