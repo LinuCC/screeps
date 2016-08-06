@@ -33,16 +33,17 @@ class Zergling {
   constructor(zergling) {
     this.zergling = zergling
     this.hasWorked = false
+    this.priorityQueues = null
   }
 
   run = (priorityQueues)=> {
 
-    if(!this.zergling.memory.item) {
+    this.priorityQueues = priorityQueues
+    if(!this.zergling.memory.item || this.zergling.memory.sourcing === null) {
       if(!this.zergling.memory.kind) {
         this.zergling.say('calcKind')
         this.calcKind()
       }
-      this.zergling.say('findWork')
       this.findWork(priorityQueues)
     }
     else {
@@ -79,34 +80,56 @@ class Zergling {
       if(queue) {
         if(queue.peek()) {
           this.zergling.memory.item = queue.dequeue()
-          hiveMind.data[this.zergling.memory.item.id].stage = TYPE_SOURCE
+
+          if(!hiveMind.data[this.zergling.memory.item.id].fromSource) {
+            let item = hiveMind.data[this.zergling.memory.item.id]
+            if(this.zergling.carry[item.res] >= item.amount) {
+              this.zergling.say('♻', true)
+              hiveMind.data[this.zergling.memory.item.id].stage = TYPE_TARGET
+              this.zergling.memory.sourcing = false
+            }
+            else {
+              let source = new Overlord(this.zergling.room.roomName)
+                .findSourceForCreep(
+                  this.zergling, hiveMind.data[this.zergling.memory.item.id],
+                  item.res
+                )
+              if(source) {
+                hiveMind.data[this.zergling.memory.item.id].fromSource = {
+                  id: source.id, x: source.pos.x, y: source.pos.y,
+                  roomName: source.pos.roomName
+                }
+                this.zergling.say('⚗', true)
+                hiveMind.data[this.zergling.memory.item.id].stage = TYPE_SOURCE
+                this.zergling.memory.sourcing = true
+              }
+              else {
+                this.zergling.say('⚗?', true)
+                this.zergling.memory.sourcing = null
+              }
+            }
+          }
+          else {
+            hiveMind.data[this.zergling.memory.item.id].stage = TYPE_SOURCE
+            this.zergling.memory.sourcing = true
+          }
+
           break
         }
       }
       else {
         this.zergling.say('Queue where?!')
-        console.log("${queueName} missing!")
+        console.log(`${queueName} missing!`)
       }
     }
   }
 
   work = ()=> {
-    this.updateSourcingStatus()
-
     if(this.zergling.memory.sourcing) {
       this.workWith(TYPE_SOURCE)
     }
     else {
       this.workWith(TYPE_TARGET)
-    }
-  }
-
-  updateSourcingStatus = ()=> {
-    if(
-      this.zergling.memory.sourcing === undefined ||
-      this.zergling.memory.sourcing === null
-    ) {
-      this.zergling.memory.sourcing = true
     }
   }
 
@@ -190,11 +213,13 @@ class Zergling {
     if(this.zergling.memory.sourcing) {
       hiveMind.data[this.zergling.memory.item.id].stage = TYPE_TARGET
       this.zergling.memory.sourcing = false
+      this.zergling.say('☉', true)
     }
     else {
       hiveMind.remove(this.zergling.memory.item.id)
       this.zergling.memory.sourcing = null
       this.zergling.memory.item = null
+      this.zergling.say('✓', true)
     }
   }
 
