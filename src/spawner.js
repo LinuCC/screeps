@@ -44,6 +44,9 @@ class Spawner {
   assimilator = (spawn)=> {
     return Game.spawns[spawn.name].createCreep( [CLAIM, CLAIM, CLAIM, MOVE, MOVE, MOVE], 'Assi' + this.newCreepIndex(), {role: 'assimilator'})
   }
+  reserver = (spawn)=> {
+    return Game.spawns[spawn.name].createCreep( [CLAIM, MOVE], 'Assi' + this.newCreepIndex(), {role: 'assimilator'})
+  }
 
   transporter = (spawn, {fromSource, toTarget, sourcePos})=> {
     const source = Game.getObjectById(fromSource)
@@ -54,8 +57,11 @@ class Spawner {
     return Game.spawns[spawn.name].createCreep([WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], 'Transporter' + this.newCreepIndex(), {role: 'transporter', fromSource: fromSource, toTarget: toTarget, sourcePos: sourcePos})
   }
 
+  drone = (spawn)=> {
+    return Game.spawns[spawn.name].createCreep([WORK, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], 'Drone' + this.newCreepIndex(), {role: 'zergling'})
+  }
   zergling = (spawn)=> {
-    return Game.spawns[spawn.name].createCreep([WORK, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], 'Zergling' + this.newCreepIndex(), {role: 'zergling'})
+    return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE], 'Zergling' + this.newCreepIndex(), {role: 'zergling'})
   }
 
   newCreepIndex = function() {

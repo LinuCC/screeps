@@ -15,13 +15,13 @@ const roleRangedFighter = {
       if(creep.pos.inRangeTo(flag, 3)) {
         let targets = flag.pos.look()
         if(targets.length) {
-          creep.attack(targets[0])
+          creep.rangedAttack(targets[0])
         }
       }
     }
     let targets = creep.pos.findInRange(FIND_HOSTILE_CREEPS, 3)
     if(targets.length > 0) {
-      creep.attack(targets[0])
+      creep.rangedAttack(targets[0])
     }
   }
 }

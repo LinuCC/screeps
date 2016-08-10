@@ -62,6 +62,24 @@ var spawnCreepWatcher = {
             //console.log('Spawning new builder: ' + newName);
         }
 
+        let zerglings = _.filter(Game.creeps, (creep) => (
+          creep.memory.role == 'zergling' && creep.memory.kind &&
+          creep.memory.kind[0] == WORK &&
+          creep.pos.roomName == spawn.pos.roomName
+        ));
+        if(zerglings.length < spawn.memory.zerglingSize) {
+            const newName = spawner.zergling(spawn);
+        }
+
+        let drones = _.filter(Game.creeps, (creep) => (
+          creep.memory.role == 'zergling' && creep.memory.kind &&
+          creep.memory.kind[0] == CARRY &&
+          creep.pos.roomName == spawn.pos.roomName
+        ));
+        if(drones.length < spawn.memory.droneSize) {
+            const newName = spawner.drone(spawn);
+        }
+
         let repairers = _.filter(Game.creeps, (creep) => (
           creep.memory.role == 'repairer' &&
           creep.pos.roomName == spawn.pos.roomName

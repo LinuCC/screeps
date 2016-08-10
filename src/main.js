@@ -27,7 +27,15 @@ module.exports.loop = ()=> {
   hiveMind.init()
   PathFinder.use(true)
 
+  if(Game.time % 750 == 0) {
+    new Spawner().reserver(Game.spawns['VV'])
+  }
+
   global.Spawner = Spawner
+  global.Overlord = Overlord
+  global.logHiveMindOf = (spawnName)=> {
+    new Overlord(Game.spawns[spawnName].room.name).logQueuedItems()
+  }
   global.resetHive = ()=> {
     Memory.hiveMind = {}
     Memory.hiveMindIndex = 0

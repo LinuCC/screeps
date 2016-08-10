@@ -1,4 +1,5 @@
 import hiveMind from './../hiveMind'
+import Overlord from './../Overlord'
 
 const role = require('../role')
 
@@ -17,10 +18,9 @@ const TYPE_TARGET = 1
  *       id: <hiveMindId>,
  *       XXX
  *       data: {
- *         fromSource: {id, x, y, roomName},
- *         toTarget: {id, x, y, roomName},
+ *         fromSource: {id, x, y, roomName, amount: 0},
+ *         toTarget: {id, x, y, roomName, amount: 0},
  *         res: RESOURCE_ENERGY,
- *         amount: 0,
  *         stage: one of [TYPE_SOURCE, TYPE_TARGET]
  *       }
  *       XXX
@@ -47,6 +47,19 @@ class Zergling {
       this.findWork(priorityQueues)
     }
     else {
+      // QUICK HACK
+      // console.log('YO')
+      // if(!hiveMind.data[this.zergling.memory.item.id].fromSource) {
+      // console.log('Hi')
+      //         let source = new Overlord(this.zergling.pos.roomName)
+      //           .findSourceForCreep(
+      //             this.zergling, hiveMind.data[this.zergling.memory.item.id],
+      //             item.res
+      //           )
+      //           this.zergling.say('⚗', true)
+      //           hiveMind.data[this.zergling.memory.item.id].stage = TYPE_SOURCE
+      //           this.zergling.memory.sourcing = true
+      // }
       this.work()
     }
     if(!this.hasWorked) {
@@ -63,8 +76,8 @@ class Zergling {
     }
     // Transporters should always have a WORK for on-the-fly repairs
     let workPartIndex = _.findIndex(parts, 'type', WORK)
-    parts[workPartIndex].count = (parts[workPartIndex] - 1) * 1.5
-    parts = _.sortBy(parts, 'count')
+    parts[workPartIndex].count = (parts[workPartIndex].count - 1) * 2
+    parts = _.sortByOrder(parts, 'count', 'desc')
 
     this.zergling.memory.kind = []
     parts.forEach((part)=> {
@@ -80,47 +93,55 @@ class Zergling {
       if(queue) {
         if(queue.peek()) {
           this.zergling.memory.item = queue.dequeue()
-
-          if(!hiveMind.data[this.zergling.memory.item.id].fromSource) {
-            let item = hiveMind.data[this.zergling.memory.item.id]
-            if(this.zergling.carry[item.res] >= item.amount) {
-              this.zergling.say('♻', true)
-              hiveMind.data[this.zergling.memory.item.id].stage = TYPE_TARGET
-              this.zergling.memory.sourcing = false
-            }
-            else {
-              let source = new Overlord(this.zergling.room.roomName)
-                .findSourceForCreep(
-                  this.zergling, hiveMind.data[this.zergling.memory.item.id],
-                  item.res
-                )
-              if(source) {
-                hiveMind.data[this.zergling.memory.item.id].fromSource = {
-                  id: source.id, x: source.pos.x, y: source.pos.y,
-                  roomName: source.pos.roomName
-                }
-                this.zergling.say('⚗', true)
-                hiveMind.data[this.zergling.memory.item.id].stage = TYPE_SOURCE
-                this.zergling.memory.sourcing = true
-              }
-              else {
-                this.zergling.say('⚗?', true)
-                this.zergling.memory.sourcing = null
-              }
-            }
-          }
-          else {
-            hiveMind.data[this.zergling.memory.item.id].stage = TYPE_SOURCE
-            this.zergling.memory.sourcing = true
-          }
-
+          this.updateWorkStatus()
           break
+        }
+        else {
+          if(this.bored()) {
+            this.vacation()
+          }
         }
       }
       else {
         this.zergling.say('Queue where?!')
         console.log(`${queueName} missing!`)
       }
+    }
+  }
+
+  updateWorkStatus = ()=> {
+    if(!hiveMind.data[this.zergling.memory.item.id].fromSource) {
+      let item = hiveMind.data[this.zergling.memory.item.id]
+      if(this.zergling.carry[item.res] >= item.toTarget.amount) {
+        this.zergling.say('♻➟▣', true)
+        hiveMind.data[this.zergling.memory.item.id].stage = TYPE_TARGET
+        this.zergling.memory.sourcing = false
+      }
+      else {
+        let source = new Overlord(this.zergling.pos.roomName)
+          .findSourceForCreep(
+            this.zergling, hiveMind.data[this.zergling.memory.item.id],
+            item.res
+          )
+        if(source) {
+          hiveMind.data[this.zergling.memory.item.id].fromSource = {
+            id: source.id, x: source.pos.x, y: source.pos.y,
+            roomName: source.pos.roomName,
+            amount: this.creepCarryCapacity,
+          }
+          this.zergling.say('⚗', true)
+          hiveMind.data[this.zergling.memory.item.id].stage = TYPE_SOURCE
+          this.zergling.memory.sourcing = true
+        }
+        else {
+          this.zergling.say('⚗?', true)
+          this.zergling.memory.sourcing = null
+        }
+      }
+    }
+    else {
+      hiveMind.data[this.zergling.memory.item.id].stage = TYPE_SOURCE
+      this.zergling.memory.sourcing = true
     }
   }
 
@@ -142,7 +163,7 @@ class Zergling {
         memObject = hiveMind.data[this.zergling.memory.item.id].toTarget; break
     }
     let object = Game.getObjectById(memObject.id)
-    if(!object) { this.done() }
+    if(!object) { this.done(); return; }
     let range = this.calcActionRange(type, object)
     if(object) {
       if(this.zergling.pos.inRangeTo(object, range)) {
@@ -169,7 +190,11 @@ class Zergling {
   withdrawFrom = (source)=> {
     let data = hiveMind.data[this.zergling.memory.item.id]
     let type = data.type || RESOURCE_ENERGY
-    let amount = (data.amount) ? data.amount : null // 0 amount == all you can
+    // 0 amount == all you can
+    let amount = (data.fromSource.amount) ? data.fromSource.amount : null
+    if(amount > this.zergling.carryCapacity) {
+      amount = this.zergling.carryCapacity
+    }
     let res
     if(source.energy || source.mineralAmount) {
       res = this.zergling.harvest(source)
@@ -183,13 +208,13 @@ class Zergling {
       this.hasWorked = true
       this.done()
     }
-    if(res != OK) { this.handleActionResult(res, TYPE_SOURCE, source) }
   }
 
   transferTo = (target)=> {
     let data = hiveMind.data[this.zergling.memory.item.id]
     let type = data.type || RESOURCE_ENERGY
-    let amount = (data.amount) ? data.amount : null // 0 amount == all you can
+    // 0 amount == all you can
+    let amount = (data.toTarget.amount) ? data.toTarget.amount : null
     let res
     if(target instanceof ConstructionSite) {
       res = this.zergling.build(target)
@@ -202,24 +227,34 @@ class Zergling {
       if(this.zergling.carry[RESOURCE_ENERGY] == 0) { this.done() }
     }
     else {
-      res = this.zergling.transfer(target, type, amount)
+      res = this.zergling.transfer(target, type/*, amount*/)
       this.hasWorked = true
       this.done()
     }
     if(res != OK) { this.handleActionResult(res, TYPE_TARGET, target) }
   }
 
-  done = ()=> {
+  done = (res)=> {
     if(this.zergling.memory.sourcing) {
       hiveMind.data[this.zergling.memory.item.id].stage = TYPE_TARGET
       this.zergling.memory.sourcing = false
-      this.zergling.say('☉', true)
+      if(res == OK) {
+        this.zergling.say('▣', true)
+      }
+      else {
+        this.handleActionResult(res, null, null)
+      }
     }
     else {
       hiveMind.remove(this.zergling.memory.item.id)
       this.zergling.memory.sourcing = null
       this.zergling.memory.item = null
-      this.zergling.say('✓', true)
+      if(res == OK) {
+        this.zergling.say('✓', true)
+      }
+      else {
+        this.handleActionResult(res, null, null)
+      }
     }
   }
 
@@ -228,20 +263,40 @@ class Zergling {
       case TYPE_SOURCE:
         return 1; break
       case TYPE_TARGET:
-        return (object.structureType == STRUCTURE_CONTROLLER) ? 3 : 1; break
+        return (
+          object.structureType == STRUCTURE_CONTROLLER ||
+          object instanceof ConstructionSite
+        ) ? 3 : 1; break
     }
   }
 
   handleActionResult = (result, type, object)=> {
     let type_str
-    switch(type) {
-      case TYPE_SOURCE: type_str = 'source'; break
-      case TYPE_TARGET: type_str = 'target'; break
+    if(type != null) {
+      switch(type) {
+        case TYPE_SOURCE: type_str = 'source'; break
+        case TYPE_TARGET: type_str = 'target'; break
+      }
+      console.log(
+        `ERROR: Action for zergling ${this.zergling.name} trying to ` +
+        `${type_str} at ${object}: ${result}`
+      )
     }
-    console.log(
-      `ERROR: Action for zergling ${this.zergling.name} trying to ` +
-      `${type_str} at ${object}: ${result}`
-    )
+    switch(result) {
+      case ERR_NOT_OWNER: this.zergling.say('✖♚', true); break
+      case ERR_NO_PATH: this.zergling.say('✖☈?', true); break
+      // case ERR_NAME_EXISTS: this.zergling.say('', true); break
+      case ERR_BUSY: this.zergling.say('✖⚙', true); break
+      case ERR_NOT_FOUND: this.zergling.say('✖▣?', true); break
+      case ERR_NOT_ENOUGH_ENERGY: this.zergling.say('✖☢', true); break
+      case ERR_INVALID_TARGET: this.zergling.say('✖▣!', true); break
+      case ERR_FULL: this.zergling.say('✖●', true); break
+      case ERR_NOT_IN_RANGE: this.zergling.say('✖◎', true); break
+      case ERR_INVALID_ARGS: this.zergling.say('✖ARGS!', true); break
+      case ERR_TIRED: this.zergling.say('✖❄', true); break
+      case ERR_NO_BODYPART: this.zergling.say('✖☗?', true); break
+      // case ERR_NOT_ENOUGH_EXTENSIONS: this.zergling.say('', true); break
+    }
   }
 
   repairSurroundings = ()=> {
@@ -252,6 +307,25 @@ class Zergling {
     if(structures.length) {
       let target = _.sortByOrder(structures, 'hits', 'asc')[0]
       this.zergling.repair(target)
+    }
+  }
+
+  bored = ()=> {
+    let item = new Overlord(this.zergling.pos.roomName)
+      .satisfyBoredCreep(this.zergling)
+    if(item) {
+      this.zergling.memory.item = item
+      this.updateWorkStatus()
+    }
+  }
+
+  vacation = ()=> {
+    this.zergling.say('☀', true) // No tasks, creep is on vacation
+    let hangar = this.zergling.room.find(
+      FIND_MY_STRUCTURES, {filter: {structureType: STRUCTURE_SPAWN}}
+    )[0]
+    if(!this.zergling.pos.inRangeTo(hangar, 2)) {
+      this.zergling.moveTo(hangar)
     }
   }
 }

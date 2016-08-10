@@ -129,7 +129,15 @@ module.exports =
 	  _hiveMind2.default.init();
 	  PathFinder.use(true);
 
+	  if (Game.time % 750 == 0) {
+	    new _spawner2.default().fighter(Game.spawns['VV']);
+	  }
+
 	  global.Spawner = _spawner2.default;
+	  global.Overlord = _Overlord2.default;
+	  global.logHiveMindOf = spawnName => {
+	    new _Overlord2.default(Game.spawns[spawnName].room.name).logQueuedItems();
+	  };
 	  global.resetHive = () => {
 	    Memory.hiveMind = {};
 	    Memory.hiveMindIndex = 0;
@@ -885,6 +893,16 @@ module.exports =
 	            //console.log('Spawning new builder: ' + newName);
 	        }
 
+	        let zerglings = _.filter(Game.creeps, creep => creep.memory.role == 'zergling' && creep.memory.kind && creep.memory.kind[0] == WORK && creep.pos.roomName == spawn.pos.roomName);
+	        if (zerglings.length < spawn.memory.zerglingSize) {
+	            const newName = spawner.zergling(spawn);
+	        }
+
+	        let drones = _.filter(Game.creeps, creep => creep.memory.role == 'zergling' && creep.memory.kind && creep.memory.kind[0] == CARRY && creep.pos.roomName == spawn.pos.roomName);
+	        if (drones.length < spawn.memory.droneSize) {
+	            const newName = spawner.drone(spawn);
+	        }
+
 	        let repairers = _.filter(Game.creeps, creep => creep.memory.role == 'repairer' && creep.pos.roomName == spawn.pos.roomName);
 	        if (repairers.length < spawn.memory.repairerSize) {
 	            const newName = spawner.repairer(spawn);
@@ -978,8 +996,12 @@ module.exports =
 	      return Game.spawns[spawn.name].createCreep([WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], 'Transporter' + this.newCreepIndex(), { role: 'transporter', fromSource: fromSource, toTarget: toTarget, sourcePos: sourcePos });
 	    };
 
+	    this.drone = spawn => {
+	      return Game.spawns[spawn.name].createCreep([WORK, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], 'Drone' + this.newCreepIndex(), { role: 'zergling' });
+	    };
+
 	    this.zergling = spawn => {
-	      return Game.spawns[spawn.name].createCreep([WORK, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], 'Zergling' + this.newCreepIndex(), { role: 'zergling' });
+	      return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE], 'Zergling' + this.newCreepIndex(), { role: 'zergling' });
 	    };
 
 	    this.newCreepIndex = function () {
@@ -1094,13 +1116,13 @@ module.exports =
 	      if (creep.pos.inRangeTo(flag, 3)) {
 	        let targets = flag.pos.look();
 	        if (targets.length) {
-	          creep.attack(targets[0]);
+	          creep.rangedAttack(targets[0]);
 	        }
 	      }
 	    }
 	    let targets = creep.pos.findInRange(FIND_HOSTILE_CREEPS, 3);
 	    if (targets.length > 0) {
-	      creep.attack(targets[0]);
+	      creep.rangedAttack(targets[0]);
 	    }
 	  }
 	};
@@ -1331,17 +1353,45 @@ module.exports =
 	      // let targetData = this.findWorkTargetFor(RESOURCE_ENERGY)
 	      // console.log('targetData', JSON.stringify(targetData))
 
-	      let storages = this.room.find(FIND_STRUCTURES, { filter: this.filterNonVoidEnergyStorage });
-	      if (storages.length > 0) {
-	        let storage = storages[0];
-	        this.genSourceTasks(storage, queue, WORK);
+	      let conSites = this.room.find(FIND_CONSTRUCTION_SITES);
+	      if (conSites.length > 0) {
+	        for (let conSite of conSites) {
+	          let targetItems = _.filter(this.existingItems, item => item.toTarget.id == conSite.id);
+	          let ullage = conSite.progressTotal - (conSite.progress + _.sum(targetItems, t => t.toTarget.amount));
+	          let itemCount = targetItems.length;
+	          while (ullage < conSite.progressTotal && itemCount < this.maxItemsPerTask) {
+	            this.addItem(queue, false, conSite, RESOURCE_ENERGY, this.creepCarryAmount, PRIOS[CONSTRUCTION_SITE]);
+	            itemCount += 1;
+	          }
+	        }
 	      }
-	      let containers = this.room.find(FIND_STRUCTURES, { filter: this.filterNonVoidEnergyContainers });
-	      if (containers.length > 0) {
-	        containers.forEach(container => {
-	          this.genSourceTasks(container, queue, WORK);
-	        });
+
+	      let controllers = this.room.find(FIND_STRUCTURES, { filter: { structureType: STRUCTURE_CONTROLLER } });
+	      if (controllers) {
+	        let controller = controllers[0];
+	        let targetItems = _.filter(this.existingItems, item => item.toTarget.id == controller.id);
+	        let itemCount = targetItems.length;
+	        while (itemCount < this.maxItemsPerTask) {
+	          this.addItem(queue, false, controller, RESOURCE_ENERGY, this.creepCarryAmount, PRIOS[STRUCTURE_CONTROLLER]);
+	          itemCount += 1;
+	        }
 	      }
+
+	      // let storages = this.room.find(
+	      //   FIND_STRUCTURES, {filter: this.filterNonVoidEnergyStorage}
+	      // )
+	      // if(storages.length > 0) {
+	      //   let storage = storages[0]
+	      //   this.genSourceTasks(storage, queue, WORK)
+	      // }
+	      // let containers = this.room.find(
+	      //   FIND_STRUCTURES, {filter: this.filterNonVoidEnergyContainers}
+	      // )
+	      // if(containers.length > 0) {
+	      //   containers.forEach((container)=> {
+	      //     this.genSourceTasks(container, queue, WORK)
+	      //   })
+	      // }
 	    };
 
 	    this.carry = queue => {
@@ -1356,15 +1406,6 @@ module.exports =
 	          this.genTargetCarryTasksFor(target, queue, RESOURCE_ENERGY, PRIOS[target.structureType]);
 	        }
 	      }
-
-	      // Find Containers that have still stuff in them and take that stuff
-	      // somewhere else if possible
-	      let containers = this.room.find(FIND_STRUCTURES, { filter: this.filterNonVoidEnergyContainers });
-	      if (containers.length > 0) {
-	        containers.forEach(container => {
-	          this.genSourceTasks(container, queue, CARRY);
-	        });
-	      }
 	    };
 
 	    this.genTargetCarryTasksFor = (target, queue, resType, prio) => {
@@ -1377,9 +1418,9 @@ module.exports =
 	      let ullage = max - (current + existingAddAmount);
 
 	      while (ullage > 0 && itemLength < this.maxItemsPerTask) {
-	        let amount = this.creepCarryAmount < ullage ? this.creepCarryAmount : ullage;
-	        this.addItem(queue, false, target, resType, amount, prio);
-	        ullage -= amount;
+	        let targetAmount = this.creepCarryAmount < ullage ? this.creepCarryAmount : ullage;
+	        this.addItem(queue, false, target, resType, targetAmount, prio);
+	        ullage -= targetAmount;
 	        itemLength += 1;
 	      }
 	    };
@@ -1390,15 +1431,15 @@ module.exports =
 	      let existingAddAmount = targetItems.length * this.creepCarryAmount;
 
 	      while (itemLength < this.maxItemsPerTask) {
-	        let amount = this.creepCarryAmount;
-	        this.addItem(queue, false, controller, resType, amount, PRIO);
+	        let targetAmount = this.creepCarryAmount;
+	        this.addItem(queue, false, controller, resType, targetAmount, PRIO);
 	        itemLength += 1;
 	      }
 	    };
 
 	    this.genSourceTasks = (source, queue, taskType) => {
 	      let sourceItems = _.filter(this.existingItems, item => item.fromSource && item.fromSource.id == source.id && item.stage != TYPE_TARGET);
-	      let existingDrawAmount = _.sum(sourceItems, 'amount');
+	      let existingDrawAmount = _.sum(sourceItems, 'fromSource.amount');
 	      let stillStored = source.store[RESOURCE_ENERGY] - existingDrawAmount;
 	      let itemCount = sourceItems.length;
 	      while (stillStored > this.creepCarryAmount && itemCount < this.maxItemsPerTask) {
@@ -1419,6 +1460,34 @@ module.exports =
 	          itemCount += 1;
 	        } else {
 	          break; // No suitable target found
+	        }
+	      }
+	    };
+
+	    this.genSourceTask = (source, queue, taskType) => {
+	      let sourceItems = _.filter(this.existingItems, item => item.fromSource && item.fromSource.id == source.id && item.stage != TYPE_TARGET);
+	      let existingDrawAmount = _.sum(sourceItems, 'fromSource.amount');
+	      let stillStored = source.store[RESOURCE_ENERGY] - existingDrawAmount;
+	      let itemCount = sourceItems.length;
+	      if (stillStored > this.creepCarryAmount && itemCount < this.maxItemsPerTask) {
+	        let targetData = null;
+	        if (taskType == CARRY) {
+	          targetData = this.findCarryTargetFor(source, RESOURCE_ENERGY);
+	        } else if (taskType == WORK) {
+	          targetData = this.findWorkTargetFor(source, RESOURCE_ENERGY);
+	        }
+	        if (targetData && targetData.target) {
+	          var _targetData2 = targetData;
+	          let target = _targetData2.target;
+	          let prio = _targetData2.prio;
+
+	          console.log(`Adding target: ${ JSON.stringify(target.pos) } at ${ Game.time }.`);
+	          let res = this.addItem(queue, source, target, RESOURCE_ENERGY, this.creepCarryAmount, prio);
+	          stillStored -= this.creepCarryAmount;
+	          itemCount += 1;
+	          return res;
+	        } else {
+	          // No suitable target found
 	        }
 	      }
 	    };
@@ -1539,16 +1608,16 @@ module.exports =
 
 	    this.filterNonVoidEnergyStorage = object => object.structureType == STRUCTURE_STORAGE && object.store[RESOURCE_ENERGY] > 1000;
 
-	    this.addItem = (queue, source, target, res, amount, priority) => {
+	    this.addItem = (queue, source, target, res, targetAmount, priority) => {
 	      let data = {
 	        toTarget: {
 	          id: target.id,
 	          x: target.pos.x,
 	          y: target.pos.y,
-	          roomName: target.pos.roomName
+	          roomName: target.pos.roomName,
+	          amount: targetAmount
 	        },
 	        res: res,
-	        amount: amount,
 	        stage: null
 	      };
 	      if (source) {
@@ -1556,12 +1625,17 @@ module.exports =
 	          id: source.id,
 	          x: source.pos.x,
 	          y: source.pos.y,
-	          roomName: source.pos.roomName
+	          roomName: source.pos.roomName,
+	          amount: this.creepCarryAmount
 	        };
 	      }
 	      let itemId = _hiveMind2.default.push(data);
-	      queue.queue({ id: itemId, prio: priority });
+	      let queueData = { id: itemId, prio: priority };
+	      if (queue) {
+	        queue.queue(queueData);
+	      }
 	      this.existingItems = _hiveMind2.default.allForRoom(this.room);
+	      return queueData;
 	    };
 
 	    this.cleanupTasks = queues => {
@@ -1594,11 +1668,78 @@ module.exports =
 
 	    this.findSourceForCreep = (creep, item, resType) => {
 
-	      let structures = this.room.find(FIND_STRUCTURES, { filter: struc => (struc.structureType == STRUCTURE_CONTAINER || struc.structureType == STRUCTURE_STORAGE) &&
+	      let structures = this.room.find(FIND_STRUCTURES, { filter: struc => (struc.structureType == STRUCTURE_CONTAINER || struc.structureType == STRUCTURE_STORAGE) && (
 	        // The sum of the existing items amount for this structure
-	        struc.store[resType] - _.sum(_.filter(this.existingItems, item => item.fromSource.id == struc.id), 'amount') > this.creepCarryAmount });
+	        console.log('EXISTING ITEMS', struc.store[resType] - _.sum(_.filter(this.existingItems, item => item.fromSource.id == struc.id), 'fromSource.amount') > this.creepCarryAmount) || 1) && struc.store[resType] - _.sum(_.filter(this.existingItems, item => item.fromSource.id == struc.id), 'fromSource.amount') > this.creepCarryAmount });
 	      if (structures.length > 0) {
-	        return creep.findClosestByPath(structures);
+	        return creep.pos.findClosestByPath(structures);
+	      }
+	    };
+
+	    this.satisfyBoredCreep = creep => {
+	      // Find Containers that have still stuff in them and take that stuff
+	      // somewhere else if possible
+	      let containers = this.room.find(FIND_STRUCTURES, { filter: this.filterNonVoidEnergyContainers });
+	      if (containers.length > 0) {
+	        for (let container of containers) {
+	          // null == Dont queue the item, let the creep just do it
+	          let res = this.genSourceTask(container, null, creep.memory.kind[0]);
+	          if (res) {
+	            return res;
+	          }
+	        }
+	      }
+	    };
+
+	    this.logQueuedItems = () => {
+	      if (!this.room.memory.priorityQueues) {
+	        console.log('No prioqueues!');return;
+	      }
+	      for (let queueName in this.room.memory.priorityQueues) {
+	        console.log(`<span style="color: #33aaff">` + `====== Queue: ${ queueName }</span>`);
+	        let queue = this.room.memory.priorityQueues[queueName];
+
+	        for (let queueItem of queue) {
+	          let item = Memory['hiveMind'][queueItem.id];
+	          let fromStr = '';
+	          if (item['fromSource']) {
+	            fromStr = ' from <span style="color:#dd6633">' + this.getStructureName(Game.getObjectById(item['fromSource'].id)) + '</span>' + `(<span style="color:#a6a">${ item['fromSource'].amount }</span>)`;
+	          }
+	          let toStr = '';
+	          if (item['toTarget']) {
+	            toStr = ' to <span style="color:#66dd33">' + this.getStructureName(Game.getObjectById(item['toTarget'].id)) + '</span>' + `(<span style="color:#a6a">${ item['toTarget'].amount }</span>)`;
+	          }
+	          console.log(`    - Item: ${ item.res }${ fromStr }${ toStr }` + `[${ queueItem.prio }]\n` + `        ${ JSON.stringify(item) }`);
+	        }
+	      }
+	    };
+
+	    this.getStructureName = struc => {
+	      let name = false;
+	      switch (struc.structureType) {
+	        case STRUCTURE_SPAWN:
+	          name = 'Spawn';break;
+	        case STRUCTURE_EXTENSION:
+	          name = 'Extension';break;
+	        case STRUCTURE_CONTROLLER:
+	          name = 'Controller';break;
+	        case STRUCTURE_TOWER:
+	          name = 'Tower';break;
+	        case STRUCTURE_RAMPART:
+	          name = 'Rampart';break;
+	        case STRUCTURE_CONTAINER:
+	          name = 'Container';break;
+	        case STRUCTURE_STORAGE:
+	          name = 'Storage';break;
+	        case STRUCTURE_WALL:
+	          name = 'Tower';break;
+	        default:
+	          name = '???';break;
+	      }
+	      if (struc instanceof ConstructionSite) {
+	        return `ConstructionSite of ${ name }`;
+	      } else {
+	        return name;
 	      }
 	    };
 
@@ -1608,7 +1749,7 @@ module.exports =
 	    // creeps CARRY-Amount
 	    //
 	    // Or just add an amount to every task and sum it that way
-	    this.creepCarryAmount = 150;
+	    this.creepCarryAmount = 450;
 	    this.maxItemsPerTask = 20;
 	  }
 
@@ -1617,6 +1758,16 @@ module.exports =
 	   *
 	   * Checks how many items need to be generated to void the source and tries
 	   * to find targets for every task of it.
+	   * If a target cant be found for the resource, this task will not be
+	   * generated.
+	   */
+
+
+	  /**
+	   * Generates one taskItem for the given source and returns it
+	   *
+	   * Checks how many items need to be generated to void the source and tries
+	   * to find a target for an item.
 	   * If a target cant be found for the resource, this task will not be
 	   * generated.
 	   */
@@ -1639,6 +1790,10 @@ module.exports =
 
 	var _hiveMind2 = _interopRequireDefault(_hiveMind);
 
+	var _Overlord = __webpack_require__(18);
+
+	var _Overlord2 = _interopRequireDefault(_Overlord);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	const role = __webpack_require__(4);
@@ -1658,10 +1813,9 @@ module.exports =
 	 *       id: <hiveMindId>,
 	 *       XXX
 	 *       data: {
-	 *         fromSource: {id, x, y, roomName},
-	 *         toTarget: {id, x, y, roomName},
+	 *         fromSource: {id, x, y, roomName, amount: 0},
+	 *         toTarget: {id, x, y, roomName, amount: 0},
 	 *         res: RESOURCE_ENERGY,
-	 *         amount: 0,
 	 *         stage: one of [TYPE_SOURCE, TYPE_TARGET]
 	 *       }
 	 *       XXX
@@ -1682,6 +1836,19 @@ module.exports =
 	        }
 	        this.findWork(priorityQueues);
 	      } else {
+	        // QUICK HACK
+	        // console.log('YO')
+	        // if(!hiveMind.data[this.zergling.memory.item.id].fromSource) {
+	        // console.log('Hi')
+	        //         let source = new Overlord(this.zergling.pos.roomName)
+	        //           .findSourceForCreep(
+	        //             this.zergling, hiveMind.data[this.zergling.memory.item.id],
+	        //             item.res
+	        //           )
+	        //           this.zergling.say('⚗', true)
+	        //           hiveMind.data[this.zergling.memory.item.id].stage = TYPE_SOURCE
+	        //           this.zergling.memory.sourcing = true
+	        // }
 	        this.work();
 	      }
 	      if (!this.hasWorked) {
@@ -1696,8 +1863,8 @@ module.exports =
 	      }
 	      // Transporters should always have a WORK for on-the-fly repairs
 	      let workPartIndex = _.findIndex(parts, 'type', WORK);
-	      parts[workPartIndex].count = (parts[workPartIndex] - 1) * 1.5;
-	      parts = _.sortBy(parts, 'count');
+	      parts[workPartIndex].count = (parts[workPartIndex].count - 1) * 2;
+	      parts = _.sortByOrder(parts, 'count', 'desc');
 
 	      this.zergling.memory.kind = [];
 	      parts.forEach(part => {
@@ -1713,39 +1880,46 @@ module.exports =
 	        if (queue) {
 	          if (queue.peek()) {
 	            this.zergling.memory.item = queue.dequeue();
-
-	            if (!_hiveMind2.default.data[this.zergling.memory.item.id].fromSource) {
-	              let item = _hiveMind2.default.data[this.zergling.memory.item.id];
-	              if (this.zergling.carry[item.res] >= item.amount) {
-	                this.zergling.say('♻', true);
-	                _hiveMind2.default.data[this.zergling.memory.item.id].stage = TYPE_TARGET;
-	                this.zergling.memory.sourcing = false;
-	              } else {
-	                let source = new Overlord(this.zergling.room.roomName).findSourceForCreep(this.zergling, _hiveMind2.default.data[this.zergling.memory.item.id], item.res);
-	                if (source) {
-	                  _hiveMind2.default.data[this.zergling.memory.item.id].fromSource = {
-	                    id: source.id, x: source.pos.x, y: source.pos.y,
-	                    roomName: source.pos.roomName
-	                  };
-	                  this.zergling.say('⚗', true);
-	                  _hiveMind2.default.data[this.zergling.memory.item.id].stage = TYPE_SOURCE;
-	                  this.zergling.memory.sourcing = true;
-	                } else {
-	                  this.zergling.say('⚗?', true);
-	                  this.zergling.memory.sourcing = null;
-	                }
-	              }
-	            } else {
-	              _hiveMind2.default.data[this.zergling.memory.item.id].stage = TYPE_SOURCE;
-	              this.zergling.memory.sourcing = true;
-	            }
-
+	            this.updateWorkStatus();
 	            break;
+	          } else {
+	            if (this.bored()) {
+	              this.vacation();
+	            }
 	          }
 	        } else {
 	          this.zergling.say('Queue where?!');
 	          console.log(`${ queueName } missing!`);
 	        }
+	      }
+	    };
+
+	    this.updateWorkStatus = () => {
+	      if (!_hiveMind2.default.data[this.zergling.memory.item.id].fromSource) {
+	        let item = _hiveMind2.default.data[this.zergling.memory.item.id];
+	        if (this.zergling.carry[item.res] >= item.toTarget.amount) {
+	          this.zergling.say('♻➟▣', true);
+	          _hiveMind2.default.data[this.zergling.memory.item.id].stage = TYPE_TARGET;
+	          this.zergling.memory.sourcing = false;
+	        } else {
+	          let source = new _Overlord2.default(this.zergling.pos.roomName).findSourceForCreep(this.zergling, _hiveMind2.default.data[this.zergling.memory.item.id], item.res);
+	          if (source) {
+	            _hiveMind2.default.data[this.zergling.memory.item.id].fromSource = {
+	              id: source.id, x: source.pos.x, y: source.pos.y,
+	              roomName: source.pos.roomName,
+	              amount: this.creepCarryCapacity
+	            };
+	            this.zergling.say('⚗', true);
+	            _hiveMind2.default.data[this.zergling.memory.item.id].stage = TYPE_SOURCE;
+	            this.zergling.memory.sourcing = true;
+	          } else {
+	            this.zergling.say('⚗?', true);
+	            this.zergling.memory.sourcing = null;
+	          }
+	        }
+	      } else {
+	        _hiveMind2.default.data[this.zergling.memory.item.id].stage = TYPE_SOURCE;
+	        this.zergling.memory.sourcing = true;
 	      }
 	    };
 
@@ -1767,7 +1941,7 @@ module.exports =
 	      }
 	      let object = Game.getObjectById(memObject.id);
 	      if (!object) {
-	        this.done();
+	        this.done();return;
 	      }
 	      let range = this.calcActionRange(type, object);
 	      if (object) {
@@ -1791,7 +1965,11 @@ module.exports =
 	    this.withdrawFrom = source => {
 	      let data = _hiveMind2.default.data[this.zergling.memory.item.id];
 	      let type = data.type || RESOURCE_ENERGY;
-	      let amount = data.amount ? data.amount : null; // 0 amount == all you can
+	      // 0 amount == all you can
+	      let amount = data.fromSource.amount ? data.fromSource.amount : null;
+	      if (amount > this.zergling.carryCapacity) {
+	        amount = this.zergling.carryCapacity;
+	      }
 	      let res;
 	      if (source.energy || source.mineralAmount) {
 	        res = this.zergling.harvest(source);
@@ -1804,15 +1982,13 @@ module.exports =
 	        this.hasWorked = true;
 	        this.done();
 	      }
-	      if (res != OK) {
-	        this.handleActionResult(res, TYPE_SOURCE, source);
-	      }
 	    };
 
 	    this.transferTo = target => {
 	      let data = _hiveMind2.default.data[this.zergling.memory.item.id];
 	      let type = data.type || RESOURCE_ENERGY;
-	      let amount = data.amount ? data.amount : null; // 0 amount == all you can
+	      // 0 amount == all you can
+	      let amount = data.toTarget.amount ? data.toTarget.amount : null;
 	      let res;
 	      if (target instanceof ConstructionSite) {
 	        res = this.zergling.build(target);
@@ -1827,7 +2003,7 @@ module.exports =
 	          this.done();
 	        }
 	      } else {
-	        res = this.zergling.transfer(target, type, amount);
+	        res = this.zergling.transfer(target, type /*, amount*/);
 	        this.hasWorked = true;
 	        this.done();
 	      }
@@ -1836,16 +2012,24 @@ module.exports =
 	      }
 	    };
 
-	    this.done = () => {
+	    this.done = res => {
 	      if (this.zergling.memory.sourcing) {
 	        _hiveMind2.default.data[this.zergling.memory.item.id].stage = TYPE_TARGET;
 	        this.zergling.memory.sourcing = false;
-	        this.zergling.say('☉', true);
+	        if (res == OK) {
+	          this.zergling.say('▣', true);
+	        } else {
+	          this.handleActionResult(res, null, null);
+	        }
 	      } else {
 	        _hiveMind2.default.remove(this.zergling.memory.item.id);
 	        this.zergling.memory.sourcing = null;
 	        this.zergling.memory.item = null;
-	        this.zergling.say('✓', true);
+	        if (res == OK) {
+	          this.zergling.say('✓', true);
+	        } else {
+	          this.handleActionResult(res, null, null);
+	        }
 	      }
 	    };
 
@@ -1854,19 +2038,47 @@ module.exports =
 	        case TYPE_SOURCE:
 	          return 1;break;
 	        case TYPE_TARGET:
-	          return object.structureType == STRUCTURE_CONTROLLER ? 3 : 1;break;
+	          return object.structureType == STRUCTURE_CONTROLLER || object instanceof ConstructionSite ? 3 : 1;break;
 	      }
 	    };
 
 	    this.handleActionResult = (result, type, object) => {
 	      let type_str;
-	      switch (type) {
-	        case TYPE_SOURCE:
-	          type_str = 'source';break;
-	        case TYPE_TARGET:
-	          type_str = 'target';break;
+	      if (type != null) {
+	        switch (type) {
+	          case TYPE_SOURCE:
+	            type_str = 'source';break;
+	          case TYPE_TARGET:
+	            type_str = 'target';break;
+	        }
+	        console.log(`ERROR: Action for zergling ${ this.zergling.name } trying to ` + `${ type_str } at ${ object }: ${ result }`);
 	      }
-	      console.log(`ERROR: Action for zergling ${ this.zergling.name } trying to ` + `${ type_str } at ${ object }: ${ result }`);
+	      switch (result) {
+	        case ERR_NOT_OWNER:
+	          this.zergling.say('✖♚', true);break;
+	        case ERR_NO_PATH:
+	          this.zergling.say('✖☈?', true);break;
+	        // case ERR_NAME_EXISTS: this.zergling.say('', true); break
+	        case ERR_BUSY:
+	          this.zergling.say('✖⚙', true);break;
+	        case ERR_NOT_FOUND:
+	          this.zergling.say('✖▣?', true);break;
+	        case ERR_NOT_ENOUGH_ENERGY:
+	          this.zergling.say('✖☢', true);break;
+	        case ERR_INVALID_TARGET:
+	          this.zergling.say('✖▣!', true);break;
+	        case ERR_FULL:
+	          this.zergling.say('✖●', true);break;
+	        case ERR_NOT_IN_RANGE:
+	          this.zergling.say('✖◎', true);break;
+	        case ERR_INVALID_ARGS:
+	          this.zergling.say('✖ARGS!', true);break;
+	        case ERR_TIRED:
+	          this.zergling.say('✖❄', true);break;
+	        case ERR_NO_BODYPART:
+	          this.zergling.say('✖☗?', true);break;
+	        // case ERR_NOT_ENOUGH_EXTENSIONS: this.zergling.say('', true); break
+	      }
 	    };
 
 	    this.repairSurroundings = () => {
@@ -1874,6 +2086,22 @@ module.exports =
 	      if (structures.length) {
 	        let target = _.sortByOrder(structures, 'hits', 'asc')[0];
 	        this.zergling.repair(target);
+	      }
+	    };
+
+	    this.bored = () => {
+	      let item = new _Overlord2.default(this.zergling.pos.roomName).satisfyBoredCreep(this.zergling);
+	      if (item) {
+	        this.zergling.memory.item = item;
+	        this.updateWorkStatus();
+	      }
+	    };
+
+	    this.vacation = () => {
+	      this.zergling.say('☀', true); // No tasks, creep is on vacation
+	      let hangar = this.zergling.room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_SPAWN } })[0];
+	      if (!this.zergling.pos.inRangeTo(hangar, 2)) {
+	        this.zergling.moveTo(hangar);
 	      }
 	    };
 

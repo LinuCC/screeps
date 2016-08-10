@@ -27,7 +27,7 @@ class Overlord {
     // creeps CARRY-Amount
     //
     // Or just add an amount to every task and sum it that way
-    this.creepCarryAmount = 150
+    this.creepCarryAmount = 450
     this.maxItemsPerTask = 20
   }
 
@@ -48,21 +48,61 @@ class Overlord {
     // let targetData = this.findWorkTargetFor(RESOURCE_ENERGY)
     // console.log('targetData', JSON.stringify(targetData))
 
-    let storages = this.room.find(
-      FIND_STRUCTURES, {filter: this.filterNonVoidEnergyStorage}
-    )
-    if(storages.length > 0) {
-      let storage = storages[0]
-      this.genSourceTasks(storage, queue, WORK)
+    let conSites = this.room.find(FIND_CONSTRUCTION_SITES)
+    if(conSites.length > 0) {
+      for(let conSite of conSites) {
+        let targetItems = _.filter(this.existingItems, (item)=> (
+          item.toTarget.id == conSite.id
+        ))
+        let ullage = conSite.progressTotal -
+          (conSite.progress + _.sum(targetItems, (t)=> t.toTarget.amount))
+        let itemCount = targetItems.length
+        while(
+          ullage < conSite.progressTotal &&
+          itemCount < this.maxItemsPerTask
+        ) {
+          this.addItem(
+            queue, false, conSite, RESOURCE_ENERGY, this.creepCarryAmount,
+            PRIOS[CONSTRUCTION_SITE]
+          )
+          itemCount += 1
+        }
+      }
     }
-    let containers = this.room.find(
-      FIND_STRUCTURES, {filter: this.filterNonVoidEnergyContainers}
+
+    let controllers = this.room.find(
+      FIND_STRUCTURES, {filter: {structureType: STRUCTURE_CONTROLLER}}
     )
-    if(containers.length > 0) {
-      containers.forEach((container)=> {
-        this.genSourceTasks(container, queue, WORK)
-      })
+    if(controllers) {
+        let controller = controllers[0]
+        let targetItems = _.filter(this.existingItems, (item)=> (
+          item.toTarget.id == controller.id
+        ))
+        let itemCount = targetItems.length
+        while(itemCount < this.maxItemsPerTask) {
+          this.addItem(
+            queue, false, controller, RESOURCE_ENERGY, this.creepCarryAmount,
+            PRIOS[STRUCTURE_CONTROLLER]
+          )
+          itemCount += 1
+        }
     }
+
+    // let storages = this.room.find(
+    //   FIND_STRUCTURES, {filter: this.filterNonVoidEnergyStorage}
+    // )
+    // if(storages.length > 0) {
+    //   let storage = storages[0]
+    //   this.genSourceTasks(storage, queue, WORK)
+    // }
+    // let containers = this.room.find(
+    //   FIND_STRUCTURES, {filter: this.filterNonVoidEnergyContainers}
+    // )
+    // if(containers.length > 0) {
+    //   containers.forEach((container)=> {
+    //     this.genSourceTasks(container, queue, WORK)
+    //   })
+    // }
   }
 
   carry = (queue)=> {
@@ -87,17 +127,6 @@ class Overlord {
         )
       }
     }
-
-    // Find Containers that have still stuff in them and take that stuff
-    // somewhere else if possible
-    let containers = this.room.find(
-      FIND_STRUCTURES, {filter: this.filterNonVoidEnergyContainers}
-    )
-    if(containers.length > 0) {
-      containers.forEach((container)=> {
-        this.genSourceTasks(container, queue, CARRY)
-      })
-    }
   }
 
   genTargetCarryTasksFor = (target, queue, resType, prio)=> {
@@ -113,10 +142,10 @@ class Overlord {
     let ullage = max - (current + existingAddAmount)
 
     while(ullage > 0 && itemLength < this.maxItemsPerTask) {
-      let amount = (this.creepCarryAmount < ullage) ?
+      let targetAmount = (this.creepCarryAmount < ullage) ?
         this.creepCarryAmount : ullage
-      this.addItem(queue, false, target, resType, amount, prio)
-      ullage -= amount
+      this.addItem(queue, false, target, resType, targetAmount, prio)
+      ullage -= targetAmount
       itemLength += 1
     }
   }
@@ -129,8 +158,8 @@ class Overlord {
     let existingAddAmount = targetItems.length * this.creepCarryAmount
 
     while(itemLength < this.maxItemsPerTask) {
-      let amount = this.creepCarryAmount
-      this.addItem(queue, false, controller, resType, amount, PRIO)
+      let targetAmount = this.creepCarryAmount
+      this.addItem(queue, false, controller, resType, targetAmount, PRIO)
       itemLength += 1
     }
   }
@@ -148,7 +177,7 @@ class Overlord {
       item.fromSource && item.fromSource.id == source.id &&
       item.stage != TYPE_TARGET
     ))
-    let existingDrawAmount = _.sum(sourceItems, 'amount')
+    let existingDrawAmount = _.sum(sourceItems, 'fromSource.amount')
     let stillStored = source.store[RESOURCE_ENERGY] - existingDrawAmount
     let itemCount = sourceItems.length
     while(
@@ -175,6 +204,51 @@ class Overlord {
       }
       else {
         break // No suitable target found
+      }
+    }
+  }
+
+  /**
+   * Generates one taskItem for the given source and returns it
+   *
+   * Checks how many items need to be generated to void the source and tries
+   * to find a target for an item.
+   * If a target cant be found for the resource, this task will not be
+   * generated.
+   */
+  genSourceTask = (source, queue, taskType)=> {
+    let sourceItems = _.filter(this.existingItems, (item)=> (
+      item.fromSource && item.fromSource.id == source.id &&
+      item.stage != TYPE_TARGET
+    ))
+    let existingDrawAmount = _.sum(sourceItems, 'fromSource.amount')
+    let stillStored = source.store[RESOURCE_ENERGY] - existingDrawAmount
+    let itemCount = sourceItems.length
+    if(
+      stillStored > this.creepCarryAmount && itemCount < this.maxItemsPerTask
+    ) {
+      let targetData = null
+      if(taskType == CARRY) {
+        targetData = this.findCarryTargetFor(source, RESOURCE_ENERGY)
+      }
+      else if(taskType == WORK) {
+        targetData = this.findWorkTargetFor(source, RESOURCE_ENERGY)
+      }
+      if(targetData && targetData.target) {
+        let {target, prio} = targetData
+        console.log(
+          `Adding target: ${JSON.stringify(target.pos)} at ${Game.time}.`
+        )
+        let res = this.addItem(
+          queue, source, target, RESOURCE_ENERGY, this.creepCarryAmount,
+          prio
+        )
+        stillStored -= this.creepCarryAmount
+        itemCount += 1
+        return res
+      }
+      else {
+        // No suitable target found
       }
     }
   }
@@ -315,16 +389,16 @@ class Overlord {
     object.store[RESOURCE_ENERGY] > 1000
   )
 
-  addItem = (queue, source, target, res, amount, priority)=> {
+  addItem = (queue, source, target, res, targetAmount, priority)=> {
     let data = {
       toTarget: {
         id: target.id,
         x: target.pos.x,
         y: target.pos.y,
         roomName: target.pos.roomName,
+        amount: targetAmount,
       },
       res: res,
-      amount: amount,
       stage: null
     }
     if(source) {
@@ -333,11 +407,16 @@ class Overlord {
         x: source.pos.x,
         y: source.pos.y,
         roomName: source.pos.roomName,
+        amount: this.creepCarryAmount,
       }
     }
     let itemId = hiveMind.push(data)
-    queue.queue({id: itemId, prio: priority})
+    let queueData = {id: itemId, prio: priority}
+    if(queue) {
+      queue.queue(queueData)
+    }
     this.existingItems = hiveMind.allForRoom(this.room)
+    return queueData
   }
 
   cleanupTasks = (queues)=> {
@@ -373,17 +452,98 @@ class Overlord {
           struc.structureType == STRUCTURE_STORAGE
         ) &&
         // The sum of the existing items amount for this structure
+        (console.log('EXISTING ITEMS',
         struc.store[resType] - (
           _.sum(
             _.filter(this.existingItems, (item)=> (
               item.fromSource.id == struc.id
-            )), 'amount'
+            )), 'fromSource.amount'
+          )
+        ) > this.creepCarryAmount) || 1) &&
+        struc.store[resType] - (
+          _.sum(
+            _.filter(this.existingItems, (item)=> (
+              item.fromSource.id == struc.id
+            )), 'fromSource.amount'
           )
         ) > this.creepCarryAmount
       )}
     )
     if(structures.length > 0) {
-      return creep.findClosestByPath(structures)
+      return creep.pos.findClosestByPath(structures)
+    }
+  }
+
+  satisfyBoredCreep = (creep)=> {
+    // Find Containers that have still stuff in them and take that stuff
+    // somewhere else if possible
+    let containers = this.room.find(
+      FIND_STRUCTURES, {filter: this.filterNonVoidEnergyContainers}
+    )
+    if(containers.length > 0) {
+      for(let container of containers) {
+        // null == Dont queue the item, let the creep just do it
+        let res = this.genSourceTask(container, null, creep.memory.kind[0])
+        if(res) {
+          return res
+        }
+      }
+    }
+  }
+
+  logQueuedItems = ()=> {
+    if(!this.room.memory.priorityQueues) {
+      console.log('No prioqueues!'); return
+    }
+    for(let queueName in this.room.memory.priorityQueues) {
+      console.log(
+        `<span style="color: #33aaff">` +
+        `====== Queue: ${queueName}</span>`
+      )
+      let queue = this.room.memory.priorityQueues[queueName]
+
+      for(let queueItem of queue) {
+        let item = Memory['hiveMind'][queueItem.id]
+        let fromStr = ''
+        if(item['fromSource']) {
+          fromStr = ' from <span style="color:#dd6633">' +
+            this.getStructureName(Game.getObjectById(item['fromSource'].id)) +
+            '</span>' +
+            `(<span style="color:#a6a">${item['fromSource'].amount}</span>)`
+        }
+        let toStr = ''
+        if(item['toTarget']) {
+          toStr = ' to <span style="color:#66dd33">' +
+            this.getStructureName(Game.getObjectById(item['toTarget'].id)) +
+            '</span>' +
+            `(<span style="color:#a6a">${item['toTarget'].amount}</span>)`
+        }
+        console.log(
+          `    - Item: ${item.res}${fromStr}${toStr}` +
+          `[${queueItem.prio}]\n` + `        ${JSON.stringify(item)}`
+        )
+      }
+    }
+  }
+
+  getStructureName = (struc)=> {
+    let name = false
+    switch(struc.structureType) {
+      case STRUCTURE_SPAWN: name = 'Spawn'; break
+      case STRUCTURE_EXTENSION: name = 'Extension'; break
+      case STRUCTURE_CONTROLLER: name = 'Controller'; break
+      case STRUCTURE_TOWER: name = 'Tower'; break
+      case STRUCTURE_RAMPART: name = 'Rampart'; break
+      case STRUCTURE_CONTAINER: name = 'Container'; break
+      case STRUCTURE_STORAGE: name = 'Storage'; break
+      case STRUCTURE_WALL: name = 'Tower'; break
+      default: name = '???'; break
+    }
+    if(struc instanceof ConstructionSite) {
+      return `ConstructionSite of ${name}`
+    }
+    else {
+      return name
     }
   }
 }
