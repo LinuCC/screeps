@@ -12,6 +12,7 @@ const roleHarvester = {
       creep.memory.harvesting = true
     }
     if(creep.memory.harvesting) {
+      // CONTAINERS
       let container = this.findNonVoidEnergyContainer(creep.room)
       if(container) {
         if(creep.withdraw(container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
@@ -19,13 +20,19 @@ const roleHarvester = {
         }
       }
       else {
-        let container = this.findNonVoidEnergyContainer(creep.room)
-        if(container) {
-          if(creep.withdraw(container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-            creep.moveTo(container)
+        // DROPPED RESOURCES
+        let droppedViableRes = creep.room.find(
+          FIND_DROPPED_RESOURCES,
+          {filter: (res)=> ( res.resourceType == RESOURCE_ENERGY)}
+        )
+        if(droppedViableRes.length) {
+          let res = creep.pickup(droppedViableRes[0])
+          if(res == ERR_NOT_IN_RANGE) {
+            creep.moveTo(droppedViableRes[0])
           }
         }
         else {
+          // HARVEST
           var sources = creep.room.find(FIND_SOURCES);
           let harvestResult = creep.harvest(sources[1])
           if(harvestResult == ERR_NOT_IN_RANGE) {

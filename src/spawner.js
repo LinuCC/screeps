@@ -6,12 +6,15 @@ class Spawner {
     if(spawn.name == "VV") {
       return Game.spawns[spawn.name].createCreep([WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE], 'Harvester' + this.newCreepIndex(), {role: 'harvester'})
     }
+    else if(spawn.name == "ZZ") {
+      return Game.spawns[spawn.name].createCreep([WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE], 'Harvester' + this.newCreepIndex(), {role: 'harvester'})
+    }
     else {
       return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], 'Harvester' + this.newCreepIndex(), {role: 'harvester'})
     }
   }
   excavator = (spawn, fromSource)=> {
-    return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, MOVE], 'Excavator' + this.newCreepIndex(), {role: 'excavator', fromSource: fromSource})
+    return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, WORK, MOVE], 'Excavator' + this.newCreepIndex(), {role: 'excavator', fromSource: fromSource})
   }
   upgrader = (spawn)=> {
     if(spawn.name == "VV") {
@@ -24,6 +27,9 @@ class Spawner {
   builder = (spawn)=> {
     if(spawn.name == "VV") {
       return Game.spawns[spawn.name].createCreep( [WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE], 'Builder' + this.newCreepIndex(), {role: 'builder'})
+    }
+    else if(spawn.name == "ZZ") {
+      return Game.spawns[spawn.name].createCreep( [WORK, CARRY, MOVE, MOVE], 'Builder' + this.newCreepIndex(), {role: 'builder'})
     }
     else {
       return Game.spawns[spawn.name].createCreep( [WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], 'Builder' + this.newCreepIndex(), {role: 'builder'})
@@ -69,6 +75,23 @@ class Spawner {
     Memory.creepIndex += 1
     return index
   }
+
+  calcCreepBody = (room, workp, carryp, movep, max = 0)=> {
+    let roomMax = room.find(FIND_MY_STRUCTURES, {filter: (struc)=> (
+      // ASDASDASDASD
+      // ASDASDASDASD
+      // ASDASDASDASD
+      // ASDASDASDASD
+      // ASDASDASDASD
+      // ASDASDASDASD
+      // ASDASDASDASD
+      // ASDASDASDASD
+      // ASDASDASDASD
+      // ASDASDASDASD
+      struc.structureType == STRUCTURE_ &&
+    )})
+  }
+
 };
 
 module.exports = Spawner

@@ -15,20 +15,24 @@ import hiveMind from './hiveMind'
 import Overlord from './Overlord'
 import Zergling from './role/Zergling'
 import Spawner from './spawner'
+import Stats from './Stats'
 import 'babel-preset-es2017/polyfill'
+import profiler from 'screeps-profiler'
 
 // Maximum range for a remote mine, assuming 100% effectiveness: 190 squares
 
 // QueueData:
 // data[roomName][id]
 
-module.exports.loop = ()=> {
+profiler.enable()
+
+module.exports.loop = ()=> profiler.wrap(()=> {
 
   hiveMind.init()
   PathFinder.use(true)
 
-  if(Game.time % 750 == 0) {
-    new Spawner().reserver(Game.spawns['VV'])
+  if(Game.time % 5000 == 0) {
+    spawnCreepWatcher.cleanupMemory()
   }
 
   global.Spawner = Spawner
@@ -72,9 +76,11 @@ module.exports.loop = ()=> {
             new PriorityQueue(queue)
           ))
         }
-        let overlord = new Overlord(roomName)
-        if(priorityQueues) {
-          overlord.update(priorityQueues)
+        if(Game.time % 3 == 0) {
+          let overlord = new Overlord(roomName)
+          if(priorityQueues) {
+            overlord.update(priorityQueues)
+          }
         }
         let zerglings = room.find(FIND_MY_CREEPS, {filter: (c)=> (
           c.memory.role == 'zergling'
@@ -136,5 +142,6 @@ module.exports.loop = ()=> {
   }
   finally {
     hiveMind.save()
+    new Stats().persist()
   }
-};
+});

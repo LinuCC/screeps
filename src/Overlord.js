@@ -445,6 +445,24 @@ class Overlord {
 
   findSourceForCreep = (creep, item, resType)=> {
 
+    // Try dropped resources first
+    let droppedViableRes = creep.room.find(
+      FIND_DROPPED_RESOURCES,
+      {filter: (res)=> (
+        res.resourceType == resType &&
+        res.amount > item.toTarget.amount &&
+        res.amount > _.sum(
+          _.filter(this.existingItems, (item)=> (
+            item.fromSource.id == res.id
+          )), 'fromSource.amount'
+        ) + item.toTarget.amount
+      )}
+    )
+    if(droppedViableRes.length) {
+      return creep.pos.findClosestByPath(droppedViableRes)
+    }
+
+    // Try Container or storage
     let structures = this.room.find(
       FIND_STRUCTURES, {filter: (struc)=> (
         (
@@ -452,14 +470,14 @@ class Overlord {
           struc.structureType == STRUCTURE_STORAGE
         ) &&
         // The sum of the existing items amount for this structure
-        (console.log('EXISTING ITEMS',
-        struc.store[resType] - (
-          _.sum(
-            _.filter(this.existingItems, (item)=> (
-              item.fromSource.id == struc.id
-            )), 'fromSource.amount'
-          )
-        ) > this.creepCarryAmount) || 1) &&
+        // (console.log('EXISTING ITEMS',
+        // struc.store[resType] - (
+        //   _.sum(
+        //     _.filter(this.existingItems, (item)=> (
+        //       item.fromSource.id == struc.id
+        //     )), 'fromSource.amount'
+        //   )
+        // ) > this.creepCarryAmount) || 1) &&
         struc.store[resType] - (
           _.sum(
             _.filter(this.existingItems, (item)=> (
@@ -536,7 +554,7 @@ class Overlord {
       case STRUCTURE_RAMPART: name = 'Rampart'; break
       case STRUCTURE_CONTAINER: name = 'Container'; break
       case STRUCTURE_STORAGE: name = 'Storage'; break
-      case STRUCTURE_WALL: name = 'Tower'; break
+      case STRUCTURE_WALL: name = 'Wall'; break
       default: name = '???'; break
     }
     if(struc instanceof ConstructionSite) {
@@ -544,6 +562,20 @@ class Overlord {
     }
     else {
       return name
+    }
+  }
+
+  removeOldHiveMindItems = ()=> {
+    for(let item of hiveMind.data) {
+      //MORE ASDASDASDASDS
+      //MORE ASDASDASDASDS
+      //MORE ASDASDASDASDS
+      //MORE ASDASDASDASDS
+      //MORE ASDASDASDASDS
+      //MORE ASDASDASDASDS
+      //MORE ASDASDASDASDS
+      //
+      // if()
     }
   }
 }

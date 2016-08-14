@@ -115,7 +115,15 @@ module.exports =
 
 	var _spawner2 = _interopRequireDefault(_spawner);
 
-	__webpack_require__(20);
+	var _Stats = __webpack_require__(20);
+
+	var _Stats2 = _interopRequireDefault(_Stats);
+
+	__webpack_require__(21);
+
+	var _screepsProfiler = __webpack_require__(72);
+
+	var _screepsProfiler2 = _interopRequireDefault(_screepsProfiler);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -124,13 +132,15 @@ module.exports =
 	// QueueData:
 	// data[roomName][id]
 
-	module.exports.loop = () => {
+	_screepsProfiler2.default.enable();
+
+	module.exports.loop = () => _screepsProfiler2.default.wrap(() => {
 
 	  _hiveMind2.default.init();
 	  PathFinder.use(true);
 
-	  if (Game.time % 750 == 0) {
-	    new _spawner2.default().fighter(Game.spawns['VV']);
+	  if (Game.time % 5000 == 0) {
+	    _creepWatcher2.default.cleanupMemory();
 	  }
 
 	  global.Spawner = _spawner2.default;
@@ -171,9 +181,11 @@ module.exports =
 	        if (room.memory.priorityQueues && Object.keys(room.memory.priorityQueues).length > 0) {
 	          priorityQueues = _.mapValues(room.memory.priorityQueues, queue => new _priorityQueue2.default(queue));
 	        }
-	        let overlord = new _Overlord2.default(roomName);
-	        if (priorityQueues) {
-	          overlord.update(priorityQueues);
+	        if (Game.time % 3 == 0) {
+	          let overlord = new _Overlord2.default(roomName);
+	          if (priorityQueues) {
+	            overlord.update(priorityQueues);
+	          }
 	        }
 	        let zerglings = room.find(FIND_MY_CREEPS, { filter: c => c.memory.role == 'zergling' });
 	        if (zerglings.length > 0) {
@@ -217,8 +229,9 @@ module.exports =
 	    console.log(`${ e.name }: ${ e.message } - ${ e.stack }`);
 	  } finally {
 	    _hiveMind2.default.save();
+	    new _Stats2.default().persist();
 	  }
-	};
+	});
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
@@ -331,18 +344,22 @@ module.exports =
 	      creep.memory.harvesting = true;
 	    }
 	    if (creep.memory.harvesting) {
+	      // CONTAINERS
 	      let container = this.findNonVoidEnergyContainer(creep.room);
 	      if (container) {
 	        if (creep.withdraw(container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
 	          creep.moveTo(container);
 	        }
 	      } else {
-	        let container = this.findNonVoidEnergyContainer(creep.room);
-	        if (container) {
-	          if (creep.withdraw(container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-	            creep.moveTo(container);
+	        // DROPPED RESOURCES
+	        let droppedViableRes = creep.room.find(FIND_DROPPED_RESOURCES, { filter: res => res.resourceType == RESOURCE_ENERGY });
+	        if (droppedViableRes.length) {
+	          let res = creep.pickup(droppedViableRes[0]);
+	          if (res == ERR_NOT_IN_RANGE) {
+	            creep.moveTo(droppedViableRes[0]);
 	          }
 	        } else {
+	          // HARVEST
 	          var sources = creep.room.find(FIND_SOURCES);
 	          let harvestResult = creep.harvest(sources[1]);
 	          if (harvestResult == ERR_NOT_IN_RANGE) {
@@ -533,75 +550,106 @@ module.exports =
 
 	const roleBuilder = {
 
-					/** @param {Creep} creep **/
-					run: function (creep) {
+	  /** @param {Creep} creep **/
+	  run: function (creep) {
 
-									if (creep.memory.building && creep.carry.energy == 0) {
-													creep.memory.building = false;
-									}
-									if (!creep.memory.building && creep.carry.energy == creep.carryCapacity) {
-													creep.memory.building = true;
-									}
+	    if (creep.memory.building && creep.carry.energy == 0) {
+	      creep.memory.building = false;
+	    }
+	    if (!creep.memory.building && creep.carry.energy == creep.carryCapacity) {
+	      creep.memory.building = true;
+	    }
 
-									if (creep.memory.building) {
-													var targets = creep.room.find(FIND_CONSTRUCTION_SITES);
-													if (targets.length) {
-																	if (creep.build(targets[0]) == ERR_NOT_IN_RANGE) {
-																					creep.moveTo(targets[0]);
-																	}
-													} else {
-																	let target = this.getRepairTarget(creep);
-																	if (target) {
-																					if (creep.repair(target) == ERR_NOT_IN_RANGE) {
-																									creep.moveTo(target);
-																					}
-																	}
-													}
-									} else {
-													//if(structure = role.getToDismantleStructure(creep)) {
-													//    if(creep.dismantle(structure) == ERR_NOT_IN_RANGE) {
-													//        creep.moveTo(structure)
-													//    }
-													//}
-													//else {
-													var sources = creep.room.find(FIND_SOURCES);
-													if (creep.harvest(sources[1]) == ERR_NOT_IN_RANGE) {
-																	creep.moveTo(sources[1]);
-													}
-													//}
-									}
-					},
+	    if (creep.memory.building) {
+	      var targets = creep.room.find(FIND_CONSTRUCTION_SITES);
+	      if (targets.length) {
+	        if (creep.build(targets[0]) == ERR_NOT_IN_RANGE) {
+	          creep.moveTo(targets[0]);
+	        }
+	      } else {
+	        let target = this.getRepairTarget(creep);
+	        if (target) {
+	          if (creep.repair(target) == ERR_NOT_IN_RANGE) {
+	            creep.moveTo(target);
+	          }
+	        }
+	      }
+	    } else {
+	      //if(structure = role.getToDismantleStructure(creep)) {
+	      //    if(creep.dismantle(structure) == ERR_NOT_IN_RANGE) {
+	      //        creep.moveTo(structure)
+	      //    }
+	      //}
+	      //else {
 
-					getRepairTarget: function (creep) {
-									if (creep.memory.repairTarget) {
-													// Target has full health, dont try to continue repairing it
-													let structure = Game.getObjectById(creep.memory.repairTarget);
-													if (structure.hits >= structure.hitsMax) {
-																	creep.memory.repairTarget = false;
-																	return null;
-													} else {
-																	return structure;
-													}
-									} else {
-													// Search for a target to repair and try to repair it
-													let targets = creep.room.find(FIND_MY_STRUCTURES, {
-																	filter: object => object.hits < object.hitsMax * 0.8
-													});
-													if (targets && targets.length) {
 
-																	targets = targets.sort((a, b) => a.hits - b.hits);
-																	if (Array.isArray(targets)) {
+	      // CONTAINERS
+	      let container = this.findNonVoidEnergyContainer(creep.room);
+	      if (container) {
+	        if (creep.withdraw(container, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+	          creep.moveTo(container);
+	        }
+	      } else {
+	        // DROPPED RESOURCES
+	        let droppedViableRes = creep.room.find(FIND_DROPPED_RESOURCES, { filter: res => res.resourceType == RESOURCE_ENERGY });
+	        if (droppedViableRes.length) {
+	          let res = creep.pickup(droppedViableRes[0]);
+	          if (res == ERR_NOT_IN_RANGE) {
+	            creep.moveTo(droppedViableRes[0]);
+	          }
+	        } else {
+	          // HARVEST
+	          var sources = creep.room.find(FIND_SOURCES);
+	          let harvestResult = creep.harvest(sources[1]);
+	          if (harvestResult == ERR_NOT_IN_RANGE) {
+	            creep.moveTo(sources[1]);
+	          }
+	        }
+	      }
+	      //}
+	    }
+	  },
 
-																					creep.memory.repairTarget = targets[0].id;
-																					return targets[0];
-																	} else {
-																					return null;
-																	}
-													} else {
-																	return null;
-													}
-									}
-					}
+	  getRepairTarget: function (creep) {
+	    if (creep.memory.repairTarget) {
+	      // Target has full health, dont try to continue repairing it
+	      let structure = Game.getObjectById(creep.memory.repairTarget);
+	      if (structure.hits >= structure.hitsMax) {
+	        creep.memory.repairTarget = false;
+	        return null;
+	      } else {
+	        return structure;
+	      }
+	    } else {
+	      // Search for a target to repair and try to repair it
+	      let targets = creep.room.find(FIND_MY_STRUCTURES, {
+	        filter: object => object.hits < object.hitsMax * 0.8
+	      });
+	      if (targets && targets.length) {
+
+	        targets = targets.sort((a, b) => a.hits - b.hits);
+	        if (Array.isArray(targets)) {
+
+	          creep.memory.repairTarget = targets[0].id;
+	          return targets[0];
+	        } else {
+	          return null;
+	        }
+	      } else {
+	        return null;
+	      }
+	    }
+	  },
+
+	  findNonVoidEnergyContainer: room => {
+	    let containers = room.find(FIND_STRUCTURES, { filter: struc => struc.structureType == STRUCTURE_CONTAINER && struc.store[RESOURCE_ENERGY] > 200 });
+	    if (containers.length) {
+	      return containers[0];
+	    } else {
+	      return null;
+	    }
+	  }
+
 	};
 
 	module.exports = roleBuilder;
@@ -676,8 +724,9 @@ module.exports =
 	        // to the closest one. Just dont call it to often.
 	        let path = creep.pos.findPathTo(source);
 	        if (path && path.length) {
-	          let pos = path.slice(-1)[0];
-	          return new RoomPosition(pos.x, pos.y, source.room);
+	          // If we only are one tile away we are directly at the source
+	          let pos = path.length > 1 ? path.slice(-2, -1)[0] : creep.pos;
+	          return new RoomPosition(pos.x, pos.y, source.room.name);
 	        } else {
 	          return null;
 	        }
@@ -938,13 +987,15 @@ module.exports =
 	    this.harvester = spawn => {
 	      if (spawn.name == "VV") {
 	        return Game.spawns[spawn.name].createCreep([WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE], 'Harvester' + this.newCreepIndex(), { role: 'harvester' });
+	      } else if (spawn.name == "ZZ") {
+	        return Game.spawns[spawn.name].createCreep([WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE], 'Harvester' + this.newCreepIndex(), { role: 'harvester' });
 	      } else {
 	        return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], 'Harvester' + this.newCreepIndex(), { role: 'harvester' });
 	      }
 	    };
 
 	    this.excavator = (spawn, fromSource) => {
-	      return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, MOVE], 'Excavator' + this.newCreepIndex(), { role: 'excavator', fromSource: fromSource });
+	      return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, WORK, MOVE], 'Excavator' + this.newCreepIndex(), { role: 'excavator', fromSource: fromSource });
 	    };
 
 	    this.upgrader = spawn => {
@@ -958,6 +1009,8 @@ module.exports =
 	    this.builder = spawn => {
 	      if (spawn.name == "VV") {
 	        return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE], 'Builder' + this.newCreepIndex(), { role: 'builder' });
+	      } else if (spawn.name == "ZZ") {
+	        return Game.spawns[spawn.name].createCreep([WORK, CARRY, MOVE, MOVE], 'Builder' + this.newCreepIndex(), { role: 'builder' });
 	      } else {
 	        return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], 'Builder' + this.newCreepIndex(), { role: 'builder' });
 	      }
@@ -981,6 +1034,10 @@ module.exports =
 
 	    this.assimilator = spawn => {
 	      return Game.spawns[spawn.name].createCreep([CLAIM, CLAIM, CLAIM, MOVE, MOVE, MOVE], 'Assi' + this.newCreepIndex(), { role: 'assimilator' });
+	    };
+
+	    this.reserver = spawn => {
+	      return Game.spawns[spawn.name].createCreep([CLAIM, MOVE], 'Assi' + this.newCreepIndex(), { role: 'assimilator' });
 	    };
 
 	    this.transporter = (spawn, _ref) => {
@@ -1008,6 +1065,10 @@ module.exports =
 	      let index = Memory.creepIndex;
 	      Memory.creepIndex += 1;
 	      return index;
+	    };
+
+	    this.calcCreepBody = function (workp, carryp, movep) {
+	      let max = arguments.length <= 3 || arguments[3] === undefined ? 0 : arguments[3];
 	    };
 	  }
 
@@ -1668,9 +1729,24 @@ module.exports =
 
 	    this.findSourceForCreep = (creep, item, resType) => {
 
-	      let structures = this.room.find(FIND_STRUCTURES, { filter: struc => (struc.structureType == STRUCTURE_CONTAINER || struc.structureType == STRUCTURE_STORAGE) && (
+	      // Try dropped resources first
+	      let droppedViableRes = creep.room.find(FIND_DROPPED_RESOURCES, { filter: res => res.resourceType == resType && res.amount > item.toTarget.amount && res.amount > _.sum(_.filter(this.existingItems, item => item.fromSource.id == res.id), 'fromSource.amount') + item.toTarget.amount });
+	      if (droppedViableRes.length) {
+	        return creep.pos.findClosestByPath(droppedViableRes);
+	      }
+
+	      // Try Container or storage
+	      let structures = this.room.find(FIND_STRUCTURES, { filter: struc => (struc.structureType == STRUCTURE_CONTAINER || struc.structureType == STRUCTURE_STORAGE) &&
 	        // The sum of the existing items amount for this structure
-	        console.log('EXISTING ITEMS', struc.store[resType] - _.sum(_.filter(this.existingItems, item => item.fromSource.id == struc.id), 'fromSource.amount') > this.creepCarryAmount) || 1) && struc.store[resType] - _.sum(_.filter(this.existingItems, item => item.fromSource.id == struc.id), 'fromSource.amount') > this.creepCarryAmount });
+	        // (console.log('EXISTING ITEMS',
+	        // struc.store[resType] - (
+	        //   _.sum(
+	        //     _.filter(this.existingItems, (item)=> (
+	        //       item.fromSource.id == struc.id
+	        //     )), 'fromSource.amount'
+	        //   )
+	        // ) > this.creepCarryAmount) || 1) &&
+	        struc.store[resType] - _.sum(_.filter(this.existingItems, item => item.fromSource.id == struc.id), 'fromSource.amount') > this.creepCarryAmount });
 	      if (structures.length > 0) {
 	        return creep.pos.findClosestByPath(structures);
 	      }
@@ -1732,7 +1808,7 @@ module.exports =
 	        case STRUCTURE_STORAGE:
 	          name = 'Storage';break;
 	        case STRUCTURE_WALL:
-	          name = 'Tower';break;
+	          name = 'Wall';break;
 	        default:
 	          name = '???';break;
 	      }
@@ -1740,6 +1816,20 @@ module.exports =
 	        return `ConstructionSite of ${ name }`;
 	      } else {
 	        return name;
+	      }
+	    };
+
+	    this.removeOldHiveMindItems = () => {
+	      for (let item of _hiveMind2.default.data) {
+	        //MORE ASDASDASDASDS
+	        //MORE ASDASDASDASDS
+	        //MORE ASDASDASDASDS
+	        //MORE ASDASDASDASDS
+	        //MORE ASDASDASDASDS
+	        //MORE ASDASDASDASDS
+	        //MORE ASDASDASDASDS
+	        //
+	        // if()
 	      }
 	    };
 
@@ -1801,6 +1891,8 @@ module.exports =
 	const TYPE_SOURCE = 0;
 	const TYPE_TARGET = 1;
 
+	const MY_ERR_WTF = -1001;
+
 	/**
 	 * Transports, repairs.
 	 *
@@ -1851,7 +1943,7 @@ module.exports =
 	        // }
 	        this.work();
 	      }
-	      if (!this.hasWorked) {
+	      if (!this.hasWorked && this.zergling.memory.kind[0] == WORK) {
 	        this.repairSurroundings();
 	      }
 	    };
@@ -1939,9 +2031,12 @@ module.exports =
 	        case TYPE_TARGET:
 	          memObject = _hiveMind2.default.data[this.zergling.memory.item.id].toTarget;break;
 	      }
+	      if (!memObject) {
+	        this.done(MY_ERR_WTF);return;
+	      }
 	      let object = Game.getObjectById(memObject.id);
 	      if (!object) {
-	        this.done();return;
+	        this.done(MY_ERR_WTF);return;
 	      }
 	      let range = this.calcActionRange(type, object);
 	      if (object) {
@@ -1971,7 +2066,9 @@ module.exports =
 	        amount = this.zergling.carryCapacity;
 	      }
 	      let res;
-	      if (source.energy || source.mineralAmount) {
+	      if (source instanceof Resource) {
+	        res = this.zergling.pickup(source);
+	      } else if (source.energy || source.mineralAmount) {
 	        res = this.zergling.harvest(source);
 	        this.hasWorked = true;
 	        if (_.sum(this.zergling.carry) == this.zergling.carryCapacity) {
@@ -2077,12 +2174,16 @@ module.exports =
 	          this.zergling.say('✖❄', true);break;
 	        case ERR_NO_BODYPART:
 	          this.zergling.say('✖☗?', true);break;
+	        case MY_ERR_WTF:
+	          console.log('<span type="color: red">Got a WTF!</span>', `<span type="color: #aadd33">Id</span>: "${ this.creep.id }"`, `<span type="color: #33aadd">Pos</span>: ` + `"JSON.stringify(${ this.creep.pos })"`, `<span type="color: #ddaa33">Mem</span>: "` + `${ JSON.stringify(this.creep.memory) }"`);
+	          this.zergling.say('WTF?', true);
+	          break;
 	        // case ERR_NOT_ENOUGH_EXTENSIONS: this.zergling.say('', true); break
 	      }
 	    };
 
 	    this.repairSurroundings = () => {
-	      let structures = this.zergling.pos.findInRange(FIND_STRUCTURES, 3, { filter: obj => obj.hits < obj.hitsMax });
+	      let structures = this.zergling.pos.findInRange(FIND_STRUCTURES, 3, { filter: obj => obj.hits < obj.hitsMax && obj.structureType != obj.STRUCTURE_WALL });
 	      if (structures.length) {
 	        let target = _.sortByOrder(structures, 'hits', 'asc')[0];
 	        this.zergling.repair(target);
@@ -2116,30 +2217,57 @@ module.exports =
 
 /***/ },
 /* 20 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ function(module, exports) {
 
-	// ES2017 w/ Node 5
-	__webpack_require__(21);
-	__webpack_require__(56);
-	__webpack_require__(58);
-	__webpack_require__(65);
-	__webpack_require__(69);
+	"use strict";
 
+	class Stats {
+	  constructor() {
+	    this.persist = () => {
+	      Memory.stats = {};
+	      Memory.stats[`hiveMind.count`] = Object.keys(Memory.hiveMind).length;
+	      Memory.stats[`hiveMind.index`] = Memory.hiveMindIndex;
+	      for (let roomName in Game.rooms) {
+	        let room = Game.rooms[roomName];
+	        for (let queueName in room.memory.priorityQueues) {
+	          let length = room.memory.priorityQueues[queueName].length;
+	          Memory.stats[`room.${ roomName }.hiveMind.priorityQueues.${ queueName }`] = length;
+	          Memory.stats[`room.${ roomName }.zergs.${ queueName }`] = _.filter(room.find(FIND_MY_CREEPS, { filter: c => c.memory.kind && c.memory.kind[0] == queueName })).length;
+	        }
+	      }
+	    };
+	  }
+
+	}
+
+	module.exports = Stats;
 
 /***/ },
 /* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
+	// ES2017 w/ Node 5
 	__webpack_require__(22);
-	module.exports = __webpack_require__(25).Object.entries;
+	__webpack_require__(57);
+	__webpack_require__(59);
+	__webpack_require__(66);
+	__webpack_require__(70);
+
 
 /***/ },
 /* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
+	__webpack_require__(23);
+	module.exports = __webpack_require__(26).Object.entries;
+
+/***/ },
+/* 23 */
+/***/ function(module, exports, __webpack_require__) {
+
 	// https://github.com/tc39/proposal-object-values-entries
-	var $export  = __webpack_require__(23)
-	  , $entries = __webpack_require__(41)(true);
+	var $export  = __webpack_require__(24)
+	  , $entries = __webpack_require__(42)(true);
 
 	$export($export.S, 'Object', {
 	  entries: function entries(it){
@@ -2148,14 +2276,14 @@ module.exports =
 	});
 
 /***/ },
-/* 23 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var global    = __webpack_require__(24)
-	  , core      = __webpack_require__(25)
-	  , hide      = __webpack_require__(26)
-	  , redefine  = __webpack_require__(36)
-	  , ctx       = __webpack_require__(39)
+	var global    = __webpack_require__(25)
+	  , core      = __webpack_require__(26)
+	  , hide      = __webpack_require__(27)
+	  , redefine  = __webpack_require__(37)
+	  , ctx       = __webpack_require__(40)
 	  , PROTOTYPE = 'prototype';
 
 	var $export = function(type, name, source){
@@ -2196,7 +2324,7 @@ module.exports =
 	module.exports = $export;
 
 /***/ },
-/* 24 */
+/* 25 */
 /***/ function(module, exports) {
 
 	// https://github.com/zloirock/core-js/issues/86#issuecomment-115759028
@@ -2205,19 +2333,19 @@ module.exports =
 	if(typeof __g == 'number')__g = global; // eslint-disable-line no-undef
 
 /***/ },
-/* 25 */
+/* 26 */
 /***/ function(module, exports) {
 
 	var core = module.exports = {version: '2.4.0'};
 	if(typeof __e == 'number')__e = core; // eslint-disable-line no-undef
 
 /***/ },
-/* 26 */
+/* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var dP         = __webpack_require__(27)
-	  , createDesc = __webpack_require__(35);
-	module.exports = __webpack_require__(31) ? function(object, key, value){
+	var dP         = __webpack_require__(28)
+	  , createDesc = __webpack_require__(36);
+	module.exports = __webpack_require__(32) ? function(object, key, value){
 	  return dP.f(object, key, createDesc(1, value));
 	} : function(object, key, value){
 	  object[key] = value;
@@ -2225,15 +2353,15 @@ module.exports =
 	};
 
 /***/ },
-/* 27 */
+/* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var anObject       = __webpack_require__(28)
-	  , IE8_DOM_DEFINE = __webpack_require__(30)
-	  , toPrimitive    = __webpack_require__(34)
+	var anObject       = __webpack_require__(29)
+	  , IE8_DOM_DEFINE = __webpack_require__(31)
+	  , toPrimitive    = __webpack_require__(35)
 	  , dP             = Object.defineProperty;
 
-	exports.f = __webpack_require__(31) ? Object.defineProperty : function defineProperty(O, P, Attributes){
+	exports.f = __webpack_require__(32) ? Object.defineProperty : function defineProperty(O, P, Attributes){
 	  anObject(O);
 	  P = toPrimitive(P, true);
 	  anObject(Attributes);
@@ -2246,17 +2374,17 @@ module.exports =
 	};
 
 /***/ },
-/* 28 */
+/* 29 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var isObject = __webpack_require__(29);
+	var isObject = __webpack_require__(30);
 	module.exports = function(it){
 	  if(!isObject(it))throw TypeError(it + ' is not an object!');
 	  return it;
 	};
 
 /***/ },
-/* 29 */
+/* 30 */
 /***/ function(module, exports) {
 
 	module.exports = function(it){
@@ -2264,24 +2392,24 @@ module.exports =
 	};
 
 /***/ },
-/* 30 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = !__webpack_require__(31) && !__webpack_require__(32)(function(){
-	  return Object.defineProperty(__webpack_require__(33)('div'), 'a', {get: function(){ return 7; }}).a != 7;
-	});
-
-/***/ },
 /* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
-	// Thank's IE8 for his funny defineProperty
-	module.exports = !__webpack_require__(32)(function(){
-	  return Object.defineProperty({}, 'a', {get: function(){ return 7; }}).a != 7;
+	module.exports = !__webpack_require__(32) && !__webpack_require__(33)(function(){
+	  return Object.defineProperty(__webpack_require__(34)('div'), 'a', {get: function(){ return 7; }}).a != 7;
 	});
 
 /***/ },
 /* 32 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// Thank's IE8 for his funny defineProperty
+	module.exports = !__webpack_require__(33)(function(){
+	  return Object.defineProperty({}, 'a', {get: function(){ return 7; }}).a != 7;
+	});
+
+/***/ },
+/* 33 */
 /***/ function(module, exports) {
 
 	module.exports = function(exec){
@@ -2293,11 +2421,11 @@ module.exports =
 	};
 
 /***/ },
-/* 33 */
+/* 34 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var isObject = __webpack_require__(29)
-	  , document = __webpack_require__(24).document
+	var isObject = __webpack_require__(30)
+	  , document = __webpack_require__(25).document
 	  // in old IE typeof document.createElement is 'object'
 	  , is = isObject(document) && isObject(document.createElement);
 	module.exports = function(it){
@@ -2305,11 +2433,11 @@ module.exports =
 	};
 
 /***/ },
-/* 34 */
+/* 35 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// 7.1.1 ToPrimitive(input [, PreferredType])
-	var isObject = __webpack_require__(29);
+	var isObject = __webpack_require__(30);
 	// instead of the ES6 spec version, we didn't implement @@toPrimitive case
 	// and the second argument - flag - preferred type is a string
 	module.exports = function(it, S){
@@ -2322,7 +2450,7 @@ module.exports =
 	};
 
 /***/ },
-/* 35 */
+/* 36 */
 /***/ function(module, exports) {
 
 	module.exports = function(bitmap, value){
@@ -2335,18 +2463,18 @@ module.exports =
 	};
 
 /***/ },
-/* 36 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var global    = __webpack_require__(24)
-	  , hide      = __webpack_require__(26)
-	  , has       = __webpack_require__(37)
-	  , SRC       = __webpack_require__(38)('src')
+	var global    = __webpack_require__(25)
+	  , hide      = __webpack_require__(27)
+	  , has       = __webpack_require__(38)
+	  , SRC       = __webpack_require__(39)('src')
 	  , TO_STRING = 'toString'
 	  , $toString = Function[TO_STRING]
 	  , TPL       = ('' + $toString).split(TO_STRING);
 
-	__webpack_require__(25).inspectSource = function(it){
+	__webpack_require__(26).inspectSource = function(it){
 	  return $toString.call(it);
 	};
 
@@ -2372,7 +2500,7 @@ module.exports =
 	});
 
 /***/ },
-/* 37 */
+/* 38 */
 /***/ function(module, exports) {
 
 	var hasOwnProperty = {}.hasOwnProperty;
@@ -2381,7 +2509,7 @@ module.exports =
 	};
 
 /***/ },
-/* 38 */
+/* 39 */
 /***/ function(module, exports) {
 
 	var id = 0
@@ -2391,11 +2519,11 @@ module.exports =
 	};
 
 /***/ },
-/* 39 */
+/* 40 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// optional / simple context binding
-	var aFunction = __webpack_require__(40);
+	var aFunction = __webpack_require__(41);
 	module.exports = function(fn, that, length){
 	  aFunction(fn);
 	  if(that === undefined)return fn;
@@ -2416,7 +2544,7 @@ module.exports =
 	};
 
 /***/ },
-/* 40 */
+/* 41 */
 /***/ function(module, exports) {
 
 	module.exports = function(it){
@@ -2425,12 +2553,12 @@ module.exports =
 	};
 
 /***/ },
-/* 41 */
+/* 42 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var getKeys   = __webpack_require__(42)
-	  , toIObject = __webpack_require__(44)
-	  , isEnum    = __webpack_require__(55).f;
+	var getKeys   = __webpack_require__(43)
+	  , toIObject = __webpack_require__(45)
+	  , isEnum    = __webpack_require__(56).f;
 	module.exports = function(isEntries){
 	  return function(it){
 	    var O      = toIObject(it)
@@ -2446,25 +2574,25 @@ module.exports =
 	};
 
 /***/ },
-/* 42 */
+/* 43 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// 19.1.2.14 / 15.2.3.14 Object.keys(O)
-	var $keys       = __webpack_require__(43)
-	  , enumBugKeys = __webpack_require__(54);
+	var $keys       = __webpack_require__(44)
+	  , enumBugKeys = __webpack_require__(55);
 
 	module.exports = Object.keys || function keys(O){
 	  return $keys(O, enumBugKeys);
 	};
 
 /***/ },
-/* 43 */
+/* 44 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var has          = __webpack_require__(37)
-	  , toIObject    = __webpack_require__(44)
-	  , arrayIndexOf = __webpack_require__(48)(false)
-	  , IE_PROTO     = __webpack_require__(52)('IE_PROTO');
+	var has          = __webpack_require__(38)
+	  , toIObject    = __webpack_require__(45)
+	  , arrayIndexOf = __webpack_require__(49)(false)
+	  , IE_PROTO     = __webpack_require__(53)('IE_PROTO');
 
 	module.exports = function(object, names){
 	  var O      = toIObject(object)
@@ -2480,28 +2608,28 @@ module.exports =
 	};
 
 /***/ },
-/* 44 */
+/* 45 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// to indexed object, toObject with fallback for non-array-like ES3 strings
-	var IObject = __webpack_require__(45)
-	  , defined = __webpack_require__(47);
+	var IObject = __webpack_require__(46)
+	  , defined = __webpack_require__(48);
 	module.exports = function(it){
 	  return IObject(defined(it));
 	};
 
 /***/ },
-/* 45 */
+/* 46 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// fallback for non-array-like ES3 and non-enumerable old V8 strings
-	var cof = __webpack_require__(46);
+	var cof = __webpack_require__(47);
 	module.exports = Object('z').propertyIsEnumerable(0) ? Object : function(it){
 	  return cof(it) == 'String' ? it.split('') : Object(it);
 	};
 
 /***/ },
-/* 46 */
+/* 47 */
 /***/ function(module, exports) {
 
 	var toString = {}.toString;
@@ -2511,7 +2639,7 @@ module.exports =
 	};
 
 /***/ },
-/* 47 */
+/* 48 */
 /***/ function(module, exports) {
 
 	// 7.2.1 RequireObjectCoercible(argument)
@@ -2521,14 +2649,14 @@ module.exports =
 	};
 
 /***/ },
-/* 48 */
+/* 49 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// false -> Array#indexOf
 	// true  -> Array#includes
-	var toIObject = __webpack_require__(44)
-	  , toLength  = __webpack_require__(49)
-	  , toIndex   = __webpack_require__(51);
+	var toIObject = __webpack_require__(45)
+	  , toLength  = __webpack_require__(50)
+	  , toIndex   = __webpack_require__(52);
 	module.exports = function(IS_INCLUDES){
 	  return function($this, el, fromIndex){
 	    var O      = toIObject($this)
@@ -2547,18 +2675,18 @@ module.exports =
 	};
 
 /***/ },
-/* 49 */
+/* 50 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// 7.1.15 ToLength
-	var toInteger = __webpack_require__(50)
+	var toInteger = __webpack_require__(51)
 	  , min       = Math.min;
 	module.exports = function(it){
 	  return it > 0 ? min(toInteger(it), 0x1fffffffffffff) : 0; // pow(2, 53) - 1 == 9007199254740991
 	};
 
 /***/ },
-/* 50 */
+/* 51 */
 /***/ function(module, exports) {
 
 	// 7.1.4 ToInteger
@@ -2569,10 +2697,10 @@ module.exports =
 	};
 
 /***/ },
-/* 51 */
+/* 52 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var toInteger = __webpack_require__(50)
+	var toInteger = __webpack_require__(51)
 	  , max       = Math.max
 	  , min       = Math.min;
 	module.exports = function(index, length){
@@ -2581,20 +2709,20 @@ module.exports =
 	};
 
 /***/ },
-/* 52 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var shared = __webpack_require__(53)('keys')
-	  , uid    = __webpack_require__(38);
+	var shared = __webpack_require__(54)('keys')
+	  , uid    = __webpack_require__(39);
 	module.exports = function(key){
 	  return shared[key] || (shared[key] = uid(key));
 	};
 
 /***/ },
-/* 53 */
+/* 54 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var global = __webpack_require__(24)
+	var global = __webpack_require__(25)
 	  , SHARED = '__core-js_shared__'
 	  , store  = global[SHARED] || (global[SHARED] = {});
 	module.exports = function(key){
@@ -2602,7 +2730,7 @@ module.exports =
 	};
 
 /***/ },
-/* 54 */
+/* 55 */
 /***/ function(module, exports) {
 
 	// IE 8- don't enum bug keys
@@ -2611,25 +2739,25 @@ module.exports =
 	).split(',');
 
 /***/ },
-/* 55 */
+/* 56 */
 /***/ function(module, exports) {
 
 	exports.f = {}.propertyIsEnumerable;
 
 /***/ },
-/* 56 */
-/***/ function(module, exports, __webpack_require__) {
-
-	__webpack_require__(57);
-	module.exports = __webpack_require__(25).Object.values;
-
-/***/ },
 /* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
+	__webpack_require__(58);
+	module.exports = __webpack_require__(26).Object.values;
+
+/***/ },
+/* 58 */
+/***/ function(module, exports, __webpack_require__) {
+
 	// https://github.com/tc39/proposal-object-values-entries
-	var $export = __webpack_require__(23)
-	  , $values = __webpack_require__(41)(false);
+	var $export = __webpack_require__(24)
+	  , $values = __webpack_require__(42)(false);
 
 	$export($export.S, 'Object', {
 	  values: function values(it){
@@ -2638,22 +2766,22 @@ module.exports =
 	});
 
 /***/ },
-/* 58 */
-/***/ function(module, exports, __webpack_require__) {
-
-	__webpack_require__(59);
-	module.exports = __webpack_require__(25).Object.getOwnPropertyDescriptors;
-
-/***/ },
 /* 59 */
 /***/ function(module, exports, __webpack_require__) {
 
+	__webpack_require__(60);
+	module.exports = __webpack_require__(26).Object.getOwnPropertyDescriptors;
+
+/***/ },
+/* 60 */
+/***/ function(module, exports, __webpack_require__) {
+
 	// https://github.com/tc39/proposal-object-getownpropertydescriptors
-	var $export        = __webpack_require__(23)
-	  , ownKeys        = __webpack_require__(60)
-	  , toIObject      = __webpack_require__(44)
-	  , gOPD           = __webpack_require__(63)
-	  , createProperty = __webpack_require__(64);
+	var $export        = __webpack_require__(24)
+	  , ownKeys        = __webpack_require__(61)
+	  , toIObject      = __webpack_require__(45)
+	  , gOPD           = __webpack_require__(64)
+	  , createProperty = __webpack_require__(65);
 
 	$export($export.S, 'Object', {
 	  getOwnPropertyDescriptors: function getOwnPropertyDescriptors(object){
@@ -2669,14 +2797,14 @@ module.exports =
 	});
 
 /***/ },
-/* 60 */
+/* 61 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// all object keys, includes non-enumerable and symbols
-	var gOPN     = __webpack_require__(61)
-	  , gOPS     = __webpack_require__(62)
-	  , anObject = __webpack_require__(28)
-	  , Reflect  = __webpack_require__(24).Reflect;
+	var gOPN     = __webpack_require__(62)
+	  , gOPS     = __webpack_require__(63)
+	  , anObject = __webpack_require__(29)
+	  , Reflect  = __webpack_require__(25).Reflect;
 	module.exports = Reflect && Reflect.ownKeys || function ownKeys(it){
 	  var keys       = gOPN.f(anObject(it))
 	    , getSymbols = gOPS.f;
@@ -2684,36 +2812,36 @@ module.exports =
 	};
 
 /***/ },
-/* 61 */
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// 19.1.2.7 / 15.2.3.4 Object.getOwnPropertyNames(O)
-	var $keys      = __webpack_require__(43)
-	  , hiddenKeys = __webpack_require__(54).concat('length', 'prototype');
+	var $keys      = __webpack_require__(44)
+	  , hiddenKeys = __webpack_require__(55).concat('length', 'prototype');
 
 	exports.f = Object.getOwnPropertyNames || function getOwnPropertyNames(O){
 	  return $keys(O, hiddenKeys);
 	};
 
 /***/ },
-/* 62 */
+/* 63 */
 /***/ function(module, exports) {
 
 	exports.f = Object.getOwnPropertySymbols;
 
 /***/ },
-/* 63 */
+/* 64 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var pIE            = __webpack_require__(55)
-	  , createDesc     = __webpack_require__(35)
-	  , toIObject      = __webpack_require__(44)
-	  , toPrimitive    = __webpack_require__(34)
-	  , has            = __webpack_require__(37)
-	  , IE8_DOM_DEFINE = __webpack_require__(30)
+	var pIE            = __webpack_require__(56)
+	  , createDesc     = __webpack_require__(36)
+	  , toIObject      = __webpack_require__(45)
+	  , toPrimitive    = __webpack_require__(35)
+	  , has            = __webpack_require__(38)
+	  , IE8_DOM_DEFINE = __webpack_require__(31)
 	  , gOPD           = Object.getOwnPropertyDescriptor;
 
-	exports.f = __webpack_require__(31) ? gOPD : function getOwnPropertyDescriptor(O, P){
+	exports.f = __webpack_require__(32) ? gOPD : function getOwnPropertyDescriptor(O, P){
 	  O = toIObject(O);
 	  P = toPrimitive(P, true);
 	  if(IE8_DOM_DEFINE)try {
@@ -2723,12 +2851,12 @@ module.exports =
 	};
 
 /***/ },
-/* 64 */
+/* 65 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var $defineProperty = __webpack_require__(27)
-	  , createDesc      = __webpack_require__(35);
+	var $defineProperty = __webpack_require__(28)
+	  , createDesc      = __webpack_require__(36);
 
 	module.exports = function(object, index, value){
 	  if(index in object)$defineProperty.f(object, index, createDesc(0, value));
@@ -2736,21 +2864,21 @@ module.exports =
 	};
 
 /***/ },
-/* 65 */
+/* 66 */
 /***/ function(module, exports, __webpack_require__) {
 
-	__webpack_require__(66);
-	module.exports = __webpack_require__(25).String.padStart;
+	__webpack_require__(67);
+	module.exports = __webpack_require__(26).String.padStart;
 
 
 /***/ },
-/* 66 */
+/* 67 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	// https://github.com/tc39/proposal-string-pad-start-end
-	var $export = __webpack_require__(23)
-	  , $pad    = __webpack_require__(67);
+	var $export = __webpack_require__(24)
+	  , $pad    = __webpack_require__(68);
 
 	$export($export.P, 'String', {
 	  padStart: function padStart(maxLength /*, fillString = ' ' */){
@@ -2759,13 +2887,13 @@ module.exports =
 	});
 
 /***/ },
-/* 67 */
+/* 68 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// https://github.com/tc39/proposal-string-pad-start-end
-	var toLength = __webpack_require__(49)
-	  , repeat   = __webpack_require__(68)
-	  , defined  = __webpack_require__(47);
+	var toLength = __webpack_require__(50)
+	  , repeat   = __webpack_require__(69)
+	  , defined  = __webpack_require__(48);
 
 	module.exports = function(that, maxLength, fillString, left){
 	  var S            = String(defined(that))
@@ -2781,12 +2909,12 @@ module.exports =
 
 
 /***/ },
-/* 68 */
+/* 69 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var toInteger = __webpack_require__(50)
-	  , defined   = __webpack_require__(47);
+	var toInteger = __webpack_require__(51)
+	  , defined   = __webpack_require__(48);
 
 	module.exports = function repeat(count){
 	  var str = String(defined(this))
@@ -2798,27 +2926,287 @@ module.exports =
 	};
 
 /***/ },
-/* 69 */
+/* 70 */
 /***/ function(module, exports, __webpack_require__) {
 
-	__webpack_require__(70);
-	module.exports = __webpack_require__(25).String.padEnd;
+	__webpack_require__(71);
+	module.exports = __webpack_require__(26).String.padEnd;
 
 
 /***/ },
-/* 70 */
+/* 71 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	// https://github.com/tc39/proposal-string-pad-start-end
-	var $export = __webpack_require__(23)
-	  , $pad    = __webpack_require__(67);
+	var $export = __webpack_require__(24)
+	  , $pad    = __webpack_require__(68);
 
 	$export($export.P, 'String', {
 	  padEnd: function padEnd(maxLength /*, fillString = ' ' */){
 	    return $pad(this, maxLength, arguments.length > 1 ? arguments[1] : undefined, false);
 	  }
 	});
+
+/***/ },
+/* 72 */
+/***/ function(module, exports) {
+
+	let usedOnStart = 0;
+	let enabled = false;
+	let depth = 0;
+
+	function setupProfiler() {
+	  depth = 0; // reset depth, this needs to be done each tick.
+	  Game.profiler = {
+	    stream(duration, filter) {
+	      setupMemory('stream', duration || 10, filter);
+	    },
+	    email(duration, filter) {
+	      setupMemory('email', duration || 100, filter);
+	    },
+	    profile(duration, filter) {
+	      setupMemory('profile', duration || 100, filter);
+	    },
+	    reset: resetMemory,
+	  };
+
+	  overloadCPUCalc();
+	}
+
+	function setupMemory(profileType, duration, filter) {
+	  resetMemory();
+	  if (!Memory.profiler) {
+	    Memory.profiler = {
+	      map: {},
+	      totalTime: 0,
+	      enabledTick: Game.time + 1,
+	      disableTick: Game.time + duration,
+	      type: profileType,
+	      filter,
+	    };
+	  }
+	}
+
+	function resetMemory() {
+	  Memory.profiler = null;
+	}
+
+	function overloadCPUCalc() {
+	  if (Game.rooms.sim) {
+	    usedOnStart = 0; // This needs to be reset, but only in the sim.
+	    Game.cpu.getUsed = function getUsed() {
+	      return performance.now() - usedOnStart;
+	    };
+	  }
+	}
+
+	function getFilter() {
+	  return Memory.profiler.filter;
+	}
+
+	function wrapFunction(name, originalFunction) {
+	  return function wrappedFunction() {
+	    if (Profiler.isProfiling()) {
+	      const nameMatchesFilter = name === getFilter();
+	      const start = Game.cpu.getUsed();
+	      if (nameMatchesFilter) {
+	        depth++;
+	      }
+	      const result = originalFunction.apply(this, arguments);
+	      if (depth > 0 || !getFilter()) {
+	        const end = Game.cpu.getUsed();
+	        Profiler.record(name, end - start);
+	      }
+	      if (nameMatchesFilter) {
+	        depth--;
+	      }
+	      return result;
+	    }
+
+	    return originalFunction.apply(this, arguments);
+	  };
+	}
+
+	function hookUpPrototypes() {
+	  Profiler.prototypes.forEach(proto => {
+	    profileObjectFunctions(proto.val, proto.name);
+	  });
+	}
+
+	function profileObjectFunctions(object, label) {
+	  const objectToWrap = object.prototype ? object.prototype : object;
+
+	  Object.keys(objectToWrap).forEach(functionName => {
+	    const extendedLabel = `${label}.${functionName}`;
+	    try {
+	      if (typeof objectToWrap[functionName] === 'function' && functionName !== 'getUsed') {
+	        const originalFunction = objectToWrap[functionName];
+	        objectToWrap[functionName] = profileFunction(originalFunction, extendedLabel);
+	      }
+	    } catch (e) { } /* eslint no-empty:0 */
+	  });
+
+	  return objectToWrap;
+	}
+
+	function profileFunction(fn, functionName) {
+	  const fnName = functionName || fn.name;
+	  if (!fnName) {
+	    console.log('Couldn\'t find a function name for - ', fn);
+	    console.log('Will not profile this function.');
+	    return fn;
+	  }
+
+	  return wrapFunction(fnName, fn);
+	}
+
+	const Profiler = {
+	  printProfile() {
+	    console.log(Profiler.output());
+	  },
+
+	  emailProfile() {
+	    Game.notify(Profiler.output());
+	  },
+
+	  output() {
+	    const elapsedTicks = Game.time - Memory.profiler.enabledTick + 1;
+	    const header = 'calls\t\ttime\t\tavg\t\tfunction';
+	    const footer = [
+	      `Avg: ${(Memory.profiler.totalTime / elapsedTicks).toFixed(2)}`,
+	      `Total: ${Memory.profiler.totalTime.toFixed(2)}`,
+	      `Ticks: ${elapsedTicks}`,
+	    ].join('\t');
+	    return [].concat(header, Profiler.lines().slice(0, 20), footer).join('\n');
+	  },
+
+	  lines() {
+	    const stats = Object.keys(Memory.profiler.map).map(functionName => {
+	      const functionCalls = Memory.profiler.map[functionName];
+	      return {
+	        name: functionName,
+	        calls: functionCalls.calls,
+	        totalTime: functionCalls.time,
+	        averageTime: functionCalls.time / functionCalls.calls,
+	      };
+	    }).sort((val1, val2) => {
+	      return val2.totalTime - val1.totalTime;
+	    });
+
+	    const lines = stats.map(data => {
+	      return [
+	        data.calls,
+	        data.totalTime.toFixed(1),
+	        data.averageTime.toFixed(3),
+	        data.name,
+	      ].join('\t\t');
+	    });
+
+	    return lines;
+	  },
+
+	  prototypes: [
+	    { name: 'Game', val: Game },
+	    { name: 'Room', val: Room },
+	    { name: 'Structure', val: Structure },
+	    { name: 'Spawn', val: Spawn },
+	    { name: 'Creep', val: Creep },
+	    { name: 'RoomPosition', val: RoomPosition },
+	    { name: 'Source', val: Source },
+	    { name: 'Flag', val: Flag },
+	  ],
+
+	  record(functionName, time) {
+	    if (!Memory.profiler.map[functionName]) {
+	      Memory.profiler.map[functionName] = {
+	        time: 0,
+	        calls: 0,
+	      };
+	    }
+	    Memory.profiler.map[functionName].calls++;
+	    Memory.profiler.map[functionName].time += time;
+	  },
+
+	  endTick() {
+	    if (Game.time >= Memory.profiler.enabledTick) {
+	      const cpuUsed = Game.cpu.getUsed();
+	      Memory.profiler.totalTime += cpuUsed;
+	      Profiler.report();
+	    }
+	  },
+
+	  report() {
+	    if (Profiler.shouldPrint()) {
+	      Profiler.printProfile();
+	    } else if (Profiler.shouldEmail()) {
+	      Profiler.emailProfile();
+	    }
+	  },
+
+	  isProfiling() {
+	    return enabled && !!Memory.profiler && Game.time <= Memory.profiler.disableTick;
+	  },
+
+	  type() {
+	    return Memory.profiler.type;
+	  },
+
+	  shouldPrint() {
+	    const streaming = Profiler.type() === 'stream';
+	    const profiling = Profiler.type() === 'profile';
+	    const onEndingTick = Memory.profiler.disableTick === Game.time;
+	    return streaming || (profiling && onEndingTick);
+	  },
+
+	  shouldEmail() {
+	    return Profiler.type() === 'email' && Memory.profiler.disableTick === Game.time;
+	  },
+	};
+
+	module.exports = {
+	  wrap(callback) {
+	    if (enabled) {
+	      setupProfiler();
+	    }
+
+	    if (Profiler.isProfiling()) {
+	      usedOnStart = Game.cpu.getUsed();
+
+	      // Commented lines are part of an on going experiment to keep the profiler
+	      // performant, and measure certain types of overhead.
+
+	      // var callbackStart = Game.cpu.getUsed();
+	      const returnVal = callback();
+	      // var callbackEnd = Game.cpu.getUsed();
+	      Profiler.endTick();
+	      // var end = Game.cpu.getUsed();
+
+	      // var profilerTime = (end - start) - (callbackEnd - callbackStart);
+	      // var callbackTime = callbackEnd - callbackStart;
+	      // var unaccounted = end - profilerTime - callbackTime;
+	      // console.log('total-', end, 'profiler-', profilerTime, 'callbacktime-',
+	      // callbackTime, 'start-', start, 'unaccounted', unaccounted);
+	      return returnVal;
+	    }
+
+	    return callback();
+	  },
+
+	  enable() {
+	    enabled = true;
+	    hookUpPrototypes();
+	  },
+
+	  registerObject(object, label) {
+	    return profileObjectFunctions(object, label);
+	  },
+
+	  registerFN(fn, functionName) {
+	    return profileFunction(fn, functionName);
+	  },
+	};
+
 
 /***/ }
 /******/ ]);

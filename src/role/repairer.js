@@ -66,7 +66,10 @@ const roleRepairer = {
                         ||
                         (struc.structureType != STRUCTURE_WALL)
                     ) &&
-                    creep.room.memory.dismantleQueue.indexOf(struc.id) == -1
+                    (
+                      creep.room.memory.dismantleQueue === undefined ||
+                      creep.room.memory.dismantleQueue.indexOf(struc.id) == -1
+                    )
                 )
             });
             if(targets && targets.length) {

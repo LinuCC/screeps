@@ -6,6 +6,8 @@ const role = require('../role')
 const TYPE_SOURCE = 0
 const TYPE_TARGET = 1
 
+const MY_ERR_WTF = -1001
+
 /**
  * Transports, repairs.
  *
@@ -62,7 +64,7 @@ class Zergling {
       // }
       this.work()
     }
-    if(!this.hasWorked) {
+    if(!this.hasWorked && this.zergling.memory.kind[0] == WORK) {
       this.repairSurroundings()
     }
   }
@@ -162,8 +164,9 @@ class Zergling {
       case TYPE_TARGET:
         memObject = hiveMind.data[this.zergling.memory.item.id].toTarget; break
     }
+    if(!memObject) { this.done(MY_ERR_WTF); return; }
     let object = Game.getObjectById(memObject.id)
-    if(!object) { this.done(); return; }
+    if(!object) { this.done(MY_ERR_WTF); return; }
     let range = this.calcActionRange(type, object)
     if(object) {
       if(this.zergling.pos.inRangeTo(object, range)) {
@@ -196,7 +199,10 @@ class Zergling {
       amount = this.zergling.carryCapacity
     }
     let res
-    if(source.energy || source.mineralAmount) {
+    if(source instanceof Resource) {
+      res = this.zergling.pickup(source)
+    }
+    else if(source.energy || source.mineralAmount) {
       res = this.zergling.harvest(source)
       this.hasWorked = true
       if(_.sum(this.zergling.carry) == this.zergling.carryCapacity) {
@@ -295,6 +301,17 @@ class Zergling {
       case ERR_INVALID_ARGS: this.zergling.say('✖ARGS!', true); break
       case ERR_TIRED: this.zergling.say('✖❄', true); break
       case ERR_NO_BODYPART: this.zergling.say('✖☗?', true); break
+      case MY_ERR_WTF:
+        console.log(
+          '<span type="color: red">Got a WTF!</span>',
+          `<span type="color: #aadd33">Id</span>: "${this.creep.id}"`,
+          `<span type="color: #33aadd">Pos</span>: ` +
+          `"${JSON.stringify(this.creep.pos)}"`,
+          `<span type="color: #ddaa33">Mem</span>: "` +
+          `${JSON.stringify(this.creep.memory)}"`,
+        )
+        this.zergling.say('WTF?', true)
+        break
       // case ERR_NOT_ENOUGH_EXTENSIONS: this.zergling.say('', true); break
     }
   }
@@ -302,7 +319,10 @@ class Zergling {
   repairSurroundings = ()=> {
     let structures = this.zergling.pos.findInRange(
       FIND_STRUCTURES, 3,
-      {filter: (obj)=> (obj.hits < obj.hitsMax)}
+      {filter: (obj)=> (
+        obj.hits < obj.hitsMax &&
+        obj.structureType != obj.STRUCTURE_WALL
+      )}
     )
     if(structures.length) {
       let target = _.sortByOrder(structures, 'hits', 'asc')[0]

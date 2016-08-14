@@ -75,8 +75,9 @@ const roleExcavator = {
         // to the closest one. Just dont call it to often.
         let path = creep.pos.findPathTo(source)
         if(path && path.length) {
-          let pos = path.slice(-1)[0]
-          return new RoomPosition(pos.x, pos.y, source.room)
+          // If we only are one tile away we are directly at the source
+          let pos = (path.length > 1) ? path.slice(-2, -1)[0] : creep.pos
+          return new RoomPosition(pos.x, pos.y, source.room.name)
         }
         else {
           return null
