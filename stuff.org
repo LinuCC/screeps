@@ -1,0 +1,79 @@
+* Zerglings extension pathing
+  - Every Zerg should be able to chain prio-items together based on the path
+    to that item.
+  - Also calculate the Zergs lifetime and what it can do if that is very
+    limited
+  - The prio-list should have an accommodating mapping of what structures are
+    near to each other:
+    #+BEGIN_SRC json
+      {
+        <structureId>: {
+
+        }
+      }
+    #+END_SRC
+      - How does the creep use this information to select specific elements?
+        Whats the algorithm?
+
+* priorityQueue
+  - Basic Prioritising: Each basic PRIO-Type has 100 count more than its
+    direct predecessor
+  - Differences between items of the same PRIO-Type can be stored by changing
+    the count. Up to 50 count added or subtracted from the base-value is
+    okay.
+  - How does the range between items affect the prio?
+    => "Range" cannot be expressed by a single item-instance, thus cant be
+    expressed directly as a priority
+
+** Priority types
+
+*** Types
+  - Critical (> 30000)
+    - A zergling should constantly execute this item until a certain
+      condition is met, at which point the item gets removed and the zergling
+      takes a different task.
+      Useful for example to keep the tower from getting empty when an enemy
+      attacks.
+      The creep should only move when it is empty, not on the first failed
+      try (If the tower is full, wait at the tower and refill it until the
+      creeps inventory is empty)
+  - Urgent (< 30000)
+  - Normal (< 20000)
+  - Passive / Dump (< 10000)
+    - These should be cloned except its the last possible transaction (like
+      transferring to the storage when it is near full and will be brimming
+      when done)
+
+*** Differentiation
+  - Each type should be differentiated by removing a count of 10000 from the Prio
+    to the Priority-counts found in the type under that.
+
+** Range & Priority
+  - Range should have a big impact on the selection of the next item and
+    should also be the reason to stack multiple items onto one zergling.
+  - There should be "critical" / "urgent" tasks, which priorities shouldnt be
+    overriden by the range so that non-critical tasks dont get prioritized
+    above them.
+  - At the same time the range shouldnt make "passive" tasks (like filling
+    the storage) more important than urgent or normal tasks.
+  - The range can alter the base priority value of an item by up to 5000
+    subtracted or added.
+
+*** Calculation
+  - We dont need to calculate the entire priorityQueue for each
+    Creep-position.
+    Since the range will not change the priority to another type, we only
+    need to search for items with priorities of 5000 + the first items
+    priority.
+    We can apply the range-alterations to the priority-values of the
+    resulting array of items and sort them.
+    The zergling can then pick the first item from the stack.
+    Filter the Array of leftover items by the amount of resources the creep
+    still has, throw away the previous range-alterations and calculate new
+    ones based on the creeps position when fulfilling the picked item.
+    Loop until the creep cant fulfill any more roles.
+    This means that for max efficiency he shouldnt repair the roads since
+    some items cant be fulfilled that way.
+    If the creep carries an insufficient amount of resources for even the
+    first task, he should search a source and then take as many items as he
+    can to satisfy the one sourcing.
