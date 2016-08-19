@@ -16,6 +16,7 @@ const PRIOS = {
   [STRUCTURE_TOWER]: 1200,
   [CONSTRUCTION_SITE]: 1900,
   [STRUCTURE_STORAGE]: 2000,
+  [STRUCTURE_CONTROLLER]: 9000,
   [STRUCTURE_CONTAINER]: 10000,
 };
 
@@ -57,15 +58,16 @@ class Overlord {
         let ullage = conSite.progressTotal -
           (conSite.progress + _.sum(targetItems, (t)=> t.toTarget.amount))
         let itemCount = targetItems.length
-        while(
-          ullage < conSite.progressTotal &&
-          itemCount < this.maxItemsPerTask
-        ) {
+        let amount = (
+          (ullage < this.creepCarryAmount) ? ullage : this.creepCarryAmount
+        )
+        while(ullage > 0 && itemCount < this.maxItemsPerTask) {
           this.addItem(
-            queue, false, conSite, RESOURCE_ENERGY, this.creepCarryAmount,
+            queue, false, conSite, RESOURCE_ENERGY, amount,
             PRIOS[CONSTRUCTION_SITE]
           )
           itemCount += 1
+          ullage -= amount
         }
       }
     }
@@ -119,6 +121,17 @@ class Overlord {
         ) &&
         structure.energy < structure.energyCapacity
     )})
+    if(
+      this.room.memory.links &&
+      this.room.memory.links.sources &&
+      this.room.memory.links.sources.length > 0
+    ) {
+      lacking.concat(
+        this.room.memory.links.sources.map(
+          (source)=> Game.getObjectById(source)
+        )
+      )
+    }
     if(lacking.length > 0) {
       // lacking = _.sortByOrder(lacking, 'energy', 'asc')
       for(let target of lacking) {
@@ -261,22 +274,16 @@ class Overlord {
       return {target: construction, prio: PRIOS[CONSTRUCTION_SITE]}
     }
 
-    let controller = this.findTargetControllerFor(source, resType)
-    if(controller) {
-      return {target: controller, prio: PRIOS[STRUCTURE_CONTROLLER]}
-    }
+    // Controller get handled by the work queue
+    // let controller = this.findTargetControllerFor(source, resType)
+    // if(controller) {
+    //   return {target: controller, prio: PRIOS[STRUCTURE_CONTROLLER]}
+    // }
   }
 
   findTargetConstructionFor = (source)=> {
     let conSites = this.room.find(FIND_CONSTRUCTION_SITES)
     if(conSites.length) { return conSites[0] }
-  }
-
-  findTargetControllerFor = (source)=> {
-    let controllers = this.room.find(
-      FIND_STRUCTURES, {filter: {structureType: STRUCTURE_CONTROLLER}}
-    )
-    if(controllers.length) { return controllers[0] }
   }
 
   findCarryTargetFor = (source, resType)=> {
@@ -397,6 +404,7 @@ class Overlord {
         y: target.pos.y,
         roomName: target.pos.roomName,
         amount: targetAmount,
+        // amount: (target.amount !== null) ? target.amount : this.creepCarryAmount,
       },
       res: res,
       stage: null
@@ -407,7 +415,7 @@ class Overlord {
         x: source.pos.x,
         y: source.pos.y,
         roomName: source.pos.roomName,
-        amount: this.creepCarryAmount,
+        // amount: (source.amount !== null) ? source.amount : this.creepCarryAmount,
       }
     }
     let itemId = hiveMind.push(data)
@@ -555,6 +563,7 @@ class Overlord {
       case STRUCTURE_CONTAINER: name = 'Container'; break
       case STRUCTURE_STORAGE: name = 'Storage'; break
       case STRUCTURE_WALL: name = 'Wall'; break
+      case STRUCTURE_ROAD: name = 'Road'; break
       default: name = '???'; break
     }
     if(struc instanceof ConstructionSite) {
@@ -566,17 +575,48 @@ class Overlord {
   }
 
   removeOldHiveMindItems = ()=> {
-    for(let item of hiveMind.data) {
-      //MORE ASDASDASDASDS
-      //MORE ASDASDASDASDS
-      //MORE ASDASDASDASDS
-      //MORE ASDASDASDASDS
-      //MORE ASDASDASDASDS
-      //MORE ASDASDASDASDS
-      //MORE ASDASDASDASDS
-      //
-      // if()
+    let oldItemCount = 0
+    nextItem:
+    for(let itemId in hiveMind.data) {
+      let item = hiveMind.data[itemId]
+      for(let creepName in Game.creeps) {
+        let creep = Game.creeps[creepName]
+        if(creep.memory.item && creep.memory.item.id == item.id) {
+          continue nextItem
+        }
+      }
+
+      for(let roomName in Game.rooms) {
+        let room = Game.rooms[roomName]
+        if(
+          room.memory.priorityQueues &&
+          Object.keys(room.memory.priorityQueues).length &&
+          Object.keys(room.memory.priorityQueues).some((queueName)=> (
+            room.memory.priorityQueues[queueName].some((queueItem)=> (
+              queueItem.id == item.id
+            ))
+          ))
+        ) {
+         continue nextItem
+        }
+        // if(room.memory.priorityQueues && room.memory.priorityQueues.length) {
+        //   for(let queueName in room.memory.priorityQueues) {
+        //     for(let queueItem in room.memory.priorityQueues[queueName]) {
+        //       if(queueItem.id == item.id) {
+        //         break checkItem
+        //       }
+        //     }
+        //   }
+        // }u
+      }
+      console.log(
+        "<span style='color: #aadd33'>Item missing:</span>\n    ",
+        JSON.stringify(item)
+      )
+      // delete hiveMind.data[itemId]
+      oldItemCount += 1
     }
+    Memory.stats['hiveMind.oldItemCount'] = oldItemCount
   }
 }
 

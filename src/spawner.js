@@ -3,37 +3,16 @@ class Spawner {
     return Game.spawns[spawn.name].createCreep([WORK, CARRY, CARRY, MOVE, MOVE], 'Harvester' + this.newCreepIndex(), {role: 'harvester'})
   }
   harvester = (spawn)=> {
-    if(spawn.name == "VV") {
-      return Game.spawns[spawn.name].createCreep([WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE], 'Harvester' + this.newCreepIndex(), {role: 'harvester'})
-    }
-    else if(spawn.name == "ZZ") {
-      return Game.spawns[spawn.name].createCreep([WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE], 'Harvester' + this.newCreepIndex(), {role: 'harvester'})
-    }
-    else {
-      return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], 'Harvester' + this.newCreepIndex(), {role: 'harvester'})
-    }
+    return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], 'Harvester' + this.newCreepIndex(), {role: 'harvester'})
   }
   excavator = (spawn, fromSource)=> {
     return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, WORK, MOVE], 'Excavator' + this.newCreepIndex(), {role: 'excavator', fromSource: fromSource})
   }
   upgrader = (spawn)=> {
-    if(spawn.name == "VV") {
-      return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE], 'Upgrader' + this.newCreepIndex(), {role: 'upgrader'})
-    }
-    else {
-      return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE], 'Upgrader' + this.newCreepIndex(), {role: 'upgrader'})
-    }
+    return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE], 'Upgrader' + this.newCreepIndex(), {role: 'upgrader'})
   }
   builder = (spawn)=> {
-    if(spawn.name == "VV") {
-      return Game.spawns[spawn.name].createCreep( [WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE], 'Builder' + this.newCreepIndex(), {role: 'builder'})
-    }
-    else if(spawn.name == "ZZ") {
-      return Game.spawns[spawn.name].createCreep( [WORK, CARRY, MOVE, MOVE], 'Builder' + this.newCreepIndex(), {role: 'builder'})
-    }
-    else {
-      return Game.spawns[spawn.name].createCreep( [WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], 'Builder' + this.newCreepIndex(), {role: 'builder'})
-    }
+    return Game.spawns[spawn.name].createCreep( [WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], 'Builder' + this.newCreepIndex(), {role: 'builder'})
   }
   repairer = (spawn)=> {
     return Game.spawns[spawn.name].createCreep( [WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE], 'Repairer' + this.newCreepIndex(), {role: 'repairer'})
@@ -58,16 +37,18 @@ class Spawner {
     const source = Game.getObjectById(fromSource)
     const target = Game.getObjectById(toTarget)
 
-    // ADD CALCULATION (With `PathFinder`) FOR MODULES HERE
+    let body = this.calcCreepBody(spawn.room, [WORK, WORK, CARRY, CARRY, CARRY], 0, false)
 
-    return Game.spawns[spawn.name].createCreep([WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], 'Transporter' + this.newCreepIndex(), {role: 'transporter', fromSource: fromSource, toTarget: toTarget, sourcePos: sourcePos})
+    return Game.spawns[spawn.name].createCreep(body, 'Transporter' + this.newCreepIndex(), {role: 'transporter', fromSource: fromSource, toTarget: toTarget, sourcePos: sourcePos})
   }
 
   drone = (spawn)=> {
-    return Game.spawns[spawn.name].createCreep([WORK, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], 'Drone' + this.newCreepIndex(), {role: 'zergling'})
+    let body = this.calcCreepBody(spawn.room, [CARRY])
+    return Game.spawns[spawn.name].createCreep(body, 'Drone' + this.newCreepIndex(), {role: 'zergling', kind: [CARRY]})
   }
   zergling = (spawn)=> {
-    return Game.spawns[spawn.name].createCreep([WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE], 'Zergling' + this.newCreepIndex(), {role: 'zergling'})
+    let body = this.calcCreepBody(spawn.room, [WORK, WORK, WORK, CARRY, CARRY])
+    return Game.spawns[spawn.name].createCreep(body, 'Zergling' + this.newCreepIndex(), {role: 'zergling', kind: [WORK, CARRY]})
   }
 
   newCreepIndex = function() {
@@ -76,20 +57,37 @@ class Spawner {
     return index
   }
 
-  calcCreepBody = (room, workp, carryp, movep, max = 0)=> {
-    let roomMax = room.find(FIND_MY_STRUCTURES, {filter: (struc)=> (
-      // ASDASDASDASD
-      // ASDASDASDASD
-      // ASDASDASDASD
-      // ASDASDASDASD
-      // ASDASDASDASD
-      // ASDASDASDASD
-      // ASDASDASDASD
-      // ASDASDASDASD
-      // ASDASDASDASD
-      // ASDASDASDASD
-      struc.structureType == STRUCTURE_ &&
-    )})
+  calcCreepBody = (room, parts, maxCost = 0, usingStreet = true)=> {
+    let partCost = {
+      [WORK]: 100,
+      [CARRY]: 50,
+      [MOVE]: 50
+    }
+    let roomMaxCost = _.sum(
+      room.find(FIND_MY_STRUCTURES, {filter: (struc)=> (
+        struc.structureType == STRUCTURE_EXTENSION ||
+        struc.structureType == STRUCTURE_SPAWN
+      )}),
+      'energy'
+    )
+    let max = (maxCost != 0) ? maxCost : roomMaxCost
+    let partBlockCost = parts.reduce((memo, part)=> (memo + partCost[part]), 0)
+    let moveRatio = (usingStreet) ? 1/2 : 1
+    let movesPerBlock = (parts.length * moveRatio)
+    let moveCost = movesPerBlock * partCost[MOVE]
+    // We should add one MOVE to the 6 calculated MOVE if we have 13 parts
+    let hiddenMoveCost = (movesPerBlock % 1 > 0) ? partCost[MOVE] / 2 : 0
+    let wholeBlockCost = partBlockCost + moveCost
+    let maxBlockCount = Math.floor(50 / (parts.length + movesPerBlock))
+    let blockCount = Math.floor((max - hiddenMoveCost) / wholeBlockCost)
+    blockCount = (maxBlockCount < blockCount) ? maxBlockCount : blockCount
+    let moveBlockCount = Math.ceil(movesPerBlock * blockCount)
+    let body = []
+    _.range(moveBlockCount).forEach(()=> body.push(MOVE))
+    for(let i = 0; i < blockCount; i += 1) {
+      body = body.concat(parts)
+    }
+    return body
   }
 
 };

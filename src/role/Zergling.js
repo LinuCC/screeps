@@ -40,32 +40,52 @@ class Zergling {
 
   run = (priorityQueues)=> {
 
-    this.priorityQueues = priorityQueues
-    if(!this.zergling.memory.item || this.zergling.memory.sourcing === null) {
-      if(!this.zergling.memory.kind) {
-        this.zergling.say('calcKind')
-        this.calcKind()
+    try {
+
+      this.priorityQueues = priorityQueues
+      if(!this.zergling.memory.item) {
+        if(!this.zergling.memory.kind) {
+          this.zergling.say('calcKind')
+          this.calcKind()
+        }
+        if(this.findWork(priorityQueues)) {
+          this.work()
+        }
+        else {
+          this.vacation()
+        }
       }
-      this.findWork(priorityQueues)
+      else if(this.zergling.memory.sourcing === null) {
+        // Zerg has item, but hasnt found a source for it yet
+        if(this.updateWorkStatus()) {
+          this.work()
+        }
+        else {
+          this.vacation()
+        }
+      }
+      else {
+        this.work()
+      }
+      if(!this.hasWorked && this.zergling.memory.kind[0] == WORK) {
+        this.repairSurroundings()
+      }
     }
-    else {
-      // QUICK HACK
-      // console.log('YO')
-      // if(!hiveMind.data[this.zergling.memory.item.id].fromSource) {
-      // console.log('Hi')
-      //         let source = new Overlord(this.zergling.pos.roomName)
-      //           .findSourceForCreep(
-      //             this.zergling, hiveMind.data[this.zergling.memory.item.id],
-      //             item.res
-      //           )
-      //           this.zergling.say('⚗', true)
-      //           hiveMind.data[this.zergling.memory.item.id].stage = TYPE_SOURCE
-      //           this.zergling.memory.sourcing = true
-      // }
-      this.work()
+    catch(e) {
+      console.log('<span style="color: red">Creep Error`d:\n' + e.stack + '\n')
+      if(
+        this.zergling.memory.item &&
+        !hiveMind.data[this.zergling.memory.item.id]
+      ) {
+        log.cyan('Cleaning up missing hiveMind-Data')
+        this.zergling.memory.item = null
+        this.zergling.memory.sourcing = null
+      }
     }
-    if(!this.hasWorked && this.zergling.memory.kind[0] == WORK) {
-      this.repairSurroundings()
+    finally {
+      if(this.zergling.ticksToLive == 1) {
+        this.swarmPurposeFulfilled()
+      }
     }
   }
 
@@ -95,12 +115,11 @@ class Zergling {
       if(queue) {
         if(queue.peek()) {
           this.zergling.memory.item = queue.dequeue()
-          this.updateWorkStatus()
-          break
+          return this.updateWorkStatus()
         }
         else {
           if(this.bored()) {
-            this.vacation()
+            this.zergling.say('⚘☀', true) // No tasks, creep is on vacation
           }
         }
       }
@@ -109,6 +128,7 @@ class Zergling {
         console.log(`${queueName} missing!`)
       }
     }
+    return false
   }
 
   updateWorkStatus = ()=> {
@@ -118,6 +138,7 @@ class Zergling {
         this.zergling.say('♻➟▣', true)
         hiveMind.data[this.zergling.memory.item.id].stage = TYPE_TARGET
         this.zergling.memory.sourcing = false
+        return true
       }
       else {
         let source = new Overlord(this.zergling.pos.roomName)
@@ -134,16 +155,19 @@ class Zergling {
           this.zergling.say('⚗', true)
           hiveMind.data[this.zergling.memory.item.id].stage = TYPE_SOURCE
           this.zergling.memory.sourcing = true
+          return true
         }
         else {
           this.zergling.say('⚗?', true)
           this.zergling.memory.sourcing = null
+          return false
         }
       }
     }
     else {
       hiveMind.data[this.zergling.memory.item.id].stage = TYPE_SOURCE
       this.zergling.memory.sourcing = true
+      return true
     }
   }
 
@@ -164,9 +188,9 @@ class Zergling {
       case TYPE_TARGET:
         memObject = hiveMind.data[this.zergling.memory.item.id].toTarget; break
     }
-    if(!memObject) { this.done(MY_ERR_WTF); return; }
+    if(!memObject) { this.done(MY_ERR_WTF, 'workWith#memObject'); return; }
     let object = Game.getObjectById(memObject.id)
-    if(!object) { this.done(MY_ERR_WTF); return; }
+    if(!object) { this.done(MY_ERR_WTF, 'workWith#object'); return; }
     let range = this.calcActionRange(type, object)
     if(object) {
       if(this.zergling.pos.inRangeTo(object, range)) {
@@ -201,6 +225,10 @@ class Zergling {
     let res
     if(source instanceof Resource) {
       res = this.zergling.pickup(source)
+      this.hasWorked = true
+      if(_.sum(this.zergling.carry) == this.zergling.carryCapacity) {
+        this.done()
+      }
     }
     else if(source.energy || source.mineralAmount) {
       res = this.zergling.harvest(source)
@@ -240,7 +268,7 @@ class Zergling {
     if(res != OK) { this.handleActionResult(res, TYPE_TARGET, target) }
   }
 
-  done = (res)=> {
+  done = (res, debugInfo = false)=> {
     if(this.zergling.memory.sourcing) {
       hiveMind.data[this.zergling.memory.item.id].stage = TYPE_TARGET
       this.zergling.memory.sourcing = false
@@ -259,7 +287,7 @@ class Zergling {
         this.zergling.say('✓', true)
       }
       else {
-        this.handleActionResult(res, null, null)
+        this.handleActionResult(res, null, null, debugInfo)
       }
     }
   }
@@ -276,7 +304,7 @@ class Zergling {
     }
   }
 
-  handleActionResult = (result, type, object)=> {
+  handleActionResult = (result, type, object, debugInfo = null)=> {
     let type_str
     if(type != null) {
       switch(type) {
@@ -303,12 +331,14 @@ class Zergling {
       case ERR_NO_BODYPART: this.zergling.say('✖☗?', true); break
       case MY_ERR_WTF:
         console.log(
-          '<span type="color: red">Got a WTF!</span>',
-          `<span type="color: #aadd33">Id</span>: "${this.creep.id}"`,
-          `<span type="color: #33aadd">Pos</span>: ` +
-          `"${JSON.stringify(this.creep.pos)}"`,
-          `<span type="color: #ddaa33">Mem</span>: "` +
-          `${JSON.stringify(this.creep.memory)}"`,
+          '<span style="color: red">Got a WTF!</span>',
+          `<span style="color: #aadd33">Id</span>: "${this.zergling.id}"`,
+          `<span style="color: #33aadd">Pos</span>: ` +
+          `"${JSON.stringify(this.zergling.pos)}"`,
+          `<span style="color: #ddaa33">Mem</span>: "` +
+          `${JSON.stringify(this.zergling.memory)}"`,
+          `<span style="color: #aa33dd">More Info</span>: "` +
+          `${JSON.stringify(debugInfo)}"`
         )
         this.zergling.say('WTF?', true)
         break
@@ -321,7 +351,8 @@ class Zergling {
       FIND_STRUCTURES, 3,
       {filter: (obj)=> (
         obj.hits < obj.hitsMax &&
-        obj.structureType != obj.STRUCTURE_WALL
+        obj.structureType != STRUCTURE_WALL &&
+        obj.structureType != STRUCTURE_RAMPART
       )}
     )
     if(structures.length) {
@@ -336,16 +367,40 @@ class Zergling {
     if(item) {
       this.zergling.memory.item = item
       this.updateWorkStatus()
+      return false
+    }
+    else {
+      return true
     }
   }
 
+  /*
+   * Zergling is idling
+   */
   vacation = ()=> {
-    this.zergling.say('☀', true) // No tasks, creep is on vacation
+    let statName = (
+      `room.${this.zergling.room.name}.zergStats.` +
+      `${this.zergling.memory.kind[0]}.idleTicks`
+    )
+    if(!Memory.stats[statName]) { Memory.stats[statName] = 0 }
+    Memory.stats[statName] += 1
     let hangar = this.zergling.room.find(
       FIND_MY_STRUCTURES, {filter: {structureType: STRUCTURE_SPAWN}}
     )[0]
-    if(!this.zergling.pos.inRangeTo(hangar, 2)) {
+    if(hangar && !this.zergling.pos.inRangeTo(hangar, 2)) {
       this.zergling.moveTo(hangar)
+    }
+  }
+
+  /*
+   * Make sure that the hiveMind-Item gets deleted before the zergling dies
+   */
+  swarmPurposeFulfilled = ()=> {
+    this.zergling.say('For the ☣')
+    if(this.zergling.memory.item) {
+      hiveMind.remove(this.zergling.memory.item.id)
+      this.zergling.memory.sourcing = null
+      this.zergling.memory.item = null
     }
   }
 }

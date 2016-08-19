@@ -18,6 +18,7 @@ import Spawner from './spawner'
 import Stats from './Stats'
 import 'babel-preset-es2017/polyfill'
 import profiler from 'screeps-profiler'
+import helper from './helper'
 
 // Maximum range for a remote mine, assuming 100% effectiveness: 190 squares
 
@@ -30,13 +31,21 @@ module.exports.loop = ()=> profiler.wrap(()=> {
 
   hiveMind.init()
   PathFinder.use(true)
+  let stats = new Stats()
+  stats.begin()
 
   if(Game.time % 5000 == 0) {
     spawnCreepWatcher.cleanupMemory()
   }
+  if(Game.time % 10 == 0) {
+    // Logging purposes
+    log.cyan('Removing Old HiveMindItems')
+    new Overlord('NoFrigginRoom').removeOldHiveMindItems()
+  }
 
   global.Spawner = Spawner
   global.Overlord = Overlord
+  global.hiveMind = hiveMind
   global.logHiveMindOf = (spawnName)=> {
     new Overlord(Game.spawns[spawnName].room.name).logQueuedItems()
   }
@@ -142,6 +151,6 @@ module.exports.loop = ()=> profiler.wrap(()=> {
   }
   finally {
     hiveMind.save()
-    new Stats().persist()
+    stats.persist()
   }
 });
