@@ -41,7 +41,7 @@ const roleRepairer = {
 	    if(creep.memory.repairTarget) {
 	        // Target has full health, dont try to continue repairing it
 	        let structure = Game.getObjectById(creep.memory.repairTarget)
-	        if(structure.hits >= structure.hitsMax) {
+	        if(!structure || structure.hits >= structure.hitsMax) {
 	            creep.memory.repairTarget = false
 	            return null
 	        }

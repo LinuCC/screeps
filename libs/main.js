@@ -206,6 +206,23 @@ module.exports =
 	            zergling.run(priorityQueues);
 	          });
 	        }
+
+	        if (room.memory.links && room.memory.links.providers) {
+	          nextTarget: for (let target of room.memory.links.providers) {
+	            let targetLink = Game.getObjectById(target);
+	            if (targetLink.energy < targetLink.energyCapacity) {
+	              if (room.memory.links && room.memory.links.sources.length) {
+	                for (let source of room.memory.links.sources) {
+	                  let sourceLink = Game.getObjectById(source);
+	                  if (sourceLink.energy > 0) {
+	                    sourceLink.transferEnergy(targetLink);
+	                    continue nextTarget;
+	                  }
+	                }
+	              }
+	            }
+	          }
+	        }
 	      }
 	    } catch (e) {
 	      console.log(`${ e.name }: ${ e.message } - ${ e.stack }`);
@@ -243,6 +260,7 @@ module.exports =
 	    _hiveMind2.default.save();
 	    stats.persist();
 	  }
+	  console.log(JSON.stringify(Memory.stats));
 	});
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
@@ -276,6 +294,12 @@ module.exports =
 	            //Game.notify(`User ${username} spotted in room ${room.name}`);
 	            const towers = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_TOWER } });
 	            towers.forEach(tower => tower.attack(this.mostValuableTarget(hostiles, tower)));
+	        } else {
+	            let creeps = room.find(FIND_MY_CREEPS, { filter: c => c.hits < c.hitsMax });
+	            if (creeps.length) {
+	                const towers = room.find(FIND_MY_STRUCTURES, { filter: { structureType: STRUCTURE_TOWER } });
+	                towers.forEach(tower => tower.heal(creeps[0]));
+	            }
 	        }
 	    },
 
@@ -514,6 +538,26 @@ module.exports =
 	      } else if (creep.upgradeController(creep.room.controller) == ERR_NOT_IN_RANGE) {
 	        creep.moveTo(creep.room.controller);
 	      }
+	    }
+	  },
+
+	  getLackingSourceLink(creep) {
+	    let sources = creep.room.find(FIND_MY_STRUCTURES, { filter: struc => struc.structureType == STRUCTURE_LINK && struc.energy < struc.energyCapacity });
+
+	    if (sources.length) {
+	      return sources[0];
+	    } else {
+	      return null;
+	    }
+	  },
+
+	  getNonVoidProviderLink(creep) {
+	    let sources = creep.room.find(FIND_MY_STRUCTURES, { filter: struc => struc.structureType == STRUCTURE_LINK && struc.energy > 0 });
+
+	    if (sources.length) {
+	      return sources[0];
+	    } else {
+	      return null;
 	    }
 	  }
 	};
@@ -806,7 +850,7 @@ module.exports =
 	        if (creep.memory.repairTarget) {
 	            // Target has full health, dont try to continue repairing it
 	            let structure = Game.getObjectById(creep.memory.repairTarget);
-	            if (structure.hits >= structure.hitsMax) {
+	            if (!structure || structure.hits >= structure.hitsMax) {
 	                creep.memory.repairTarget = false;
 	                return null;
 	            } else {
@@ -1422,6 +1466,7 @@ module.exports =
 	  [STRUCTURE_SPAWN]: 1000,
 	  [STRUCTURE_EXTENSION]: 1100,
 	  [STRUCTURE_TOWER]: 1200,
+	  [STRUCTURE_LINK]: 1800,
 	  [CONSTRUCTION_SITE]: 1900,
 	  [STRUCTURE_STORAGE]: 2000,
 	  [STRUCTURE_CONTROLLER]: 9000,
@@ -1465,6 +1510,27 @@ module.exports =
 	  /**
 	   * Dont forget: Extensions can have 100 / 200 energyCapacity on higher levels
 	   */
+
+
+	  getLackingSourceLink(creep) {
+	    let sources = creep.room.find(FIND_MY_STRUCTURES, { filter: struc => struc.structureType == STRUCTURE_LINK && struc.energy < struc.energyCapacity });
+
+	    if (sources.length) {
+	      return sources[0];
+	    } else {
+	      return null;
+	    }
+	  }
+
+	  getNonVoidProviderLink(creep) {
+	    let sources = creep.room.find(FIND_MY_STRUCTURES, { filter: struc => struc.structureType == STRUCTURE_LINK && struc.energy > 0 });
+
+	    if (sources.length) {
+	      return sources[0];
+	    } else {
+	      return null;
+	    }
+	  }
 	}
 
 	var _initialiseProps = function () {
@@ -1535,7 +1601,7 @@ module.exports =
 	    // Find the targets that need stuff and generate tasks for them
 	    let lacking = this.room.find(FIND_MY_STRUCTURES, { filter: structure => (structure.structureType == STRUCTURE_SPAWN || structure.structureType == STRUCTURE_EXTENSION || structure.structureType == STRUCTURE_TOWER) && structure.energy < structure.energyCapacity });
 	    if (this.room.memory.links && this.room.memory.links.sources && this.room.memory.links.sources.length > 0) {
-	      lacking.concat(this.room.memory.links.sources.map(source => Game.getObjectById(source)));
+	      lacking = lacking.concat(this.room.memory.links.sources.map(source => Game.getObjectById(source)));
 	    }
 	    if (lacking.length > 0) {
 	      // lacking = _.sortByOrder(lacking, 'energy', 'asc')
@@ -1816,6 +1882,10 @@ module.exports =
 	      //   )
 	      // ) > this.creepCarryAmount) || 1) &&
 	      struc.store[resType] - _.sum(_.filter(this.existingItems, item => item.fromSource.id == struc.id), 'fromSource.amount') > this.creepCarryAmount });
+	    if (this.room.memory.links && this.room.memory.links.providers.length) {
+	      let providers = _.filter(this.room.memory.links.providers.map(providerLinkId => Game.getObjectById(providerLinkId)), prov => prov.energy > 0);
+	      structures = structures.concat(providers);
+	    }
 	    if (structures.length > 0) {
 	      return creep.pos.findClosestByPath(structures);
 	    }
@@ -1880,6 +1950,8 @@ module.exports =
 	        name = 'Wall';break;
 	      case STRUCTURE_ROAD:
 	        name = 'Road';break;
+	      case STRUCTURE_LINK:
+	        name = 'Link';break;
 	      default:
 	        name = '???';break;
 	    }
@@ -2122,6 +2194,13 @@ module.exports =
 	              this.transferTo(object);break;
 	          }
 	        } else {
+	          if (object.structureType == STRUCTURE_CONTROLLER) {
+	            let altFlags = _.filter(Game.flags, flag => flag.name == 'altCon' && flag.pos.roomName == this.zergling.room.name);
+	            if (altFlags.length) {
+	              this.zergling.moveTo(altFlags[0]);
+	              return;
+	            }
+	          }
 	          this.zergling.moveTo(object);
 	        }
 	      } else {
@@ -2146,7 +2225,7 @@ module.exports =
 	        if (_.sum(this.zergling.carry) == this.zergling.carryCapacity) {
 	          this.done();
 	        }
-	      } else if (source.energy || source.mineralAmount) {
+	      } else if ((source.energy || source.mineralAmount) && source.cooldown === undefined) {
 	        res = this.zergling.harvest(source);
 	        this.hasWorked = true;
 	        if (_.sum(this.zergling.carry) == this.zergling.carryCapacity) {
@@ -2334,6 +2413,7 @@ module.exports =
 	    };
 
 	    this.persist = () => {
+	      console.log("hi");
 	      Memory.stats[`hiveMind.count`] = Object.keys(Memory.hiveMind).length;
 	      Memory.stats[`hiveMind.index`] = Memory.hiveMindIndex;
 	      for (let roomName in Game.rooms) {

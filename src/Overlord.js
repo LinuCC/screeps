@@ -14,6 +14,7 @@ const PRIOS = {
   [STRUCTURE_SPAWN]: 1000,
   [STRUCTURE_EXTENSION]: 1100,
   [STRUCTURE_TOWER]: 1200,
+  [STRUCTURE_LINK]: 1800,
   [CONSTRUCTION_SITE]: 1900,
   [STRUCTURE_STORAGE]: 2000,
   [STRUCTURE_CONTROLLER]: 9000,
@@ -126,7 +127,7 @@ class Overlord {
       this.room.memory.links.sources &&
       this.room.memory.links.sources.length > 0
     ) {
-      lacking.concat(
+      lacking = lacking.concat(
         this.room.memory.links.sources.map(
           (source)=> Game.getObjectById(source)
         )
@@ -495,6 +496,15 @@ class Overlord {
         ) > this.creepCarryAmount
       )}
     )
+    if(this.room.memory.links && this.room.memory.links.providers.length) {
+      let providers = _.filter(
+        this.room.memory.links.providers.map((providerLinkId)=>
+          Game.getObjectById(providerLinkId)
+        ),
+        (prov)=> prov.energy > 0
+      )
+      structures = structures.concat(providers)
+    }
     if(structures.length > 0) {
       return creep.pos.findClosestByPath(structures)
     }
@@ -564,6 +574,7 @@ class Overlord {
       case STRUCTURE_STORAGE: name = 'Storage'; break
       case STRUCTURE_WALL: name = 'Wall'; break
       case STRUCTURE_ROAD: name = 'Road'; break
+      case STRUCTURE_LINK: name = 'Link'; break
       default: name = '???'; break
     }
     if(struc instanceof ConstructionSite) {
@@ -617,6 +628,35 @@ class Overlord {
       oldItemCount += 1
     }
     Memory.stats['hiveMind.oldItemCount'] = oldItemCount
+  }
+
+
+  getLackingSourceLink(creep) {
+    let sources = creep.room.find(FIND_MY_STRUCTURES, {filter: (struc)=> (
+      struc.structureType == STRUCTURE_LINK &&
+      struc.energy < struc.energyCapacity
+    )})
+
+    if(sources.length) {
+      return sources[0]
+    }
+    else {
+      return null
+    }
+  }
+
+  getNonVoidProviderLink(creep) {
+    let sources = creep.room.find(FIND_MY_STRUCTURES, {filter: (struc)=> (
+      struc.structureType == STRUCTURE_LINK &&
+      struc.energy > 0
+    )})
+
+    if(sources.length) {
+      return sources[0]
+    }
+    else {
+      return null
+    }
   }
 }
 

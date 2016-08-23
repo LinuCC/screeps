@@ -68,5 +68,33 @@ module.exports = {
       }
     }
   },
+
+  getLackingSourceLink(creep) {
+    let sources = creep.room.find(FIND_MY_STRUCTURES, {filter: (struc)=> (
+      struc.structureType == STRUCTURE_LINK &&
+      struc.energy < struc.energyCapacity
+    )})
+
+    if(sources.length) {
+      return sources[0]
+    }
+    else {
+      return null
+    }
+  },
+
+  getNonVoidProviderLink(creep) {
+    let sources = creep.room.find(FIND_MY_STRUCTURES, {filter: (struc)=> (
+      struc.structureType == STRUCTURE_LINK &&
+      struc.energy > 0
+    )})
+
+    if(sources.length) {
+      return sources[0]
+    }
+    else {
+      return null
+    }
+  }
 };
 

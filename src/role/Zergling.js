@@ -202,6 +202,16 @@ class Zergling {
         }
       }
       else {
+        if(object.structureType == STRUCTURE_CONTROLLER) {
+          let altFlags = _.filter(Game.flags, (flag)=> (
+            flag.name == 'altCon' &&
+            flag.pos.roomName == this.zergling.room.name
+          ))
+          if(altFlags.length) {
+            this.zergling.moveTo(altFlags[0])
+            return
+          }
+        }
         this.zergling.moveTo(object)
       }
     }
@@ -230,7 +240,9 @@ class Zergling {
         this.done()
       }
     }
-    else if(source.energy || source.mineralAmount) {
+    else if(
+      (source.energy || source.mineralAmount) && source.cooldown === undefined
+    ) {
       res = this.zergling.harvest(source)
       this.hasWorked = true
       if(_.sum(this.zergling.carry) == this.zergling.carryCapacity) {

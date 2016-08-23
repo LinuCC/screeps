@@ -29,6 +29,19 @@ module.exports = {
                 tower.attack(this.mostValuableTarget(hostiles, tower))
             ));
         }
+        else {
+          let creeps = room.find(
+            FIND_MY_CREEPS, {filter: (c)=> c.hits < c.hitsMax}
+          )
+          if(creeps.length) {
+            const towers = room.find(
+                FIND_MY_STRUCTURES, {filter: {structureType: STRUCTURE_TOWER}}
+            );
+            towers.forEach((tower)=> (
+              tower.heal(creeps[0])
+            ))
+          }
+        }
     },
 
     mostValuableTarget(hostiles, tower) {

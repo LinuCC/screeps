@@ -100,6 +100,24 @@ module.exports.loop = ()=> profiler.wrap(()=> {
             zergling.run(priorityQueues)
           })
         }
+
+        if(room.memory.links && room.memory.links.providers) {
+          nextTarget:
+          for(let target of room.memory.links.providers) {
+            let targetLink = Game.getObjectById(target)
+            if(targetLink.energy < targetLink.energyCapacity) {
+              if(room.memory.links && room.memory.links.sources.length) {
+                for(let source of room.memory.links.sources) {
+                  let sourceLink = Game.getObjectById(source)
+                  if(sourceLink.energy > 0) {
+                    sourceLink.transferEnergy(targetLink)
+                    continue nextTarget
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }
     catch(e) {
@@ -153,4 +171,5 @@ module.exports.loop = ()=> profiler.wrap(()=> {
     hiveMind.save()
     stats.persist()
   }
+  console.log(JSON.stringify(Memory.stats))
 });

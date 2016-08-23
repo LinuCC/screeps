@@ -1,0 +1,12 @@
+function coordinateToCharacter(thePos)
+{
+    return String.fromCodePoint(thePos.x | (thePos.y << 6));
+}
+
+function decodeCoordinate(theString, theIndex)
+{
+    var val = theString.charCodeAt(theIndex);
+    var x = (val &  0x3F);
+    var y = ((val >> 6) & 0x3F);
+    return {x: x, y:y};
+}
