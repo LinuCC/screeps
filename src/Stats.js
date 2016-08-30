@@ -43,8 +43,12 @@ class Stats {
           _.sum(energyStorages, 'energy')
         )
       }
-      Memory.stats[`room.${roomName}.upgrade.progress`] =
-        room.controller.progress
+      if(room.controller) {
+        Memory.stats[`room.${roomName}.upgrade.progress`] =
+          room.controller.progress
+        Memory.stats[`room.${roomName}.upgrade.progressTotal`] =
+          room.controller.progressTotal
+      }
 
       Memory.stats['cpu.bucket'] = Game.cpu.bucket
       Memory.stats['cpu.limit'] = Game.cpu.limit

@@ -20,11 +20,16 @@ class Spawner {
   fighter = (spawn)=> {
     return Game.spawns[spawn.name].createCreep( [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK], 'Fighter' + this.newCreepIndex(), {role: 'fighter'})
   }
+  wreckingBall = (spawn)=> {
+    let body = this.calcCreepBody(spawn.room, [WORK], 0, false)
+    return Game.spawns[spawn.name].createCreep( body, 'WreckingBall' + this.newCreepIndex(), {role: 'fighter'})
+  }
   rangedFighter = (spawn)=> {
     return Game.spawns[spawn.name].createCreep( [MOVE, MOVE, MOVE, MOVE, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK], 'RangedFighter' + this.newCreepIndex(), {role: 'rangedFighter'})
   }
   healer = (spawn)=> {
-    return Game.spawns[spawn.name].createCreep( [HEAL, HEAL, HEAL, HEAL, MOVE, MOVE, MOVE, MOVE], 'Healer' + this.newCreepIndex(), {role: 'healer'})
+    let body = this.calcCreepBody(spawn.room, [HEAL], 0, false)
+    return Game.spawns[spawn.name].createCreep( body, 'Healer' + this.newCreepIndex(), {role: 'healer'})
   }
   assimilator = (spawn)=> {
     return Game.spawns[spawn.name].createCreep( [CLAIM, CLAIM, CLAIM, MOVE, MOVE, MOVE], 'Assi' + this.newCreepIndex(), {role: 'assimilator'})
@@ -46,9 +51,18 @@ class Spawner {
     let body = this.calcCreepBody(spawn.room, [CARRY])
     return Game.spawns[spawn.name].createCreep(body, 'Drone' + this.newCreepIndex(), {role: 'zergling', kind: [CARRY]})
   }
-  zergling = (spawn)=> {
-    let body = this.calcCreepBody(spawn.room, [WORK, WORK, WORK, CARRY, CARRY])
-    return Game.spawns[spawn.name].createCreep(body, 'Zergling' + this.newCreepIndex(), {role: 'zergling', kind: [WORK, CARRY]})
+  zergling = (spawn, opts = {})=> {
+    let usingStreet = true
+    opts = Object.assign({}, opts, {role: 'zergling', kind: [WORK, CARRY]})
+    if(opts['usingStreet'] != undefined) {
+      usingStreet = opts['usingStreet']
+      delete opts['usingStreet']
+    }
+    let name = 'Zergling' + this.newCreepIndex()
+    let body = this.calcCreepBody(
+      spawn.room, [WORK, WORK, WORK, CARRY, CARRY], 0, usingStreet
+    )
+    return Game.spawns[spawn.name].createCreep(body, name, opts)
   }
 
   newCreepIndex = function() {
@@ -61,7 +75,10 @@ class Spawner {
     let partCost = {
       [WORK]: 100,
       [CARRY]: 50,
-      [MOVE]: 50
+      [MOVE]: 50,
+      [ATTACK]: 80,
+      [RANGED_ATTACK]: 150,
+      [HEAL]: 250
     }
     let roomMaxCost = _.sum(
       room.find(FIND_MY_STRUCTURES, {filter: (struc)=> (

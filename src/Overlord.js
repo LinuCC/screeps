@@ -508,6 +508,18 @@ class Overlord {
     if(structures.length > 0) {
       return creep.pos.findClosestByPath(structures)
     }
+    else {
+      // Mine resources themself
+      let isBootstrapping = this.room.find(
+        FIND_STRUCTURES, {filter: {structureType: STRUCTURE_CONTAINER}}
+      ).length == 0
+      if(isBootstrapping) {
+        let sources = creep.room.find(FIND_SOURCES, {filter: (source)=> (
+          source.energy > 0
+        )})
+        return creep.pos.findClosestByPath(sources)
+      }
+    }
   }
 
   satisfyBoredCreep = (creep)=> {
@@ -624,7 +636,7 @@ class Overlord {
         "<span style='color: #aadd33'>Item missing:</span>\n    ",
         JSON.stringify(item)
       )
-      // delete hiveMind.data[itemId]
+      delete hiveMind.data[itemId]
       oldItemCount += 1
     }
     Memory.stats['hiveMind.oldItemCount'] = oldItemCount

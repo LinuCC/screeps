@@ -28,6 +28,7 @@ const MY_ERR_WTF = -1001
  *       XXX
  *    }
  *   sourcing
+ *   myRoom = The room the zergling is supposed to be in
  */
 
 class Zergling {
@@ -44,6 +45,15 @@ class Zergling {
 
       this.priorityQueues = priorityQueues
       if(!this.zergling.memory.item) {
+        if(
+          this.zergling.memory.myRoom &&
+          this.zergling.pos.roomName != this.zergling.memory.myRoom
+        ) {
+          this.zergling.moveTo(
+            Game.rooms[this.zergling.memory.myRoom].controller
+          )
+          return
+        }
         if(!this.zergling.memory.kind) {
           this.zergling.say('calcKind')
           this.calcKind()
@@ -263,9 +273,17 @@ class Zergling {
     let amount = (data.toTarget.amount) ? data.toTarget.amount : null
     let res
     if(target instanceof ConstructionSite) {
+      console.log("Target before", JSON.stringify(target))
       res = this.zergling.build(target)
+      console.log("Target after", JSON.stringify(target))
+      console.log("Target reloaded", JSON.stringify(Game.getObjectById(target.id)))
       this.hasWorked = true
-      if(this.zergling.carry[RESOURCE_ENERGY] == 0) { this.done() }
+      if(
+        this.zergling.carry[RESOURCE_ENERGY] == 0
+
+      ) {
+        this.done()
+      }
     }
     else if(target.structureType == STRUCTURE_CONTROLLER) {
       res = this.zergling.upgradeController(target)
@@ -355,6 +373,7 @@ class Zergling {
         this.zergling.say('WTF?', true)
         break
       // case ERR_NOT_ENOUGH_EXTENSIONS: this.zergling.say('', true); break
+      case ERR_RCL_NOT_ENOUGH: this.zergling.say('<!', true); break
     }
   }
 

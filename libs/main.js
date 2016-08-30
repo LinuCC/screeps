@@ -150,7 +150,7 @@ module.exports =
 	  }
 	  if (Game.time % 10 == 0) {
 	    // Logging purposes
-	    log.cyan('Removing Old HiveMindItems');
+	    // log.cyan('Removing Old HiveMindItems')
 	    new _Overlord2.default('NoFrigginRoom').removeOldHiveMindItems();
 	  }
 
@@ -260,7 +260,6 @@ module.exports =
 	    _hiveMind2.default.save();
 	    stats.persist();
 	  }
-	  console.log(JSON.stringify(Memory.stats));
 	});
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
@@ -1044,6 +1043,8 @@ module.exports =
 
 	class Spawner {
 	  constructor() {
+	    var _this = this;
+
 	    this.rebootHarvester = spawn => {
 	      return Game.spawns[spawn.name].createCreep([WORK, CARRY, CARRY, MOVE, MOVE], 'Harvester' + this.newCreepIndex(), { role: 'harvester' });
 	    };
@@ -1072,12 +1073,18 @@ module.exports =
 	      return Game.spawns[spawn.name].createCreep([MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK], 'Fighter' + this.newCreepIndex(), { role: 'fighter' });
 	    };
 
+	    this.wreckingBall = spawn => {
+	      let body = this.calcCreepBody(spawn.room, [WORK], 0, false);
+	      return Game.spawns[spawn.name].createCreep(body, 'WreckingBall' + this.newCreepIndex(), { role: 'fighter' });
+	    };
+
 	    this.rangedFighter = spawn => {
 	      return Game.spawns[spawn.name].createCreep([MOVE, MOVE, MOVE, MOVE, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK], 'RangedFighter' + this.newCreepIndex(), { role: 'rangedFighter' });
 	    };
 
 	    this.healer = spawn => {
-	      return Game.spawns[spawn.name].createCreep([HEAL, HEAL, HEAL, HEAL, MOVE, MOVE, MOVE, MOVE], 'Healer' + this.newCreepIndex(), { role: 'healer' });
+	      let body = this.calcCreepBody(spawn.room, [HEAL], 0, false);
+	      return Game.spawns[spawn.name].createCreep(body, 'Healer' + this.newCreepIndex(), { role: 'healer' });
 	    };
 
 	    this.assimilator = spawn => {
@@ -1106,9 +1113,18 @@ module.exports =
 	      return Game.spawns[spawn.name].createCreep(body, 'Drone' + this.newCreepIndex(), { role: 'zergling', kind: [CARRY] });
 	    };
 
-	    this.zergling = spawn => {
-	      let body = this.calcCreepBody(spawn.room, [WORK, WORK, WORK, CARRY, CARRY]);
-	      return Game.spawns[spawn.name].createCreep(body, 'Zergling' + this.newCreepIndex(), { role: 'zergling', kind: [WORK, CARRY] });
+	    this.zergling = function (spawn) {
+	      let opts = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+	      let usingStreet = true;
+	      opts = Object.assign({}, opts, { role: 'zergling', kind: [WORK, CARRY] });
+	      if (opts['usingStreet'] != undefined) {
+	        usingStreet = opts['usingStreet'];
+	        delete opts['usingStreet'];
+	      }
+	      let name = 'Zergling' + _this.newCreepIndex();
+	      let body = _this.calcCreepBody(spawn.room, [WORK, WORK, WORK, CARRY, CARRY], 0, usingStreet);
+	      return Game.spawns[spawn.name].createCreep(body, name, opts);
 	    };
 
 	    this.newCreepIndex = function () {
@@ -1124,7 +1140,10 @@ module.exports =
 	      let partCost = {
 	        [WORK]: 100,
 	        [CARRY]: 50,
-	        [MOVE]: 50
+	        [MOVE]: 50,
+	        [ATTACK]: 80,
+	        [RANGED_ATTACK]: 150,
+	        [HEAL]: 250
 	      };
 	      let roomMaxCost = _.sum(room.find(FIND_MY_STRUCTURES, { filter: struc => struc.structureType == STRUCTURE_EXTENSION || struc.structureType == STRUCTURE_SPAWN }), 'energy');
 	      let max = maxCost != 0 ? maxCost : roomMaxCost;
@@ -1156,10 +1175,10 @@ module.exports =
 /* 12 */
 /***/ function(module, exports) {
 
-	"use strict";
+	'use strict';
 
 	const roleFighter = {
-	  run: creep => {
+	  run(creep) {
 	    let flag;
 	    if (creep.memory.flagName) {
 	      flag = Game.flags[creep.memory.flagName];
@@ -1174,13 +1193,21 @@ module.exports =
 	      if (creep.pos.inRangeTo(flag, 1)) {
 	        let targets = flag.pos.look();
 	        if (targets.length) {
-	          creep.attack(targets[0]);
+	          this.destroy(creep, targets[0]);
 	        }
 	      }
 	      let targets = creep.pos.findInRange(FIND_HOSTILE_CREEPS, 1);
 	      if (targets.length > 0) {
-	        creep.attack(targets[0]);
+	        this.destroy(creep, targets[0]);
 	      }
+	    }
+	  },
+
+	  destroy(creep, target) {
+	    if (creep.getActiveBodyparts(WORK) > 0 && !(target instanceof Creep)) {
+	      console.log(creep.dismantle(Game.getObjectById('57a2ac0b0ed300e43ec06811')));
+	    } else {
+	      creep.attack(target);
 	    }
 	  }
 	};
@@ -1888,6 +1915,13 @@ module.exports =
 	    }
 	    if (structures.length > 0) {
 	      return creep.pos.findClosestByPath(structures);
+	    } else {
+	      // Mine resources themself
+	      let isBootstrapping = this.room.find(FIND_STRUCTURES, { filter: { structureType: STRUCTURE_CONTAINER } }).length == 0;
+	      if (isBootstrapping) {
+	        let sources = creep.room.find(FIND_SOURCES, { filter: source => source.energy > 0 });
+	        return creep.pos.findClosestByPath(sources);
+	      }
 	    }
 	  };
 
@@ -1989,7 +2023,7 @@ module.exports =
 	        // }u
 	      }
 	      console.log("<span style='color: #aadd33'>Item missing:</span>\n    ", JSON.stringify(item));
-	      // delete hiveMind.data[itemId]
+	      delete _hiveMind2.default.data[itemId];
 	      oldItemCount += 1;
 	    }
 	    Memory.stats['hiveMind.oldItemCount'] = oldItemCount;
@@ -2041,6 +2075,7 @@ module.exports =
 	 *       XXX
 	 *    }
 	 *   sourcing
+	 *   myRoom = The room the zergling is supposed to be in
 	 */
 
 	class Zergling {
@@ -2054,6 +2089,10 @@ module.exports =
 
 	        this.priorityQueues = priorityQueues;
 	        if (!this.zergling.memory.item) {
+	          if (this.zergling.memory.myRoom && this.zergling.pos.roomName != this.zergling.memory.myRoom) {
+	            this.zergling.moveTo(Game.rooms[this.zergling.memory.myRoom].controller);
+	            return;
+	          }
 	          if (!this.zergling.memory.kind) {
 	            this.zergling.say('calcKind');
 	            this.calcKind();
@@ -2245,7 +2284,10 @@ module.exports =
 	      let amount = data.toTarget.amount ? data.toTarget.amount : null;
 	      let res;
 	      if (target instanceof ConstructionSite) {
+	        console.log("Target before", JSON.stringify(target));
 	        res = this.zergling.build(target);
+	        console.log("Target after", JSON.stringify(target));
+	        console.log("Target reloaded", JSON.stringify(Game.getObjectById(target.id)));
 	        this.hasWorked = true;
 	        if (this.zergling.carry[RESOURCE_ENERGY] == 0) {
 	          this.done();
@@ -2340,6 +2382,8 @@ module.exports =
 	          _this.zergling.say('WTF?', true);
 	          break;
 	        // case ERR_NOT_ENOUGH_EXTENSIONS: this.zergling.say('', true); break
+	        case ERR_RCL_NOT_ENOUGH:
+	          _this.zergling.say('<!', true);break;
 	      }
 	    };
 
@@ -2413,7 +2457,6 @@ module.exports =
 	    };
 
 	    this.persist = () => {
-	      console.log("hi");
 	      Memory.stats[`hiveMind.count`] = Object.keys(Memory.hiveMind).length;
 	      Memory.stats[`hiveMind.index`] = Memory.hiveMindIndex;
 	      for (let roomName in Game.rooms) {
@@ -2433,7 +2476,10 @@ module.exports =
 	        if (resStorages.length) {
 	          Memory.stats[`room.${ roomName }.resources.storage.energy`] = resStorages.reduce((memo, storage) => memo + storage.store[RESOURCE_ENERGY], 0) + _.sum(energyStorages, 'energy');
 	        }
-	        Memory.stats[`room.${ roomName }.upgrade.progress`] = room.controller.progress;
+	        if (room.controller) {
+	          Memory.stats[`room.${ roomName }.upgrade.progress`] = room.controller.progress;
+	          Memory.stats[`room.${ roomName }.upgrade.progressTotal`] = room.controller.progressTotal;
+	        }
 
 	        Memory.stats['cpu.bucket'] = Game.cpu.bucket;
 	        Memory.stats['cpu.limit'] = Game.cpu.limit;

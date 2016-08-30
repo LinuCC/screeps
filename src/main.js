@@ -39,7 +39,7 @@ module.exports.loop = ()=> profiler.wrap(()=> {
   }
   if(Game.time % 10 == 0) {
     // Logging purposes
-    log.cyan('Removing Old HiveMindItems')
+    // log.cyan('Removing Old HiveMindItems')
     new Overlord('NoFrigginRoom').removeOldHiveMindItems()
   }
 
@@ -171,5 +171,4 @@ module.exports.loop = ()=> profiler.wrap(()=> {
     hiveMind.save()
     stats.persist()
   }
-  console.log(JSON.stringify(Memory.stats))
 });
