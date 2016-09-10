@@ -41,13 +41,14 @@ module.exports.loop = ()=> profiler.wrap(()=> {
   if(Game.time % 5000 == 0) {
     spawnCreepWatcher.cleanupMemory()
   }
-  if(Game.time % 50 == 0) {
+  if(Game.time % 1 == 0) {
     // Logging purposes
     // log.cyan('Removing Old HiveMindItems')
     // new Overlord('NoFrigginRoom').removeOldHiveMindItems()
     new Overseer().check()
   }
 
+  modwide.$ = $
   modwide.Spawner = Spawner
   modwide.Overlord = Overlord
   modwide.hiveMind = hiveMind

@@ -127,7 +127,7 @@ class Overseer {
    * Rooms with spawns in them
    */
   myMainRooms = ()=> {
-    return _.uniq(_.mapValues(Game.spawns, (spawn)=> spawn.room))
+    return _.uniq(_.map(Game.spawns, (spawn)=> spawn.room))
   }
 }
 

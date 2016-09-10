@@ -11,6 +11,10 @@ class PriorityQueue {
     this._heapify()
   }
 
+  itemCount = ()=> (
+    this.data.length
+  )
+
   _heapify = ()=> {
     if(this.data.length > 0) {
       for(let i in [...Array(this.data.length).keys()]) {

@@ -288,6 +288,7 @@ class Zergling {
     else if(target.structureType == STRUCTURE_CONTROLLER) {
       res = this.zergling.upgradeController(target)
       this.hasWorked = true
+      // TODO carry - the upgradeController-energy for this tick
       if(this.zergling.carry[RESOURCE_ENERGY] == 0) { this.done() }
     }
     else {

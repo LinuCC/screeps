@@ -1,3 +1,4 @@
+import $ from './constants'
 import hiveMind from './hiveMind'
 
 const TYPE_SOURCE = 0
@@ -37,6 +38,8 @@ class Overlord {
 
     this.existingItems = hiveMind.allForRoom(this.room)
 
+    this.spawn()
+
     if(queues[WORK]) {
       this.work(queues[WORK])
     }
@@ -45,6 +48,47 @@ class Overlord {
     }
 
     this.remote()
+  }
+
+  spawn = ()=> {
+    let queue = this.room.queue($.SPAWN)
+    if(queue && queue.itemCount() > 0) {
+      let spawningSpawns = []
+      while(queue.peek()) {
+        let queueItem = queue.peek()
+        let data = Memory['hiveMind'][queueItem.id]
+        let body = (data.body) ?
+          data.body : this.calcCreepBody($.ZERG_PARTS_TEMPLATES[data.kind])
+        let spawns = this.room.spawns(
+          (s)=> s.canCreateCreep(body) === OK && !spawningSpawns.includes(s)
+        )
+        if(spawns.length) {
+          let memory = (data.memory) ? data.memory : {role: $.ROLE_ZERG}
+          let res = spawns[0].createCreep(
+            body, `${data.kind}${this.newCreepIndex()}`, memory
+          )
+          spawningSpawns.push(spawns[0])
+          if(typeof res === 'string') {
+            queue.dequeue()
+            hiveMind.remove(queueItem.id)
+            console.log("DEQUEUE")
+          }
+          else {
+            console.log("Spawn noped", res)
+            break
+          }
+        }
+        else {
+          break;
+        }
+      }
+    }
+  }
+
+  newCreepIndex = function() {
+    let index = Memory.creepIndex
+    Memory.creepIndex += 1
+    return index
   }
 
   work = (queue)=> {
@@ -645,6 +689,42 @@ class Overlord {
     else {
       return null
     }
+  }
+
+  calcCreepBody = (parts, maxCost = 0, usingStreet = true)=> {
+    let partCost = {
+      [WORK]: 100,
+      [CARRY]: 50,
+      [MOVE]: 50,
+      [ATTACK]: 80,
+      [RANGED_ATTACK]: 150,
+      [HEAL]: 250
+    }
+    let roomMaxCost = _.sum(
+      this.room.find(FIND_MY_STRUCTURES, {filter: (struc)=> (
+        struc.structureType == STRUCTURE_EXTENSION ||
+        struc.structureType == STRUCTURE_SPAWN
+      )}),
+      'energy'
+    )
+    let max = (maxCost != 0) ? maxCost : roomMaxCost
+    let partBlockCost = parts.reduce((memo, part)=> (memo + partCost[part]), 0)
+    let moveRatio = (usingStreet) ? 1/2 : 1
+    let movesPerBlock = (parts.length * moveRatio)
+    let moveCost = movesPerBlock * partCost[MOVE]
+    // We should add one MOVE to the 6 calculated MOVE if we have 13 parts
+    let hiddenMoveCost = (movesPerBlock % 1 > 0) ? partCost[MOVE] / 2 : 0
+    let wholeBlockCost = partBlockCost + moveCost
+    let maxBlockCount = Math.floor(50 / (parts.length + movesPerBlock))
+    let blockCount = Math.floor((max - hiddenMoveCost) / wholeBlockCost)
+    blockCount = (maxBlockCount < blockCount) ? maxBlockCount : blockCount
+    let moveBlockCount = Math.ceil(movesPerBlock * blockCount)
+    let body = []
+    _.range(moveBlockCount).forEach(()=> body.push(MOVE))
+    for(let i = 0; i < blockCount; i += 1) {
+      body = body.concat(parts)
+    }
+    return body
   }
 }
 

@@ -158,13 +158,14 @@ var modwide = global; module.exports =
 	  if (Game.time % 5000 == 0) {
 	    _creepWatcher2.default.cleanupMemory();
 	  }
-	  if (Game.time % 50 == 0) {
+	  if (Game.time % 1 == 0) {
 	    // Logging purposes
 	    // log.cyan('Removing Old HiveMindItems')
 	    // new Overlord('NoFrigginRoom').removeOldHiveMindItems()
 	    new _Overseer2.default().check();
 	  }
 
+	  modwide.$ = _constants2.default;
 	  modwide.Spawner = _spawner2.default;
 	  modwide.Overlord = _Overlord2.default;
 	  modwide.hiveMind = _hiveMind2.default;
@@ -301,6 +302,23 @@ var modwide = global; module.exports =
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+	Room.prototype.spawns = function () {
+	  let filter = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+
+	  let findFilter = null;
+	  if (typeof filter === 'function') {
+	    findFilter = s => s.structureType === STRUCTURE_SPAWN && filter(s);
+	  } else {
+	    findFilter = Object.assign({ structureType: STRUCTURE_SPAWN }, filter);
+	  }
+	  let options = { filter: findFilter };
+	  return this.find(FIND_MY_STRUCTURES, options);
+	};
+
+	Room.prototype.queue = function (name) {
+	  return new _priorityQueue2.default(this.memory.priorityQueues[name]);
+	};
+
 	Room.prototype.pushToQueue = function (queue, item, priority) {
 	  if (typeof queue == 'string') {
 	    if (!this.memory.priorityQueues[queue]) {
@@ -312,7 +330,8 @@ var modwide = global; module.exports =
 	  if (queue) {
 	    let itemId = _hiveMind2.default.push(item);
 	    let queueData = { id: itemId, prio: priority };
-	    return queue.queue(queueData);
+	    queue.queue(queueData);
+	    return itemId;
 	  } else {
 	    throw new Error('Queue?');
 	  }
@@ -371,6 +390,8 @@ var modwide = global; module.exports =
 
 	class PriorityQueue {
 	  constructor(initialValues) {
+	    this.itemCount = () => this.data.length;
+
 	    this._heapify = () => {
 	      if (this.data.length > 0) {
 	        for (let i in [...Array(this.data.length).keys()]) {
@@ -471,10 +492,17 @@ var modwide = global; module.exports =
 	const KIND_ZERGLING = 2; /* Work stuff */
 	const KIND_INFESTOR = 3; /* Mine stuff from sources */
 	const KIND_CORRUPTOR = 4; /* Claim Controller */
+	const KIND_MUTALISK = 5; /* Scout stuff */
+
+	const SCOUT = 'scout';
+	const SPAWN = 'spawn';
 
 	const _exports = Object.freeze({
 	  ROOM_CENTER_X: 25,
 	  ROOM_CENTER_Y: 25,
+
+	  SPAWN: SPAWN,
+	  SCOUT: SCOUT,
 
 	  ENERGY_COST: Object.freeze({
 	    [WORK]: 100,
@@ -484,13 +512,18 @@ var modwide = global; module.exports =
 	    [RANGED_ATTACK]: 150,
 	    [HEAL]: 250
 	  }),
-	  ZERG_KINDS: [KIND_DRONE, KIND_ZERGLING, KIND_INFESTOR, KIND_CORRUPTOR],
-	  PRIO_QUEUES: [WORK, CARRY, CLAIM],
+	  ZERG_KINDS: [KIND_DRONE, KIND_ZERGLING, KIND_INFESTOR, KIND_CORRUPTOR, KIND_MUTALISK],
+	  ZERG_PARTS_TEMPLATES: {
+	    KIND_DRONE: [CARRY],
+	    KIND_ZERGLING: [WORK, WORK, WORK, CARRY, CARRY]
+	  },
+	  PRIO_QUEUES: [WORK, CARRY, CLAIM, SCOUT, SPAWN],
 	  ROLE_ZERG: ROLE_ZERG,
 	  KIND_DRONE: KIND_DRONE,
 	  KIND_ZERGLING: KIND_ZERGLING,
 	  KIND_INFESTOR: KIND_INFESTOR,
 	  KIND_CORRUPTOR: KIND_CORRUPTOR,
+	  KIND_MUTALISK: KIND_MUTALISK,
 
 	  ROOM_DEFAULT_TARGET_ZERG_COUNT: {
 	    [KIND_DRONE]: 1,
@@ -1600,6 +1633,10 @@ var modwide = global; module.exports =
 
 	'use strict';
 
+	var _constants = __webpack_require__(4);
+
+	var _constants2 = _interopRequireDefault(_constants);
+
 	var _hiveMind = __webpack_require__(2);
 
 	var _hiveMind2 = _interopRequireDefault(_hiveMind);
@@ -1629,9 +1666,13 @@ var modwide = global; module.exports =
 
 	class Overlord {
 	  constructor(roomName) {
+	    var _this = this;
+
 	    this.update = queues => {
 
 	      this.existingItems = _hiveMind2.default.allForRoom(this.room);
+
+	      this.spawn();
 
 	      if (queues[WORK]) {
 	        this.work(queues[WORK]);
@@ -1639,6 +1680,42 @@ var modwide = global; module.exports =
 	      if (queues[CARRY]) {
 	        this.carry(queues[CARRY]);
 	      }
+
+	      this.remote();
+	    };
+
+	    this.spawn = () => {
+	      let queue = this.room.queue(_constants2.default.SPAWN);
+	      if (queue && queue.itemCount() > 0) {
+	        let spawningSpawns = [];
+	        while (queue.peek()) {
+	          let queueItem = queue.peek();
+	          let data = Memory['hiveMind'][queueItem.id];
+	          let body = data.body ? data.body : this.calcCreepBody(_constants2.default.ZERG_PARTS_TEMPLATES[data.kind]);
+	          let spawns = this.room.spawns(s => s.canCreateCreep(body) === OK && !(spawningSpawns.indexOf(s) !== -1));
+	          if (spawns.length) {
+	            let memory = data.memory ? data.memory : { role: _constants2.default.ROLE_ZERG };
+	            let res = spawns[0].createCreep(body, `${ data.kind }${ this.newCreepIndex() }`, memory);
+	            spawningSpawns.push(spawns[0]);
+	            if (typeof res === 'string') {
+	              queue.dequeue();
+	              _hiveMind2.default.remove(queueItem.id);
+	              console.log("DEQUEUE");
+	            } else {
+	              console.log("Spawn noped", res);
+	              break;
+	            }
+	          } else {
+	            break;
+	          }
+	        }
+	      }
+	    };
+
+	    this.newCreepIndex = function () {
+	      let index = Memory.creepIndex;
+	      Memory.creepIndex += 1;
+	      return index;
 	    };
 
 	    this.work = queue => {
@@ -1993,6 +2070,23 @@ var modwide = global; module.exports =
 	      }
 	    };
 
+	    this.remote = () => {
+	      if (this.room.memory.connectedRemoteRooms) {
+	        for (let remoteName of this.room.memory.connectedRemoteRooms) {
+	          let data = this.room.memory.connectedRemoteRooms[remoteName];
+	          let remoteRoom = Game.rooms[remoteName];
+	          if (data.parsed) {} else {
+	            this.initiateRemoteRoomParsing();
+	          }
+	        }
+	      }
+	    };
+
+	    this.initiateRemoteRoomParsing = () => {
+	      // Scout, cache & pave path with roads
+	      // TODO ADD ME
+	    };
+
 	    this.satisfyBoredCreep = creep => {
 	      // Find Containers that have still stuff in them and take that stuff
 	      // somewhere else if possible
@@ -2064,6 +2158,39 @@ var modwide = global; module.exports =
 	      }
 	    };
 
+	    this.calcCreepBody = function (parts) {
+	      let maxCost = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
+	      let usingStreet = arguments.length <= 2 || arguments[2] === undefined ? true : arguments[2];
+
+	      let partCost = {
+	        [WORK]: 100,
+	        [CARRY]: 50,
+	        [MOVE]: 50,
+	        [ATTACK]: 80,
+	        [RANGED_ATTACK]: 150,
+	        [HEAL]: 250
+	      };
+	      let roomMaxCost = _.sum(_this.room.find(FIND_MY_STRUCTURES, { filter: struc => struc.structureType == STRUCTURE_EXTENSION || struc.structureType == STRUCTURE_SPAWN }), 'energy');
+	      let max = maxCost != 0 ? maxCost : roomMaxCost;
+	      let partBlockCost = parts.reduce((memo, part) => memo + partCost[part], 0);
+	      let moveRatio = usingStreet ? 1 / 2 : 1;
+	      let movesPerBlock = parts.length * moveRatio;
+	      let moveCost = movesPerBlock * partCost[MOVE];
+	      // We should add one MOVE to the 6 calculated MOVE if we have 13 parts
+	      let hiddenMoveCost = movesPerBlock % 1 > 0 ? partCost[MOVE] / 2 : 0;
+	      let wholeBlockCost = partBlockCost + moveCost;
+	      let maxBlockCount = Math.floor(50 / (parts.length + movesPerBlock));
+	      let blockCount = Math.floor((max - hiddenMoveCost) / wholeBlockCost);
+	      blockCount = maxBlockCount < blockCount ? maxBlockCount : blockCount;
+	      let moveBlockCount = Math.ceil(movesPerBlock * blockCount);
+	      let body = [];
+	      _.range(moveBlockCount).forEach(() => body.push(MOVE));
+	      for (let i = 0; i < blockCount; i += 1) {
+	        body = body.concat(parts);
+	      }
+	      return body;
+	    };
+
 	    this.room = Game.rooms[roomName];
 	    // Basic unit to quantify how many tasks the container can serve per amount.
 	    // Should be generalized into a room-wide calculation, depending on the
@@ -2118,6 +2245,7 @@ var modwide = global; module.exports =
 	      return null;
 	    }
 	  }
+
 	}
 
 	module.exports = Overlord;
@@ -2218,7 +2346,8 @@ var modwide = global; module.exports =
 	        }
 	        if (!targetRoom.memory.connectedRemoteRooms[remoteRoomName]) {
 	          targetRoom.memory.connectedRemoteRooms[remoteRoomName] = {
-	            active: true
+	            active: true,
+	            parsed: false
 	          };
 	        }
 	        return true;
@@ -2226,7 +2355,7 @@ var modwide = global; module.exports =
 	    };
 
 	    this.myMainRooms = () => {
-	      return _.uniq(_.mapValues(Game.spawns, spawn => spawn.room));
+	      return _.uniq(_.map(Game.spawns, spawn => spawn.room));
 	    };
 	  }
 
@@ -2246,7 +2375,11 @@ var modwide = global; module.exports =
 	    for (let flagName in Game.flags) {
 	      let flag = Game.flags[flagName];
 	      if (flag.color == _constants2.default.FLAG_IDENTIFIERS.remoteRoom.color && flag.secondaryColor == _constants2.default.FLAG_IDENTIFIERS.remoteRoom.secondaryColor) {
-	        if (this.generateRemoteRoom(flag.pos.roomName)) {
+	        let targetRoomName = null;
+	        if (this.myMainRooms().map(r => r.name).indexOf(flag.name) !== -1) {
+	          targetRoomName = flag.name;
+	        }
+	        if (this.generateRemoteRoom(flag.pos.roomName, targetRoomName)) {
 	          flag.remove();
 	        }
 	      }
@@ -2303,7 +2436,7 @@ var modwide = global; module.exports =
 	 *       XXX
 	 *    }
 	 *   sourcing
-	 *   myRoom = The room the zergling is supposed to be in
+	 *   myRoomName = The room the zergling is supposed to be in
 	 */
 
 	class Zergling {
@@ -2317,13 +2450,16 @@ var modwide = global; module.exports =
 
 	        this.priorityQueues = priorityQueues;
 	        if (!this.zergling.memory.item) {
-	          if (this.zergling.memory.myRoom && this.zergling.pos.roomName != this.zergling.memory.myRoom) {
-	            this.zergling.moveTo(Game.rooms[this.zergling.memory.myRoom].controller);
+	          if (this.zergling.memory.myRoomName && this.zergling.pos.roomName != this.zergling.memory.myRoomName) {
+	            this.zergling.moveTo(Game.rooms[this.zergling.memory.myRoomName].controller);
 	            return;
 	          }
 	          if (!this.zergling.memory.kind) {
 	            this.zergling.say('calcKind');
 	            this.calcKind();
+	          }
+	          if (!this.zergling.memory.myRoomName) {
+	            this.zergling.memory.myRoomName = this.zergling.pos.roomName;
 	          }
 	          if (this.findWork(priorityQueues)) {
 	            this.work();
@@ -2522,6 +2658,7 @@ var modwide = global; module.exports =
 	      } else if (target.structureType == STRUCTURE_CONTROLLER) {
 	        res = this.zergling.upgradeController(target);
 	        this.hasWorked = true;
+	        // TODO carry - the upgradeController-energy for this tick
 	        if (this.zergling.carry[RESOURCE_ENERGY] == 0) {
 	          this.done();
 	        }
