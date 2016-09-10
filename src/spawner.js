@@ -1,3 +1,5 @@
+import './constants.js'
+
 class Spawner {
   rebootHarvester = (spawn)=> {
     return Game.spawns[spawn.name].createCreep([WORK, CARRY, CARRY, MOVE, MOVE], 'Harvester' + this.newCreepIndex(), {role: 'harvester'})
@@ -17,8 +19,9 @@ class Spawner {
   repairer = (spawn)=> {
     return Game.spawns[spawn.name].createCreep( [WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE], 'Repairer' + this.newCreepIndex(), {role: 'repairer'})
   }
-  fighter = (spawn)=> {
-    return Game.spawns[spawn.name].createCreep( [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK], 'Fighter' + this.newCreepIndex(), {role: 'fighter'})
+  fighter = (spawn, maxEnergy = 0)=> {
+    const body = this.calcCreepBody(spawn.room, [ATTACK], maxEnergy, false)
+    return Game.spawns[spawn.name].createCreep(body, 'Fighter' + this.newCreepIndex(), {role: 'fighter'})
   }
   wreckingBall = (spawn)=> {
     let body = this.calcCreepBody(spawn.room, [WORK], 0, false)
@@ -27,8 +30,8 @@ class Spawner {
   rangedFighter = (spawn)=> {
     return Game.spawns[spawn.name].createCreep( [MOVE, MOVE, MOVE, MOVE, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK], 'RangedFighter' + this.newCreepIndex(), {role: 'rangedFighter'})
   }
-  healer = (spawn)=> {
-    let body = this.calcCreepBody(spawn.room, [HEAL], 0, false)
+  healer = (spawn, maxEnergy = 0)=> {
+    let body = this.calcCreepBody(spawn.room, [HEAL], maxEnergy, false)
     return Game.spawns[spawn.name].createCreep( body, 'Healer' + this.newCreepIndex(), {role: 'healer'})
   }
   assimilator = (spawn)=> {
@@ -69,6 +72,16 @@ class Spawner {
     let index = Memory.creepIndex
     Memory.creepIndex += 1
     return index
+  }
+
+  /**
+   * @param spawnRoom - The room in which the infestor should be spawned
+   * @param sourceAmount - The amount of energy the source contains
+   *  (one of [1500, 3000, 4500])
+   * @param destinationRange - The length of the path to the source to be mined
+   */
+  calcInfestorCreepBody = (spawnRoom, sourceAmount, destinationRange)=> {
+
   }
 
   calcCreepBody = (room, parts, maxCost = 0, usingStreet = true)=> {

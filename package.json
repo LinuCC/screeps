@@ -4,7 +4,7 @@
   "description": "Just my screeps-code",
   "author": "LinuCC <linucc@linu.cc>",
   "scripts": {
-    "build": "webpack && echo 'module.exports = ' | cat - 'libs/main.js' > /tmp/out && mv /tmp/out libs/main.js"
+    "build": "webpack && echo 'var modwide = global; module.exports = ' | cat - 'libs/main.js' > /tmp/out && mv /tmp/out libs/main.js"
   },
   "main": "libs/bundle.js",
   "dependencies": {

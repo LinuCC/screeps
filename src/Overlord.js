@@ -43,6 +43,8 @@ class Overlord {
     if(queues[CARRY]) {
       this.carry(queues[CARRY])
     }
+
+    this.remote()
   }
 
   work = (queue)=> {
@@ -522,6 +524,26 @@ class Overlord {
     }
   }
 
+  remote = ()=> {
+    if(this.room.memory.connectedRemoteRooms) {
+      for(let remoteName of this.room.memory.connectedRemoteRooms) {
+        let data = this.room.memory.connectedRemoteRooms[remoteName]
+        let remoteRoom = Game.rooms[remoteName]
+        if(data.parsed) {
+
+        }
+        else {
+          this.initiateRemoteRoomParsing()
+        }
+      }
+    }
+  }
+
+  initiateRemoteRoomParsing = ()=> {
+    // Scout, cache & pave path with roads
+    // TODO ADD ME
+  }
+
   satisfyBoredCreep = (creep)=> {
     // Find Containers that have still stuff in them and take that stuff
     // somewhere else if possible
@@ -596,52 +618,6 @@ class Overlord {
       return name
     }
   }
-
-  removeOldHiveMindItems = ()=> {
-    let oldItemCount = 0
-    nextItem:
-    for(let itemId in hiveMind.data) {
-      let item = hiveMind.data[itemId]
-      for(let creepName in Game.creeps) {
-        let creep = Game.creeps[creepName]
-        if(creep.memory.item && creep.memory.item.id == item.id) {
-          continue nextItem
-        }
-      }
-
-      for(let roomName in Game.rooms) {
-        let room = Game.rooms[roomName]
-        if(
-          room.memory.priorityQueues &&
-          Object.keys(room.memory.priorityQueues).length &&
-          Object.keys(room.memory.priorityQueues).some((queueName)=> (
-            room.memory.priorityQueues[queueName].some((queueItem)=> (
-              queueItem.id == item.id
-            ))
-          ))
-        ) {
-         continue nextItem
-        }
-        // if(room.memory.priorityQueues && room.memory.priorityQueues.length) {
-        //   for(let queueName in room.memory.priorityQueues) {
-        //     for(let queueItem in room.memory.priorityQueues[queueName]) {
-        //       if(queueItem.id == item.id) {
-        //         break checkItem
-        //       }
-        //     }
-        //   }
-        // }u
-      }
-      console.log(
-        "<span style='color: #aadd33'>Item missing:</span>\n    ",
-        JSON.stringify(item)
-      )
-      delete hiveMind.data[itemId]
-      oldItemCount += 1
-    }
-    Memory.stats['hiveMind.oldItemCount'] = oldItemCount
-  }
-
 
   getLackingSourceLink(creep) {
     let sources = creep.room.find(FIND_MY_STRUCTURES, {filter: (struc)=> (

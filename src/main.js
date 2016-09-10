@@ -1,3 +1,6 @@
+import './overwrite/room'
+
+import $ from './constants'
 import defense from './defense'
 import roleHarvester from './role/harvester'
 import roleUpgrader from './role/upgrader'
@@ -13,6 +16,7 @@ import roleAssimilator from './role/assimilator'
 import PriorityQueue from './priorityQueue'
 import hiveMind from './hiveMind'
 import Overlord from './Overlord'
+import Overseer from './Overseer'
 import Zergling from './role/Zergling'
 import Spawner from './spawner'
 import Stats from './Stats'
@@ -37,19 +41,20 @@ module.exports.loop = ()=> profiler.wrap(()=> {
   if(Game.time % 5000 == 0) {
     spawnCreepWatcher.cleanupMemory()
   }
-  if(Game.time % 10 == 0) {
+  if(Game.time % 50 == 0) {
     // Logging purposes
     // log.cyan('Removing Old HiveMindItems')
-    new Overlord('NoFrigginRoom').removeOldHiveMindItems()
+    // new Overlord('NoFrigginRoom').removeOldHiveMindItems()
+    new Overseer().check()
   }
 
-  global.Spawner = Spawner
-  global.Overlord = Overlord
-  global.hiveMind = hiveMind
-  global.logHiveMindOf = (spawnName)=> {
+  modwide.Spawner = Spawner
+  modwide.Overlord = Overlord
+  modwide.hiveMind = hiveMind
+  modwide.logHiveMindOf = (spawnName)=> {
     new Overlord(Game.spawns[spawnName].room.name).logQueuedItems()
   }
-  global.resetHive = ()=> {
+  modwide.resetHive = ()=> {
     Memory.hiveMind = {}
     Memory.hiveMindIndex = 0
     for(let roomName in Game.rooms) {
@@ -64,6 +69,14 @@ module.exports.loop = ()=> profiler.wrap(()=> {
       delete creep.memory.item
       delete creep.memory.sourcing
       delete creep.memory.kind
+    }
+  }
+  modwide.setMissingCreepRoles = (role = $.ROLE_ZERG)=> {
+    for(let creepName in Game.creeps) {
+      let creep = Game.creeps[creepName]
+      if(!creep.memory.role) {
+        creep.memory.role = role
+      }
     }
   }
 
@@ -92,7 +105,8 @@ module.exports.loop = ()=> profiler.wrap(()=> {
           }
         }
         let zerglings = room.find(FIND_MY_CREEPS, {filter: (c)=> (
-          c.memory.role == 'zergling'
+          c.memory.role == 'zergling' || // TODO remove zergling
+          c.memory.role == $.ROLE_ZERG
         )})
         if(zerglings.length > 0) {
           zerglings.forEach((zerglingCreep)=> {
@@ -159,7 +173,11 @@ module.exports.loop = ()=> profiler.wrap(()=> {
       else if(creep.memory.role == 'zergling') {
 
       }
+      else if(creep.memory.role == $.ROLE_ZERG) {
+
+      }
       else {
+        creep.say("ROLE?!")
         console.log("No role for ${creep.name}!")
       }
     }

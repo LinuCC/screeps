@@ -28,7 +28,7 @@ const MY_ERR_WTF = -1001
  *       XXX
  *    }
  *   sourcing
- *   myRoom = The room the zergling is supposed to be in
+ *   myRoomName = The room the zergling is supposed to be in
  */
 
 class Zergling {
@@ -46,17 +46,20 @@ class Zergling {
       this.priorityQueues = priorityQueues
       if(!this.zergling.memory.item) {
         if(
-          this.zergling.memory.myRoom &&
-          this.zergling.pos.roomName != this.zergling.memory.myRoom
+          this.zergling.memory.myRoomName &&
+          this.zergling.pos.roomName != this.zergling.memory.myRoomName
         ) {
           this.zergling.moveTo(
-            Game.rooms[this.zergling.memory.myRoom].controller
+            Game.rooms[this.zergling.memory.myRoomName].controller
           )
           return
         }
         if(!this.zergling.memory.kind) {
           this.zergling.say('calcKind')
           this.calcKind()
+        }
+        if(!this.zergling.memory.myRoomName) {
+          this.zergling.memory.myRoomName = this.zergling.pos.roomName
         }
         if(this.findWork(priorityQueues)) {
           this.work()
@@ -273,14 +276,11 @@ class Zergling {
     let amount = (data.toTarget.amount) ? data.toTarget.amount : null
     let res
     if(target instanceof ConstructionSite) {
-      console.log("Target before", JSON.stringify(target))
       res = this.zergling.build(target)
-      console.log("Target after", JSON.stringify(target))
-      console.log("Target reloaded", JSON.stringify(Game.getObjectById(target.id)))
       this.hasWorked = true
       if(
         this.zergling.carry[RESOURCE_ENERGY] == 0
-
+        // TODO: need to check if the target is done building in this tick
       ) {
         this.done()
       }

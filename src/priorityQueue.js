@@ -97,6 +97,6 @@ class PriorityQueue {
   }
 }
 
-global.lol = PriorityQueue
+modwide.lol = PriorityQueue
 
 module.exports = PriorityQueue

@@ -61,11 +61,13 @@ module.exports = {
 
     calculateTargetValue(hostile, tower) {
         const position = hostile.pos
-        const room = Game.rooms[hostile.pos.roomName]
-        const surroundingCreepData = room.lookForAtArea(
-            LOOK_CREEPS, position.y - 1, position.x - 1, position.y + 1, position.x + 1, true
+        const surroundingCreeps = position.findInRange(
+          FIND_HOSTILE_CREEPS, 1
         )
-        const surroundingCreeps = _.map(surroundingCreepData, (d)=> d.creep)
+        // const  = room.lookForAtArea(
+        //     LOOK_CREEPS, position.y - 1, position.x - 1, position.y + 1, position.x + 1, true
+        // )
+        // const surroundingCreeps = _.map(surroundingCreepData, (d)=> d.creep)
         let surroundingHealers = _.filter(surroundingCreeps, this.filterHealer)
 
         const range = position.getRangeTo(tower)

@@ -1,3 +1,4 @@
+import $ from './../constants'
 const Spawner = require('../spawner')
 
 var spawnCreepWatcher = {
@@ -63,7 +64,10 @@ var spawnCreepWatcher = {
         }
 
         let zerglings = _.filter(Game.creeps, (creep) => (
-          creep.memory.role == 'zergling' && creep.memory.kind &&
+          (
+            creep.memory.role == $.ROLE_ZERG || creep.memory.role == 'zergling'
+          ) &&
+          creep.memory.kind &&
           creep.memory.kind[0] == WORK &&
           creep.pos.roomName == spawn.pos.roomName
         ));
@@ -72,7 +76,10 @@ var spawnCreepWatcher = {
         }
 
         let drones = _.filter(Game.creeps, (creep) => (
-          creep.memory.role == 'zergling' && creep.memory.kind &&
+          (
+            creep.memory.role == $.ROLE_ZERG || creep.memory.role == 'zergling'
+          )
+          && creep.memory.kind &&
           creep.memory.kind[0] == CARRY &&
           creep.pos.roomName == spawn.pos.roomName
         ));

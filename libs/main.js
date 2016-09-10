@@ -1,4 +1,4 @@
-module.exports = 
+var modwide = global; module.exports = 
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -45,87 +45,97 @@ module.exports =
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(global) {'use strict';
+	'use strict';
 
-	var _defense = __webpack_require__(1);
+	__webpack_require__(1);
+
+	var _constants = __webpack_require__(4);
+
+	var _constants2 = _interopRequireDefault(_constants);
+
+	var _defense = __webpack_require__(5);
 
 	var _defense2 = _interopRequireDefault(_defense);
 
-	var _harvester = __webpack_require__(3);
+	var _harvester = __webpack_require__(7);
 
 	var _harvester2 = _interopRequireDefault(_harvester);
 
-	var _upgrader = __webpack_require__(5);
+	var _upgrader = __webpack_require__(9);
 
 	var _upgrader2 = _interopRequireDefault(_upgrader);
 
-	var _builder = __webpack_require__(6);
+	var _builder = __webpack_require__(10);
 
 	var _builder2 = _interopRequireDefault(_builder);
 
-	var _excavator = __webpack_require__(7);
+	var _excavator = __webpack_require__(11);
 
 	var _excavator2 = _interopRequireDefault(_excavator);
 
-	var _repairer = __webpack_require__(8);
+	var _repairer = __webpack_require__(12);
 
 	var _repairer2 = _interopRequireDefault(_repairer);
 
-	var _transporter = __webpack_require__(9);
+	var _transporter = __webpack_require__(13);
 
 	var _transporter2 = _interopRequireDefault(_transporter);
 
-	var _creepWatcher = __webpack_require__(10);
+	var _creepWatcher = __webpack_require__(14);
 
 	var _creepWatcher2 = _interopRequireDefault(_creepWatcher);
 
-	var _fighter = __webpack_require__(12);
+	var _fighter = __webpack_require__(16);
 
 	var _fighter2 = _interopRequireDefault(_fighter);
 
-	var _healer = __webpack_require__(13);
+	var _healer = __webpack_require__(17);
 
 	var _healer2 = _interopRequireDefault(_healer);
 
-	var _rangedFighter = __webpack_require__(14);
+	var _rangedFighter = __webpack_require__(18);
 
 	var _rangedFighter2 = _interopRequireDefault(_rangedFighter);
 
-	var _assimilator = __webpack_require__(15);
+	var _assimilator = __webpack_require__(19);
 
 	var _assimilator2 = _interopRequireDefault(_assimilator);
 
-	var _priorityQueue = __webpack_require__(16);
+	var _priorityQueue = __webpack_require__(3);
 
 	var _priorityQueue2 = _interopRequireDefault(_priorityQueue);
 
-	var _hiveMind = __webpack_require__(17);
+	var _hiveMind = __webpack_require__(2);
 
 	var _hiveMind2 = _interopRequireDefault(_hiveMind);
 
-	var _Overlord = __webpack_require__(18);
+	var _Overlord = __webpack_require__(20);
 
 	var _Overlord2 = _interopRequireDefault(_Overlord);
 
-	var _Zergling = __webpack_require__(19);
+	var _Overseer = __webpack_require__(21);
+
+	var _Overseer2 = _interopRequireDefault(_Overseer);
+
+	var _Zergling = __webpack_require__(22);
 
 	var _Zergling2 = _interopRequireDefault(_Zergling);
 
-	var _spawner = __webpack_require__(11);
+	var _spawner = __webpack_require__(15);
 
 	var _spawner2 = _interopRequireDefault(_spawner);
 
-	var _Stats = __webpack_require__(20);
+	var _Stats = __webpack_require__(23);
 
 	var _Stats2 = _interopRequireDefault(_Stats);
 
-	__webpack_require__(21);
+	__webpack_require__(24);
 
-	var _screepsProfiler = __webpack_require__(72);
+	var _screepsProfiler = __webpack_require__(75);
 
 	var _screepsProfiler2 = _interopRequireDefault(_screepsProfiler);
 
-	var _helper = __webpack_require__(2);
+	var _helper = __webpack_require__(6);
 
 	var _helper2 = _interopRequireDefault(_helper);
 
@@ -148,19 +158,20 @@ module.exports =
 	  if (Game.time % 5000 == 0) {
 	    _creepWatcher2.default.cleanupMemory();
 	  }
-	  if (Game.time % 10 == 0) {
+	  if (Game.time % 50 == 0) {
 	    // Logging purposes
 	    // log.cyan('Removing Old HiveMindItems')
-	    new _Overlord2.default('NoFrigginRoom').removeOldHiveMindItems();
+	    // new Overlord('NoFrigginRoom').removeOldHiveMindItems()
+	    new _Overseer2.default().check();
 	  }
 
-	  global.Spawner = _spawner2.default;
-	  global.Overlord = _Overlord2.default;
-	  global.hiveMind = _hiveMind2.default;
-	  global.logHiveMindOf = spawnName => {
+	  modwide.Spawner = _spawner2.default;
+	  modwide.Overlord = _Overlord2.default;
+	  modwide.hiveMind = _hiveMind2.default;
+	  modwide.logHiveMindOf = spawnName => {
 	    new _Overlord2.default(Game.spawns[spawnName].room.name).logQueuedItems();
 	  };
-	  global.resetHive = () => {
+	  modwide.resetHive = () => {
 	    Memory.hiveMind = {};
 	    Memory.hiveMindIndex = 0;
 	    for (let roomName in Game.rooms) {
@@ -177,6 +188,16 @@ module.exports =
 	      delete creep.memory.item;
 	      delete creep.memory.sourcing;
 	      delete creep.memory.kind;
+	    }
+	  };
+	  modwide.setMissingCreepRoles = function () {
+	    let role = arguments.length <= 0 || arguments[0] === undefined ? _constants2.default.ROLE_ZERG : arguments[0];
+
+	    for (let creepName in Game.creeps) {
+	      let creep = Game.creeps[creepName];
+	      if (!creep.memory.role) {
+	        creep.memory.role = role;
+	      }
 	    }
 	  };
 
@@ -199,7 +220,8 @@ module.exports =
 	            overlord.update(priorityQueues);
 	          }
 	        }
-	        let zerglings = room.find(FIND_MY_CREEPS, { filter: c => c.memory.role == 'zergling' });
+	        let zerglings = room.find(FIND_MY_CREEPS, { filter: c => c.memory.role == 'zergling' || // TODO remove zergling
+	          c.memory.role == _constants2.default.ROLE_ZERG });
 	        if (zerglings.length > 0) {
 	          zerglings.forEach(zerglingCreep => {
 	            let zergling = new _Zergling2.default(zerglingCreep);
@@ -250,7 +272,8 @@ module.exports =
 	        _healer2.default.run(creep);
 	      } else if (creep.memory.role == 'assimilator') {
 	        _assimilator2.default.run(creep);
-	      } else if (creep.memory.role == 'zergling') {} else {
+	      } else if (creep.memory.role == 'zergling') {} else if (creep.memory.role == _constants2.default.ROLE_ZERG) {} else {
+	        creep.say("ROLE?!");
 	        console.log("No role for ${creep.name}!");
 	      }
 	    }
@@ -261,10 +284,233 @@ module.exports =
 	    stats.persist();
 	  }
 	});
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
 /* 1 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _hiveMind = __webpack_require__(2);
+
+	var _hiveMind2 = _interopRequireDefault(_hiveMind);
+
+	var _priorityQueue = __webpack_require__(3);
+
+	var _priorityQueue2 = _interopRequireDefault(_priorityQueue);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	Room.prototype.pushToQueue = function (queue, item, priority) {
+	  if (typeof queue == 'string') {
+	    if (!this.memory.priorityQueues[queue]) {
+	      throw new Error('Queue?');
+	    }
+	    queue = new _priorityQueue2.default(this.memory.priorityQueues[queue]);
+	  }
+
+	  if (queue) {
+	    let itemId = _hiveMind2.default.push(item);
+	    let queueData = { id: itemId, prio: priority };
+	    return queue.queue(queueData);
+	  } else {
+	    throw new Error('Queue?');
+	  }
+	};
+
+/***/ },
+/* 2 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	// Singleton storing the queue-data
+	const hiveMind = {
+	  init: function () {
+	    this.data = Memory['hiveMind'] || {};
+	  },
+
+	  save: function () {
+	    Memory['hiveMind'] = this.data;
+	  },
+
+	  push: function (data) {
+	    let id = this._generateId();
+	    data['id'] = id; // Makes it easier for other things to process the items
+	    this.data[id] = data;
+	    return id;
+	  },
+
+	  remove: function (id) {
+	    delete this.data[id];
+	  },
+
+	  allForRoom: function (room) {
+	    return _.filter(this.data, entry => entry.fromSource && entry.fromSource.roomName == room.name || entry.toTarget && entry.toTarget.roomName == room.name);
+	  },
+
+	  _generateId: function () {
+	    let index = (Memory['hiveMindIndex'] || 1) + 1;
+	    Memory['hiveMindIndex'] = index;
+	    return index;
+	  }
+	};
+
+	module.exports = hiveMind;
+
+/***/ },
+/* 3 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	/**
+	 * Reimplementation of
+	 * https://github.com/adamhooper/js-priority-queue/blob/master/src/PriorityQueue/BinaryHeapStrategy.coffee
+	 */
+
+	class PriorityQueue {
+	  constructor(initialValues) {
+	    this._heapify = () => {
+	      if (this.data.length > 0) {
+	        for (let i in [...Array(this.data.length).keys()]) {
+	          this._bubbleUp(i);
+	        }
+	      }
+	    };
+
+	    this.queue = value => {
+	      this.data.push(value);
+	      this._bubbleUp(this.data.length - 1);
+	    };
+
+	    this.dequeue = () => {
+	      let ret = this.data[0];
+	      let last = this.data.pop();
+	      if (this.data.length > 0) {
+	        this.data[0] = last;
+	        this._bubbleDown(0);
+	      }
+	      return ret;
+	    };
+
+	    this.peek = () => {
+	      return this.data[0];
+	    };
+
+	    this.clear = () => {
+	      this.length = 0;
+	      this.data.length = 0;
+	    };
+
+	    this._bubbleUp = pos => {
+	      while (pos > 0) {
+	        let parent = pos - 1 >>> 1;
+	        if (this.comparator(this.data[pos], this.data[parent]) < 0) {
+	          let x = this.data[parent];
+	          this.data[parent] = this.data[pos];
+	          this.data[pos] = x;
+	          pos = parent;
+	        } else {
+	          break;
+	        }
+	      }
+	    };
+
+	    this._bubbleDown = pos => {
+	      let last = this.data.length - 1;
+
+	      while (true) {
+	        let left = (pos << 1) + 1;
+	        let right = left + 1;
+	        let minIndex = pos;
+	        if (left <= last && this.comparator(this.data[left], this.data[minIndex]) < 0) {
+	          minIndex = left;
+	        }
+	        if (right <= last && this.comparator(this.data[right], this.data[minIndex]) < 0) {
+	          minIndex = right;
+	        }
+
+	        if (minIndex != pos) {
+	          let x = this.data[minIndex];
+	          this.data[minIndex] = this.data[pos];
+	          this.data[pos] = x;
+	        } else {
+	          break;
+	        }
+	      }
+	    };
+
+	    this.hasEntryWithId = id => {
+	      for (entry of this.data) {
+	        if (entry.id == id) return true;
+	      }
+	      return false;
+	    };
+
+	    this.comparator = (a, b) => a.prio - b.prio;
+	    this.length = 0;
+	    this.data = initialValues;
+	    this._heapify();
+	  }
+
+	}
+
+	modwide.lol = PriorityQueue;
+
+	module.exports = PriorityQueue;
+
+/***/ },
+/* 4 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	const ROLE_ZERG = 'zerg';
+	const KIND_DRONE = 1; /* Carry stuff */
+	const KIND_ZERGLING = 2; /* Work stuff */
+	const KIND_INFESTOR = 3; /* Mine stuff from sources */
+	const KIND_CORRUPTOR = 4; /* Claim Controller */
+
+	const _exports = Object.freeze({
+	  ROOM_CENTER_X: 25,
+	  ROOM_CENTER_Y: 25,
+
+	  ENERGY_COST: Object.freeze({
+	    [WORK]: 100,
+	    [CARRY]: 50,
+	    [MOVE]: 50,
+	    [ATTACK]: 80,
+	    [RANGED_ATTACK]: 150,
+	    [HEAL]: 250
+	  }),
+	  ZERG_KINDS: [KIND_DRONE, KIND_ZERGLING, KIND_INFESTOR, KIND_CORRUPTOR],
+	  PRIO_QUEUES: [WORK, CARRY, CLAIM],
+	  ROLE_ZERG: ROLE_ZERG,
+	  KIND_DRONE: KIND_DRONE,
+	  KIND_ZERGLING: KIND_ZERGLING,
+	  KIND_INFESTOR: KIND_INFESTOR,
+	  KIND_CORRUPTOR: KIND_CORRUPTOR,
+
+	  ROOM_DEFAULT_TARGET_ZERG_COUNT: {
+	    [KIND_DRONE]: 1,
+	    [KIND_ZERGLING]: 1,
+	    [KIND_INFESTOR]: 1,
+	    [KIND_CORRUPTOR]: 0
+	  },
+
+	  FLAG_IDENTIFIERS: {
+	    remoteRoom: {
+	      color: COLOR_CYAN,
+	      secondaryColor: COLOR_PURPLE
+	    }
+	  }
+	});
+
+	module.exports = _exports;
+
+/***/ },
+/* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -278,7 +524,7 @@ module.exports =
 	 * mod.thing == 'a thing'; // true
 	 */
 
-	const helper = __webpack_require__(2);
+	const helper = __webpack_require__(6);
 
 	module.exports = {
 	    defendRoom(room) {
@@ -315,9 +561,11 @@ module.exports =
 
 	    calculateTargetValue(hostile, tower) {
 	        const position = hostile.pos;
-	        const room = Game.rooms[hostile.pos.roomName];
-	        const surroundingCreepData = room.lookForAtArea(LOOK_CREEPS, position.y - 1, position.x - 1, position.y + 1, position.x + 1, true);
-	        const surroundingCreeps = _.map(surroundingCreepData, d => d.creep);
+	        const surroundingCreeps = position.findInRange(FIND_HOSTILE_CREEPS, 1);
+	        // const  = room.lookForAtArea(
+	        //     LOOK_CREEPS, position.y - 1, position.x - 1, position.y + 1, position.x + 1, true
+	        // )
+	        // const surroundingCreeps = _.map(surroundingCreepData, (d)=> d.creep)
 	        let surroundingHealers = _.filter(surroundingCreeps, this.filterHealer);
 
 	        const range = position.getRangeTo(tower);
@@ -339,10 +587,10 @@ module.exports =
 	};
 
 /***/ },
-/* 2 */
+/* 6 */
 /***/ function(module, exports) {
 
-	/* WEBPACK VAR INJECTION */(function(global) {"use strict";
+	"use strict";
 
 	/*
 	 * Module code goes here. Use 'module.exports' to export things:
@@ -353,7 +601,7 @@ module.exports =
 	 * mod.thing == 'a thing'; // true
 	 */
 
-	global.log = {
+	modwide.log = {
 	    cyan: str => console.log(`<span style="color: #00BFFF">${ str }</span>`),
 	    red: str => console.log(`<span style="color: red">${ str }</span>`),
 	    green: str => console.log(`<span style="color: #aadd33">${ str }</span>`),
@@ -366,15 +614,14 @@ module.exports =
 	        return obj[keys[keys.length * Math.random() << 0]];
 	    }
 	};
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 3 */
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	const role = __webpack_require__(4);
+	const role = __webpack_require__(8);
 
 	const roleHarvester = {
 
@@ -477,7 +724,7 @@ module.exports =
 	module.exports = roleHarvester;
 
 /***/ },
-/* 4 */
+/* 8 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -562,12 +809,12 @@ module.exports =
 	};
 
 /***/ },
-/* 5 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	const role = __webpack_require__(4);
+	const role = __webpack_require__(8);
 
 	var roleUpgrader = {
 
@@ -604,12 +851,12 @@ module.exports =
 	module.exports = roleUpgrader;
 
 /***/ },
-/* 6 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	const role = __webpack_require__(4);
+	const role = __webpack_require__(8);
 
 	const roleBuilder = {
 
@@ -718,12 +965,12 @@ module.exports =
 	module.exports = roleBuilder;
 
 /***/ },
-/* 7 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	const role = __webpack_require__(4);
+	const role = __webpack_require__(8);
 
 	/**
 	 * An Excavator should be defined by the following Memory-Vars:
@@ -803,12 +1050,12 @@ module.exports =
 	module.exports = roleExcavator;
 
 /***/ },
-/* 8 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	const role = __webpack_require__(4);
+	const role = __webpack_require__(8);
 
 	const roleRepairer = {
 
@@ -880,12 +1127,12 @@ module.exports =
 	module.exports = roleRepairer;
 
 /***/ },
-/* 9 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	const role = __webpack_require__(4);
+	const role = __webpack_require__(8);
 
 	/**
 	 * An Transporter should be defined by the following Memory-Vars:
@@ -953,12 +1200,18 @@ module.exports =
 	module.exports = roleTransporter;
 
 /***/ },
-/* 10 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	const Spawner = __webpack_require__(11);
+	var _constants = __webpack_require__(4);
+
+	var _constants2 = _interopRequireDefault(_constants);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	const Spawner = __webpack_require__(15);
 
 	var spawnCreepWatcher = {
 	    run: function (spawn) {
@@ -1005,12 +1258,12 @@ module.exports =
 	            //console.log('Spawning new builder: ' + newName);
 	        }
 
-	        let zerglings = _.filter(Game.creeps, creep => creep.memory.role == 'zergling' && creep.memory.kind && creep.memory.kind[0] == WORK && creep.pos.roomName == spawn.pos.roomName);
+	        let zerglings = _.filter(Game.creeps, creep => (creep.memory.role == _constants2.default.ROLE_ZERG || creep.memory.role == 'zergling') && creep.memory.kind && creep.memory.kind[0] == WORK && creep.pos.roomName == spawn.pos.roomName);
 	        if (zerglings.length < spawn.memory.zerglingSize) {
 	            const newName = spawner.zergling(spawn);
 	        }
 
-	        let drones = _.filter(Game.creeps, creep => creep.memory.role == 'zergling' && creep.memory.kind && creep.memory.kind[0] == CARRY && creep.pos.roomName == spawn.pos.roomName);
+	        let drones = _.filter(Game.creeps, creep => (creep.memory.role == _constants2.default.ROLE_ZERG || creep.memory.role == 'zergling') && creep.memory.kind && creep.memory.kind[0] == CARRY && creep.pos.roomName == spawn.pos.roomName);
 	        if (drones.length < spawn.memory.droneSize) {
 	            const newName = spawner.drone(spawn);
 	        }
@@ -1036,10 +1289,12 @@ module.exports =
 	module.exports = spawnCreepWatcher;
 
 /***/ },
-/* 11 */
-/***/ function(module, exports) {
+/* 15 */
+/***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
+
+	__webpack_require__(4);
 
 	class Spawner {
 	  constructor() {
@@ -1069,8 +1324,11 @@ module.exports =
 	      return Game.spawns[spawn.name].createCreep([WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE], 'Repairer' + this.newCreepIndex(), { role: 'repairer' });
 	    };
 
-	    this.fighter = spawn => {
-	      return Game.spawns[spawn.name].createCreep([MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK], 'Fighter' + this.newCreepIndex(), { role: 'fighter' });
+	    this.fighter = function (spawn) {
+	      let maxEnergy = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
+
+	      const body = _this.calcCreepBody(spawn.room, [ATTACK], maxEnergy, false);
+	      return Game.spawns[spawn.name].createCreep(body, 'Fighter' + _this.newCreepIndex(), { role: 'fighter' });
 	    };
 
 	    this.wreckingBall = spawn => {
@@ -1082,9 +1340,11 @@ module.exports =
 	      return Game.spawns[spawn.name].createCreep([MOVE, MOVE, MOVE, MOVE, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK], 'RangedFighter' + this.newCreepIndex(), { role: 'rangedFighter' });
 	    };
 
-	    this.healer = spawn => {
-	      let body = this.calcCreepBody(spawn.room, [HEAL], 0, false);
-	      return Game.spawns[spawn.name].createCreep(body, 'Healer' + this.newCreepIndex(), { role: 'healer' });
+	    this.healer = function (spawn) {
+	      let maxEnergy = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
+
+	      let body = _this.calcCreepBody(spawn.room, [HEAL], maxEnergy, false);
+	      return Game.spawns[spawn.name].createCreep(body, 'Healer' + _this.newCreepIndex(), { role: 'healer' });
 	    };
 
 	    this.assimilator = spawn => {
@@ -1133,6 +1393,8 @@ module.exports =
 	      return index;
 	    };
 
+	    this.calcInfestorCreepBody = (spawnRoom, sourceAmount, destinationRange) => {};
+
 	    this.calcCreepBody = function (room, parts) {
 	      let maxCost = arguments.length <= 2 || arguments[2] === undefined ? 0 : arguments[2];
 	      let usingStreet = arguments.length <= 3 || arguments[3] === undefined ? true : arguments[3];
@@ -1167,12 +1429,20 @@ module.exports =
 	    };
 	  }
 
+	  /**
+	   * @param spawnRoom - The room in which the infestor should be spawned
+	   * @param sourceAmount - The amount of energy the source contains
+	   *  (one of [1500, 3000, 4500])
+	   * @param destinationRange - The length of the path to the source to be mined
+	   */
+
+
 	};
 
 	module.exports = Spawner;
 
 /***/ },
-/* 12 */
+/* 16 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -1215,7 +1485,7 @@ module.exports =
 	module.exports = roleFighter;
 
 /***/ },
-/* 13 */
+/* 17 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -1259,7 +1529,7 @@ module.exports =
 	module.exports = roleHealer;
 
 /***/ },
-/* 14 */
+/* 18 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -1294,7 +1564,7 @@ module.exports =
 	module.exports = roleRangedFighter;
 
 /***/ },
-/* 15 */
+/* 19 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -1325,155 +1595,12 @@ module.exports =
 	module.exports = roleAssimilator;
 
 /***/ },
-/* 16 */
-/***/ function(module, exports) {
-
-	/* WEBPACK VAR INJECTION */(function(global) {"use strict";
-
-	/**
-	 * Reimplementation of
-	 * https://github.com/adamhooper/js-priority-queue/blob/master/src/PriorityQueue/BinaryHeapStrategy.coffee
-	 */
-
-	class PriorityQueue {
-	  constructor(initialValues) {
-	    this._heapify = () => {
-	      if (this.data.length > 0) {
-	        for (let i in [...Array(this.data.length).keys()]) {
-	          this._bubbleUp(i);
-	        }
-	      }
-	    };
-
-	    this.queue = value => {
-	      this.data.push(value);
-	      this._bubbleUp(this.data.length - 1);
-	    };
-
-	    this.dequeue = () => {
-	      let ret = this.data[0];
-	      let last = this.data.pop();
-	      if (this.data.length > 0) {
-	        this.data[0] = last;
-	        this._bubbleDown(0);
-	      }
-	      return ret;
-	    };
-
-	    this.peek = () => {
-	      return this.data[0];
-	    };
-
-	    this.clear = () => {
-	      this.length = 0;
-	      this.data.length = 0;
-	    };
-
-	    this._bubbleUp = pos => {
-	      while (pos > 0) {
-	        let parent = pos - 1 >>> 1;
-	        if (this.comparator(this.data[pos], this.data[parent]) < 0) {
-	          let x = this.data[parent];
-	          this.data[parent] = this.data[pos];
-	          this.data[pos] = x;
-	          pos = parent;
-	        } else {
-	          break;
-	        }
-	      }
-	    };
-
-	    this._bubbleDown = pos => {
-	      let last = this.data.length - 1;
-
-	      while (true) {
-	        let left = (pos << 1) + 1;
-	        let right = left + 1;
-	        let minIndex = pos;
-	        if (left <= last && this.comparator(this.data[left], this.data[minIndex]) < 0) {
-	          minIndex = left;
-	        }
-	        if (right <= last && this.comparator(this.data[right], this.data[minIndex]) < 0) {
-	          minIndex = right;
-	        }
-
-	        if (minIndex != pos) {
-	          let x = this.data[minIndex];
-	          this.data[minIndex] = this.data[pos];
-	          this.data[pos] = x;
-	        } else {
-	          break;
-	        }
-	      }
-	    };
-
-	    this.hasEntryWithId = id => {
-	      for (entry of this.data) {
-	        if (entry.id == id) return true;
-	      }
-	      return false;
-	    };
-
-	    this.comparator = (a, b) => a.prio - b.prio;
-	    this.length = 0;
-	    this.data = initialValues;
-	    this._heapify();
-	  }
-
-	}
-
-	global.lol = PriorityQueue;
-
-	module.exports = PriorityQueue;
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
-
-/***/ },
-/* 17 */
-/***/ function(module, exports) {
-
-	'use strict';
-
-	// Singleton storing the queue-data
-	const hiveMind = {
-	  init: function () {
-	    this.data = Memory['hiveMind'] || {};
-	  },
-
-	  save: function () {
-	    Memory['hiveMind'] = this.data;
-	  },
-
-	  push: function (data) {
-	    let id = this._generateId();
-	    data['id'] = id; // Makes it easier for other things to process the items
-	    this.data[id] = data;
-	    return id;
-	  },
-
-	  remove: function (id) {
-	    delete this.data[id];
-	  },
-
-	  allForRoom: function (room) {
-	    return _.filter(this.data, entry => entry.fromSource && entry.fromSource.roomName == room.name || entry.toTarget.roomName == room.name);
-	  },
-
-	  _generateId: function () {
-	    let index = (Memory['hiveMindIndex'] || 1) + 1;
-	    Memory['hiveMindIndex'] = index;
-	    return index;
-	  }
-	};
-
-	module.exports = hiveMind;
-
-/***/ },
-/* 18 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _hiveMind = __webpack_require__(17);
+	var _hiveMind = __webpack_require__(2);
 
 	var _hiveMind2 = _interopRequireDefault(_hiveMind);
 
@@ -1502,7 +1629,440 @@ module.exports =
 
 	class Overlord {
 	  constructor(roomName) {
-	    _initialiseProps.call(this);
+	    this.update = queues => {
+
+	      this.existingItems = _hiveMind2.default.allForRoom(this.room);
+
+	      if (queues[WORK]) {
+	        this.work(queues[WORK]);
+	      }
+	      if (queues[CARRY]) {
+	        this.carry(queues[CARRY]);
+	      }
+	    };
+
+	    this.work = queue => {
+
+	      // let targetData = this.findWorkTargetFor(RESOURCE_ENERGY)
+	      // console.log('targetData', JSON.stringify(targetData))
+
+	      let conSites = this.room.find(FIND_CONSTRUCTION_SITES);
+	      if (conSites.length > 0) {
+	        for (let conSite of conSites) {
+	          let targetItems = _.filter(this.existingItems, item => item.toTarget.id == conSite.id);
+	          let ullage = conSite.progressTotal - (conSite.progress + _.sum(targetItems, t => t.toTarget.amount));
+	          let itemCount = targetItems.length;
+	          let amount = ullage < this.creepCarryAmount ? ullage : this.creepCarryAmount;
+	          while (ullage > 0 && itemCount < this.maxItemsPerTask) {
+	            this.addItem(queue, false, conSite, RESOURCE_ENERGY, amount, PRIOS[CONSTRUCTION_SITE]);
+	            itemCount += 1;
+	            ullage -= amount;
+	          }
+	        }
+	      }
+
+	      let controllers = this.room.find(FIND_STRUCTURES, { filter: { structureType: STRUCTURE_CONTROLLER } });
+	      if (controllers) {
+	        let controller = controllers[0];
+	        let targetItems = _.filter(this.existingItems, item => item.toTarget.id == controller.id);
+	        let itemCount = targetItems.length;
+	        while (itemCount < this.maxItemsPerTask) {
+	          this.addItem(queue, false, controller, RESOURCE_ENERGY, this.creepCarryAmount, PRIOS[STRUCTURE_CONTROLLER]);
+	          itemCount += 1;
+	        }
+	      }
+
+	      // let storages = this.room.find(
+	      //   FIND_STRUCTURES, {filter: this.filterNonVoidEnergyStorage}
+	      // )
+	      // if(storages.length > 0) {
+	      //   let storage = storages[0]
+	      //   this.genSourceTasks(storage, queue, WORK)
+	      // }
+	      // let containers = this.room.find(
+	      //   FIND_STRUCTURES, {filter: this.filterNonVoidEnergyContainers}
+	      // )
+	      // if(containers.length > 0) {
+	      //   containers.forEach((container)=> {
+	      //     this.genSourceTasks(container, queue, WORK)
+	      //   })
+	      // }
+	    };
+
+	    this.carry = queue => {
+
+	      // targetData = this.findCarryTargetFor(RESOURCE_ENERGY)
+
+	      // Find the targets that need stuff and generate tasks for them
+	      let lacking = this.room.find(FIND_MY_STRUCTURES, { filter: structure => (structure.structureType == STRUCTURE_SPAWN || structure.structureType == STRUCTURE_EXTENSION || structure.structureType == STRUCTURE_TOWER) && structure.energy < structure.energyCapacity });
+	      if (this.room.memory.links && this.room.memory.links.sources && this.room.memory.links.sources.length > 0) {
+	        lacking = lacking.concat(this.room.memory.links.sources.map(source => Game.getObjectById(source)));
+	      }
+	      if (lacking.length > 0) {
+	        // lacking = _.sortByOrder(lacking, 'energy', 'asc')
+	        for (let target of lacking) {
+	          this.genTargetCarryTasksFor(target, queue, RESOURCE_ENERGY, PRIOS[target.structureType]);
+	        }
+	      }
+	    };
+
+	    this.genTargetCarryTasksFor = (target, queue, resType, prio) => {
+	      let current = target.store ? _.sum(target.store) : target.energy;
+	      let max = target.storeCapacity ? target.storeCapacity : target.energyCapacity;
+
+	      let targetItems = _.filter(this.existingItems, item => item.toTarget.id == target.id);
+	      let itemLength = targetItems.length;
+	      let existingAddAmount = targetItems.length * this.creepCarryAmount;
+	      let ullage = max - (current + existingAddAmount);
+
+	      while (ullage > 0 && itemLength < this.maxItemsPerTask) {
+	        let targetAmount = this.creepCarryAmount < ullage ? this.creepCarryAmount : ullage;
+	        this.addItem(queue, false, target, resType, targetAmount, prio);
+	        ullage -= targetAmount;
+	        itemLength += 1;
+	      }
+	    };
+
+	    this.genTargetControllerTasks = (controller, queue) => {
+	      let targetItems = _.filter(this.existingItems, item => item.toTarget.id == controller.id);
+	      let itemLength = targetItems.length;
+	      let existingAddAmount = targetItems.length * this.creepCarryAmount;
+
+	      while (itemLength < this.maxItemsPerTask) {
+	        let targetAmount = this.creepCarryAmount;
+	        this.addItem(queue, false, controller, resType, targetAmount, PRIO);
+	        itemLength += 1;
+	      }
+	    };
+
+	    this.genSourceTasks = (source, queue, taskType) => {
+	      let sourceItems = _.filter(this.existingItems, item => item.fromSource && item.fromSource.id == source.id && item.stage != TYPE_TARGET);
+	      let existingDrawAmount = _.sum(sourceItems, 'fromSource.amount');
+	      let stillStored = source.store[RESOURCE_ENERGY] - existingDrawAmount;
+	      let itemCount = sourceItems.length;
+	      while (stillStored > this.creepCarryAmount && itemCount < this.maxItemsPerTask) {
+	        let targetData = null;
+	        if (taskType == CARRY) {
+	          targetData = this.findCarryTargetFor(source, RESOURCE_ENERGY);
+	        } else if (taskType == WORK) {
+	          targetData = this.findWorkTargetFor(source, RESOURCE_ENERGY);
+	        }
+	        if (targetData && targetData.target) {
+	          var _targetData = targetData;
+	          let target = _targetData.target;
+	          let prio = _targetData.prio;
+
+	          console.log(`Adding target: ${ JSON.stringify(target.pos) } at ${ Game.time }.`);
+	          this.addItem(queue, source, target, RESOURCE_ENERGY, this.creepCarryAmount, prio);
+	          stillStored -= this.creepCarryAmount;
+	          itemCount += 1;
+	        } else {
+	          break; // No suitable target found
+	        }
+	      }
+	    };
+
+	    this.genSourceTask = (source, queue, taskType) => {
+	      let sourceItems = _.filter(this.existingItems, item => item.fromSource && item.fromSource.id == source.id && item.stage != TYPE_TARGET);
+	      let existingDrawAmount = _.sum(sourceItems, 'fromSource.amount');
+	      let stillStored = source.store[RESOURCE_ENERGY] - existingDrawAmount;
+	      let itemCount = sourceItems.length;
+	      if (stillStored > this.creepCarryAmount && itemCount < this.maxItemsPerTask) {
+	        let targetData = null;
+	        if (taskType == CARRY) {
+	          targetData = this.findCarryTargetFor(source, RESOURCE_ENERGY);
+	        } else if (taskType == WORK) {
+	          targetData = this.findWorkTargetFor(source, RESOURCE_ENERGY);
+	        }
+	        if (targetData && targetData.target) {
+	          var _targetData2 = targetData;
+	          let target = _targetData2.target;
+	          let prio = _targetData2.prio;
+
+	          console.log(`Adding target: ${ JSON.stringify(target.pos) } at ${ Game.time }.`);
+	          let res = this.addItem(queue, source, target, RESOURCE_ENERGY, this.creepCarryAmount, prio);
+	          stillStored -= this.creepCarryAmount;
+	          itemCount += 1;
+	          return res;
+	        } else {
+	          // No suitable target found
+	        }
+	      }
+	    };
+
+	    this.findWorkTargetFor = (source, resType) => {
+	      if (resType != RESOURCE_ENERGY) {
+	        return false;
+	      }
+
+	      let construction = this.findTargetConstructionFor(source, resType);
+	      if (construction) {
+	        return { target: construction, prio: PRIOS[CONSTRUCTION_SITE] };
+	      }
+
+	      // Controller get handled by the work queue
+	      // let controller = this.findTargetControllerFor(source, resType)
+	      // if(controller) {
+	      //   return {target: controller, prio: PRIOS[STRUCTURE_CONTROLLER]}
+	      // }
+	    };
+
+	    this.findTargetConstructionFor = source => {
+	      let conSites = this.room.find(FIND_CONSTRUCTION_SITES);
+	      if (conSites.length) {
+	        return conSites[0];
+	      }
+	    };
+
+	    this.findCarryTargetFor = (source, resType) => {
+	      // Everything not handled by genTargetCarryTasksFor
+
+	      let storage = this.findTargetStorageFor(source, resType);
+	      if (storage) {
+	        return { target: storage, prio: PRIOS[STRUCTURE_STORAGE] };
+	      }
+
+	      return { target: null, prio: null };
+	    };
+
+	    this.findTargetSpawnFor = (source, resType) => {
+	      if (resType != RESOURCE_ENERGY) {
+	        return false;
+	      }
+
+	      let spawns = this.room.find(FIND_MY_STRUCTURES, { filter: structure => structure.structureType == STRUCTURE_SPAWN && structure.energy < structure.energyCapacity });
+	      if (spawns.length > 0) {
+	        spawns = _.sortByOrder(spawns, 'energy', 'asc');
+	        for (let spawn of spawns) {
+	          let spawnItems = _.filter(this.existingItems, item => item.toTarget.id == spawn.id);
+	          let existingAddAmount = spawnItems.length * this.creepCarryAmount;
+	          let ullage = spawn.energyCapacity - (spawn.energy + existingAddAmount);
+	          if (ullage > 0) {
+	            return spawn;
+	          }
+	        }
+	      }
+	    };
+
+	    this.findTargetExtensionFor = (source, resType) => {
+	      if (resType != RESOURCE_ENERGY) {
+	        return false;
+	      }
+
+	      let extensions = this.room.find(FIND_MY_STRUCTURES, { filter: structure => structure.structureType == STRUCTURE_EXTENSION && structure.energy < structure.energyCapacity });
+	      if (extensions.length > 0) {
+	        extensions = _.sortByOrder(extensions, 'energy', 'asc');
+	        for (let extension of extensions) {
+	          let extensionItems = _.filter(this.existingItems, item => item.toTarget.id == extension.id);
+	          let existingAddAmount = extensionItems.length * this.creepCarryAmount;
+	          let ullage = extension.energyCapacity - (extension.energy + existingAddAmount);
+	          if (ullage > 0) {
+	            return extension;
+	          }
+	        }
+	      }
+	    };
+
+	    this.findTargetTowerFor = (source, resType) => {
+	      if (resType != RESOURCE_ENERGY) {
+	        return false;
+	      }
+
+	      let towers = this.room.find(FIND_MY_STRUCTURES, { filter: structure => structure.structureType == STRUCTURE_TOWER && structure.energy < structure.energyCapacity });
+	      if (towers.length > 0) {
+	        towers = _.sortByOrder(towers, 'energy', 'asc');
+	        for (let tower of towers) {
+	          let towerItems = _.filter(this.existingItems, item => item.toTarget.id == tower.id);
+	          let existingAddAmount = towerItems.length * this.creepCarryAmount;
+	          let ullage = tower.energyCapacity - (tower.energy + existingAddAmount);
+	          if (ullage > 0) {
+	            return tower;
+	          }
+	        }
+	      }
+	    };
+
+	    this.findTargetStorageFor = (source, resType) => {
+
+	      let storages = this.room.find(FIND_MY_STRUCTURES, { filter: structure => structure.structureType == STRUCTURE_STORAGE && _.sum(structure.store) < structure.storeCapacity });
+	      if (storages.length > 0) {
+	        let storage = storages[0];
+	        let storageItems = _.filter(this.existingItems, item => item.toTarget.id == storage.id);
+	        let existingAddAmount = storageItems.length * this.creepCarryAmount;
+	        let ullage = storage.storeCapacity - (_.sum(storage.store) + existingAddAmount);
+	        if (ullage > 0) {
+	          return storage;
+	        }
+	      }
+	    };
+
+	    this.filterNonVoidEnergyContainers = object => object.structureType == STRUCTURE_CONTAINER && object.store[RESOURCE_ENERGY] > 200;
+
+	    this.filterNonVoidEnergyStorage = object => object.structureType == STRUCTURE_STORAGE && object.store[RESOURCE_ENERGY] > 1000;
+
+	    this.addItem = (queue, source, target, res, targetAmount, priority) => {
+	      let data = {
+	        toTarget: {
+	          id: target.id,
+	          x: target.pos.x,
+	          y: target.pos.y,
+	          roomName: target.pos.roomName,
+	          amount: targetAmount
+	        },
+	        res: res,
+	        stage: null
+	      };
+	      if (source) {
+	        data['fromSource'] = {
+	          id: source.id,
+	          x: source.pos.x,
+	          y: source.pos.y,
+	          roomName: source.pos.roomName
+	        };
+	      }
+	      let itemId = _hiveMind2.default.push(data);
+	      let queueData = { id: itemId, prio: priority };
+	      if (queue) {
+	        queue.queue(queueData);
+	      }
+	      this.existingItems = _hiveMind2.default.allForRoom(this.room);
+	      return queueData;
+	    };
+
+	    this.cleanupTasks = queues => {
+	      this.existingItems = _hiveMind2.default.allForRoom(this.room);
+	      let itemExists = null;
+	      for (let item of this.existingItems) {
+	        itemIsUsed = false;
+	        for (let queueName in queues) {
+	          if (queues[queueName].hasEntryWithId(item.id)) {
+	            itemIsUsed = true;break;
+	          }
+	        }
+	        if (itemIsUsed) {
+	          continue;
+	        }
+	        for (let creepName in Game.creeps) {
+	          let creep = Game.creeps[creepName];
+	          if (creep.memory.item && creep.memory.item.id == item.id) {
+	            itemIsUsed = true;break;
+	          }
+	        }
+	        if (itemIsUsed) {
+	          continue;
+	        }
+
+	        // Item-Id found nowhere
+	        _hiveMind2.default.remove(item.id);
+	      }
+	    };
+
+	    this.findSourceForCreep = (creep, item, resType) => {
+
+	      // Try dropped resources first
+	      let droppedViableRes = creep.room.find(FIND_DROPPED_RESOURCES, { filter: res => res.resourceType == resType && res.amount > item.toTarget.amount && res.amount > _.sum(_.filter(this.existingItems, item => item.fromSource.id == res.id), 'fromSource.amount') + item.toTarget.amount });
+	      if (droppedViableRes.length) {
+	        return creep.pos.findClosestByPath(droppedViableRes);
+	      }
+
+	      // Try Container or storage
+	      let structures = this.room.find(FIND_STRUCTURES, { filter: struc => (struc.structureType == STRUCTURE_CONTAINER || struc.structureType == STRUCTURE_STORAGE) &&
+	        // The sum of the existing items amount for this structure
+	        // (console.log('EXISTING ITEMS',
+	        // struc.store[resType] - (
+	        //   _.sum(
+	        //     _.filter(this.existingItems, (item)=> (
+	        //       item.fromSource.id == struc.id
+	        //     )), 'fromSource.amount'
+	        //   )
+	        // ) > this.creepCarryAmount) || 1) &&
+	        struc.store[resType] - _.sum(_.filter(this.existingItems, item => item.fromSource.id == struc.id), 'fromSource.amount') > this.creepCarryAmount });
+	      if (this.room.memory.links && this.room.memory.links.providers.length) {
+	        let providers = _.filter(this.room.memory.links.providers.map(providerLinkId => Game.getObjectById(providerLinkId)), prov => prov.energy > 0);
+	        structures = structures.concat(providers);
+	      }
+	      if (structures.length > 0) {
+	        return creep.pos.findClosestByPath(structures);
+	      } else {
+	        // Mine resources themself
+	        let isBootstrapping = this.room.find(FIND_STRUCTURES, { filter: { structureType: STRUCTURE_CONTAINER } }).length == 0;
+	        if (isBootstrapping) {
+	          let sources = creep.room.find(FIND_SOURCES, { filter: source => source.energy > 0 });
+	          return creep.pos.findClosestByPath(sources);
+	        }
+	      }
+	    };
+
+	    this.satisfyBoredCreep = creep => {
+	      // Find Containers that have still stuff in them and take that stuff
+	      // somewhere else if possible
+	      let containers = this.room.find(FIND_STRUCTURES, { filter: this.filterNonVoidEnergyContainers });
+	      if (containers.length > 0) {
+	        for (let container of containers) {
+	          // null == Dont queue the item, let the creep just do it
+	          let res = this.genSourceTask(container, null, creep.memory.kind[0]);
+	          if (res) {
+	            return res;
+	          }
+	        }
+	      }
+	    };
+
+	    this.logQueuedItems = () => {
+	      if (!this.room.memory.priorityQueues) {
+	        console.log('No prioqueues!');return;
+	      }
+	      for (let queueName in this.room.memory.priorityQueues) {
+	        console.log(`<span style="color: #33aaff">` + `====== Queue: ${ queueName }</span>`);
+	        let queue = this.room.memory.priorityQueues[queueName];
+
+	        for (let queueItem of queue) {
+	          let item = Memory['hiveMind'][queueItem.id];
+	          let fromStr = '';
+	          if (item['fromSource']) {
+	            fromStr = ' from <span style="color:#dd6633">' + this.getStructureName(Game.getObjectById(item['fromSource'].id)) + '</span>' + `(<span style="color:#a6a">${ item['fromSource'].amount }</span>)`;
+	          }
+	          let toStr = '';
+	          if (item['toTarget']) {
+	            toStr = ' to <span style="color:#66dd33">' + this.getStructureName(Game.getObjectById(item['toTarget'].id)) + '</span>' + `(<span style="color:#a6a">${ item['toTarget'].amount }</span>)`;
+	          }
+	          console.log(`    - Item: ${ item.res }${ fromStr }${ toStr }` + `[${ queueItem.prio }]\n` + `        ${ JSON.stringify(item) }`);
+	        }
+	      }
+	    };
+
+	    this.getStructureName = struc => {
+	      let name = false;
+	      switch (struc.structureType) {
+	        case STRUCTURE_SPAWN:
+	          name = 'Spawn';break;
+	        case STRUCTURE_EXTENSION:
+	          name = 'Extension';break;
+	        case STRUCTURE_CONTROLLER:
+	          name = 'Controller';break;
+	        case STRUCTURE_TOWER:
+	          name = 'Tower';break;
+	        case STRUCTURE_RAMPART:
+	          name = 'Rampart';break;
+	        case STRUCTURE_CONTAINER:
+	          name = 'Container';break;
+	        case STRUCTURE_STORAGE:
+	          name = 'Storage';break;
+	        case STRUCTURE_WALL:
+	          name = 'Wall';break;
+	        case STRUCTURE_ROAD:
+	          name = 'Road';break;
+	        case STRUCTURE_LINK:
+	          name = 'Link';break;
+	        default:
+	          name = '???';break;
+	      }
+	      if (struc instanceof ConstructionSite) {
+	        return `ConstructionSite of ${ name }`;
+	      } else {
+	        return name;
+	      }
+	    };
 
 	    this.room = Game.rooms[roomName];
 	    // Basic unit to quantify how many tasks the container can serve per amount.
@@ -1560,495 +2120,163 @@ module.exports =
 	  }
 	}
 
-	var _initialiseProps = function () {
-	  this.update = queues => {
-
-	    this.existingItems = _hiveMind2.default.allForRoom(this.room);
-
-	    if (queues[WORK]) {
-	      this.work(queues[WORK]);
-	    }
-	    if (queues[CARRY]) {
-	      this.carry(queues[CARRY]);
-	    }
-	  };
-
-	  this.work = queue => {
-
-	    // let targetData = this.findWorkTargetFor(RESOURCE_ENERGY)
-	    // console.log('targetData', JSON.stringify(targetData))
-
-	    let conSites = this.room.find(FIND_CONSTRUCTION_SITES);
-	    if (conSites.length > 0) {
-	      for (let conSite of conSites) {
-	        let targetItems = _.filter(this.existingItems, item => item.toTarget.id == conSite.id);
-	        let ullage = conSite.progressTotal - (conSite.progress + _.sum(targetItems, t => t.toTarget.amount));
-	        let itemCount = targetItems.length;
-	        let amount = ullage < this.creepCarryAmount ? ullage : this.creepCarryAmount;
-	        while (ullage > 0 && itemCount < this.maxItemsPerTask) {
-	          this.addItem(queue, false, conSite, RESOURCE_ENERGY, amount, PRIOS[CONSTRUCTION_SITE]);
-	          itemCount += 1;
-	          ullage -= amount;
-	        }
-	      }
-	    }
-
-	    let controllers = this.room.find(FIND_STRUCTURES, { filter: { structureType: STRUCTURE_CONTROLLER } });
-	    if (controllers) {
-	      let controller = controllers[0];
-	      let targetItems = _.filter(this.existingItems, item => item.toTarget.id == controller.id);
-	      let itemCount = targetItems.length;
-	      while (itemCount < this.maxItemsPerTask) {
-	        this.addItem(queue, false, controller, RESOURCE_ENERGY, this.creepCarryAmount, PRIOS[STRUCTURE_CONTROLLER]);
-	        itemCount += 1;
-	      }
-	    }
-
-	    // let storages = this.room.find(
-	    //   FIND_STRUCTURES, {filter: this.filterNonVoidEnergyStorage}
-	    // )
-	    // if(storages.length > 0) {
-	    //   let storage = storages[0]
-	    //   this.genSourceTasks(storage, queue, WORK)
-	    // }
-	    // let containers = this.room.find(
-	    //   FIND_STRUCTURES, {filter: this.filterNonVoidEnergyContainers}
-	    // )
-	    // if(containers.length > 0) {
-	    //   containers.forEach((container)=> {
-	    //     this.genSourceTasks(container, queue, WORK)
-	    //   })
-	    // }
-	  };
-
-	  this.carry = queue => {
-
-	    // targetData = this.findCarryTargetFor(RESOURCE_ENERGY)
-
-	    // Find the targets that need stuff and generate tasks for them
-	    let lacking = this.room.find(FIND_MY_STRUCTURES, { filter: structure => (structure.structureType == STRUCTURE_SPAWN || structure.structureType == STRUCTURE_EXTENSION || structure.structureType == STRUCTURE_TOWER) && structure.energy < structure.energyCapacity });
-	    if (this.room.memory.links && this.room.memory.links.sources && this.room.memory.links.sources.length > 0) {
-	      lacking = lacking.concat(this.room.memory.links.sources.map(source => Game.getObjectById(source)));
-	    }
-	    if (lacking.length > 0) {
-	      // lacking = _.sortByOrder(lacking, 'energy', 'asc')
-	      for (let target of lacking) {
-	        this.genTargetCarryTasksFor(target, queue, RESOURCE_ENERGY, PRIOS[target.structureType]);
-	      }
-	    }
-	  };
-
-	  this.genTargetCarryTasksFor = (target, queue, resType, prio) => {
-	    let current = target.store ? _.sum(target.store) : target.energy;
-	    let max = target.storeCapacity ? target.storeCapacity : target.energyCapacity;
-
-	    let targetItems = _.filter(this.existingItems, item => item.toTarget.id == target.id);
-	    let itemLength = targetItems.length;
-	    let existingAddAmount = targetItems.length * this.creepCarryAmount;
-	    let ullage = max - (current + existingAddAmount);
-
-	    while (ullage > 0 && itemLength < this.maxItemsPerTask) {
-	      let targetAmount = this.creepCarryAmount < ullage ? this.creepCarryAmount : ullage;
-	      this.addItem(queue, false, target, resType, targetAmount, prio);
-	      ullage -= targetAmount;
-	      itemLength += 1;
-	    }
-	  };
-
-	  this.genTargetControllerTasks = (controller, queue) => {
-	    let targetItems = _.filter(this.existingItems, item => item.toTarget.id == controller.id);
-	    let itemLength = targetItems.length;
-	    let existingAddAmount = targetItems.length * this.creepCarryAmount;
-
-	    while (itemLength < this.maxItemsPerTask) {
-	      let targetAmount = this.creepCarryAmount;
-	      this.addItem(queue, false, controller, resType, targetAmount, PRIO);
-	      itemLength += 1;
-	    }
-	  };
-
-	  this.genSourceTasks = (source, queue, taskType) => {
-	    let sourceItems = _.filter(this.existingItems, item => item.fromSource && item.fromSource.id == source.id && item.stage != TYPE_TARGET);
-	    let existingDrawAmount = _.sum(sourceItems, 'fromSource.amount');
-	    let stillStored = source.store[RESOURCE_ENERGY] - existingDrawAmount;
-	    let itemCount = sourceItems.length;
-	    while (stillStored > this.creepCarryAmount && itemCount < this.maxItemsPerTask) {
-	      let targetData = null;
-	      if (taskType == CARRY) {
-	        targetData = this.findCarryTargetFor(source, RESOURCE_ENERGY);
-	      } else if (taskType == WORK) {
-	        targetData = this.findWorkTargetFor(source, RESOURCE_ENERGY);
-	      }
-	      if (targetData && targetData.target) {
-	        var _targetData = targetData;
-	        let target = _targetData.target;
-	        let prio = _targetData.prio;
-
-	        console.log(`Adding target: ${ JSON.stringify(target.pos) } at ${ Game.time }.`);
-	        this.addItem(queue, source, target, RESOURCE_ENERGY, this.creepCarryAmount, prio);
-	        stillStored -= this.creepCarryAmount;
-	        itemCount += 1;
-	      } else {
-	        break; // No suitable target found
-	      }
-	    }
-	  };
-
-	  this.genSourceTask = (source, queue, taskType) => {
-	    let sourceItems = _.filter(this.existingItems, item => item.fromSource && item.fromSource.id == source.id && item.stage != TYPE_TARGET);
-	    let existingDrawAmount = _.sum(sourceItems, 'fromSource.amount');
-	    let stillStored = source.store[RESOURCE_ENERGY] - existingDrawAmount;
-	    let itemCount = sourceItems.length;
-	    if (stillStored > this.creepCarryAmount && itemCount < this.maxItemsPerTask) {
-	      let targetData = null;
-	      if (taskType == CARRY) {
-	        targetData = this.findCarryTargetFor(source, RESOURCE_ENERGY);
-	      } else if (taskType == WORK) {
-	        targetData = this.findWorkTargetFor(source, RESOURCE_ENERGY);
-	      }
-	      if (targetData && targetData.target) {
-	        var _targetData2 = targetData;
-	        let target = _targetData2.target;
-	        let prio = _targetData2.prio;
-
-	        console.log(`Adding target: ${ JSON.stringify(target.pos) } at ${ Game.time }.`);
-	        let res = this.addItem(queue, source, target, RESOURCE_ENERGY, this.creepCarryAmount, prio);
-	        stillStored -= this.creepCarryAmount;
-	        itemCount += 1;
-	        return res;
-	      } else {
-	        // No suitable target found
-	      }
-	    }
-	  };
-
-	  this.findWorkTargetFor = (source, resType) => {
-	    if (resType != RESOURCE_ENERGY) {
-	      return false;
-	    }
-
-	    let construction = this.findTargetConstructionFor(source, resType);
-	    if (construction) {
-	      return { target: construction, prio: PRIOS[CONSTRUCTION_SITE] };
-	    }
-
-	    // Controller get handled by the work queue
-	    // let controller = this.findTargetControllerFor(source, resType)
-	    // if(controller) {
-	    //   return {target: controller, prio: PRIOS[STRUCTURE_CONTROLLER]}
-	    // }
-	  };
-
-	  this.findTargetConstructionFor = source => {
-	    let conSites = this.room.find(FIND_CONSTRUCTION_SITES);
-	    if (conSites.length) {
-	      return conSites[0];
-	    }
-	  };
-
-	  this.findCarryTargetFor = (source, resType) => {
-	    // Everything not handled by genTargetCarryTasksFor
-
-	    let storage = this.findTargetStorageFor(source, resType);
-	    if (storage) {
-	      return { target: storage, prio: PRIOS[STRUCTURE_STORAGE] };
-	    }
-
-	    return { target: null, prio: null };
-	  };
-
-	  this.findTargetSpawnFor = (source, resType) => {
-	    if (resType != RESOURCE_ENERGY) {
-	      return false;
-	    }
-
-	    let spawns = this.room.find(FIND_MY_STRUCTURES, { filter: structure => structure.structureType == STRUCTURE_SPAWN && structure.energy < structure.energyCapacity });
-	    if (spawns.length > 0) {
-	      spawns = _.sortByOrder(spawns, 'energy', 'asc');
-	      for (let spawn of spawns) {
-	        let spawnItems = _.filter(this.existingItems, item => item.toTarget.id == spawn.id);
-	        let existingAddAmount = spawnItems.length * this.creepCarryAmount;
-	        let ullage = spawn.energyCapacity - (spawn.energy + existingAddAmount);
-	        if (ullage > 0) {
-	          return spawn;
-	        }
-	      }
-	    }
-	  };
-
-	  this.findTargetExtensionFor = (source, resType) => {
-	    if (resType != RESOURCE_ENERGY) {
-	      return false;
-	    }
-
-	    let extensions = this.room.find(FIND_MY_STRUCTURES, { filter: structure => structure.structureType == STRUCTURE_EXTENSION && structure.energy < structure.energyCapacity });
-	    if (extensions.length > 0) {
-	      extensions = _.sortByOrder(extensions, 'energy', 'asc');
-	      for (let extension of extensions) {
-	        let extensionItems = _.filter(this.existingItems, item => item.toTarget.id == extension.id);
-	        let existingAddAmount = extensionItems.length * this.creepCarryAmount;
-	        let ullage = extension.energyCapacity - (extension.energy + existingAddAmount);
-	        if (ullage > 0) {
-	          return extension;
-	        }
-	      }
-	    }
-	  };
-
-	  this.findTargetTowerFor = (source, resType) => {
-	    if (resType != RESOURCE_ENERGY) {
-	      return false;
-	    }
-
-	    let towers = this.room.find(FIND_MY_STRUCTURES, { filter: structure => structure.structureType == STRUCTURE_TOWER && structure.energy < structure.energyCapacity });
-	    if (towers.length > 0) {
-	      towers = _.sortByOrder(towers, 'energy', 'asc');
-	      for (let tower of towers) {
-	        let towerItems = _.filter(this.existingItems, item => item.toTarget.id == tower.id);
-	        let existingAddAmount = towerItems.length * this.creepCarryAmount;
-	        let ullage = tower.energyCapacity - (tower.energy + existingAddAmount);
-	        if (ullage > 0) {
-	          return tower;
-	        }
-	      }
-	    }
-	  };
-
-	  this.findTargetStorageFor = (source, resType) => {
-
-	    let storages = this.room.find(FIND_MY_STRUCTURES, { filter: structure => structure.structureType == STRUCTURE_STORAGE && _.sum(structure.store) < structure.storeCapacity });
-	    if (storages.length > 0) {
-	      let storage = storages[0];
-	      let storageItems = _.filter(this.existingItems, item => item.toTarget.id == storage.id);
-	      let existingAddAmount = storageItems.length * this.creepCarryAmount;
-	      let ullage = storage.storeCapacity - (_.sum(storage.store) + existingAddAmount);
-	      if (ullage > 0) {
-	        return storage;
-	      }
-	    }
-	  };
-
-	  this.filterNonVoidEnergyContainers = object => object.structureType == STRUCTURE_CONTAINER && object.store[RESOURCE_ENERGY] > 200;
-
-	  this.filterNonVoidEnergyStorage = object => object.structureType == STRUCTURE_STORAGE && object.store[RESOURCE_ENERGY] > 1000;
-
-	  this.addItem = (queue, source, target, res, targetAmount, priority) => {
-	    let data = {
-	      toTarget: {
-	        id: target.id,
-	        x: target.pos.x,
-	        y: target.pos.y,
-	        roomName: target.pos.roomName,
-	        amount: targetAmount
-	      },
-	      res: res,
-	      stage: null
-	    };
-	    if (source) {
-	      data['fromSource'] = {
-	        id: source.id,
-	        x: source.pos.x,
-	        y: source.pos.y,
-	        roomName: source.pos.roomName
-	      };
-	    }
-	    let itemId = _hiveMind2.default.push(data);
-	    let queueData = { id: itemId, prio: priority };
-	    if (queue) {
-	      queue.queue(queueData);
-	    }
-	    this.existingItems = _hiveMind2.default.allForRoom(this.room);
-	    return queueData;
-	  };
-
-	  this.cleanupTasks = queues => {
-	    this.existingItems = _hiveMind2.default.allForRoom(this.room);
-	    let itemExists = null;
-	    for (let item of this.existingItems) {
-	      itemIsUsed = false;
-	      for (let queueName in queues) {
-	        if (queues[queueName].hasEntryWithId(item.id)) {
-	          itemIsUsed = true;break;
-	        }
-	      }
-	      if (itemIsUsed) {
-	        continue;
-	      }
-	      for (let creepName in Game.creeps) {
-	        let creep = Game.creeps[creepName];
-	        if (creep.memory.item && creep.memory.item.id == item.id) {
-	          itemIsUsed = true;break;
-	        }
-	      }
-	      if (itemIsUsed) {
-	        continue;
-	      }
-
-	      // Item-Id found nowhere
-	      _hiveMind2.default.remove(item.id);
-	    }
-	  };
-
-	  this.findSourceForCreep = (creep, item, resType) => {
-
-	    // Try dropped resources first
-	    let droppedViableRes = creep.room.find(FIND_DROPPED_RESOURCES, { filter: res => res.resourceType == resType && res.amount > item.toTarget.amount && res.amount > _.sum(_.filter(this.existingItems, item => item.fromSource.id == res.id), 'fromSource.amount') + item.toTarget.amount });
-	    if (droppedViableRes.length) {
-	      return creep.pos.findClosestByPath(droppedViableRes);
-	    }
-
-	    // Try Container or storage
-	    let structures = this.room.find(FIND_STRUCTURES, { filter: struc => (struc.structureType == STRUCTURE_CONTAINER || struc.structureType == STRUCTURE_STORAGE) &&
-	      // The sum of the existing items amount for this structure
-	      // (console.log('EXISTING ITEMS',
-	      // struc.store[resType] - (
-	      //   _.sum(
-	      //     _.filter(this.existingItems, (item)=> (
-	      //       item.fromSource.id == struc.id
-	      //     )), 'fromSource.amount'
-	      //   )
-	      // ) > this.creepCarryAmount) || 1) &&
-	      struc.store[resType] - _.sum(_.filter(this.existingItems, item => item.fromSource.id == struc.id), 'fromSource.amount') > this.creepCarryAmount });
-	    if (this.room.memory.links && this.room.memory.links.providers.length) {
-	      let providers = _.filter(this.room.memory.links.providers.map(providerLinkId => Game.getObjectById(providerLinkId)), prov => prov.energy > 0);
-	      structures = structures.concat(providers);
-	    }
-	    if (structures.length > 0) {
-	      return creep.pos.findClosestByPath(structures);
-	    } else {
-	      // Mine resources themself
-	      let isBootstrapping = this.room.find(FIND_STRUCTURES, { filter: { structureType: STRUCTURE_CONTAINER } }).length == 0;
-	      if (isBootstrapping) {
-	        let sources = creep.room.find(FIND_SOURCES, { filter: source => source.energy > 0 });
-	        return creep.pos.findClosestByPath(sources);
-	      }
-	    }
-	  };
-
-	  this.satisfyBoredCreep = creep => {
-	    // Find Containers that have still stuff in them and take that stuff
-	    // somewhere else if possible
-	    let containers = this.room.find(FIND_STRUCTURES, { filter: this.filterNonVoidEnergyContainers });
-	    if (containers.length > 0) {
-	      for (let container of containers) {
-	        // null == Dont queue the item, let the creep just do it
-	        let res = this.genSourceTask(container, null, creep.memory.kind[0]);
-	        if (res) {
-	          return res;
-	        }
-	      }
-	    }
-	  };
-
-	  this.logQueuedItems = () => {
-	    if (!this.room.memory.priorityQueues) {
-	      console.log('No prioqueues!');return;
-	    }
-	    for (let queueName in this.room.memory.priorityQueues) {
-	      console.log(`<span style="color: #33aaff">` + `====== Queue: ${ queueName }</span>`);
-	      let queue = this.room.memory.priorityQueues[queueName];
-
-	      for (let queueItem of queue) {
-	        let item = Memory['hiveMind'][queueItem.id];
-	        let fromStr = '';
-	        if (item['fromSource']) {
-	          fromStr = ' from <span style="color:#dd6633">' + this.getStructureName(Game.getObjectById(item['fromSource'].id)) + '</span>' + `(<span style="color:#a6a">${ item['fromSource'].amount }</span>)`;
-	        }
-	        let toStr = '';
-	        if (item['toTarget']) {
-	          toStr = ' to <span style="color:#66dd33">' + this.getStructureName(Game.getObjectById(item['toTarget'].id)) + '</span>' + `(<span style="color:#a6a">${ item['toTarget'].amount }</span>)`;
-	        }
-	        console.log(`    - Item: ${ item.res }${ fromStr }${ toStr }` + `[${ queueItem.prio }]\n` + `        ${ JSON.stringify(item) }`);
-	      }
-	    }
-	  };
-
-	  this.getStructureName = struc => {
-	    let name = false;
-	    switch (struc.structureType) {
-	      case STRUCTURE_SPAWN:
-	        name = 'Spawn';break;
-	      case STRUCTURE_EXTENSION:
-	        name = 'Extension';break;
-	      case STRUCTURE_CONTROLLER:
-	        name = 'Controller';break;
-	      case STRUCTURE_TOWER:
-	        name = 'Tower';break;
-	      case STRUCTURE_RAMPART:
-	        name = 'Rampart';break;
-	      case STRUCTURE_CONTAINER:
-	        name = 'Container';break;
-	      case STRUCTURE_STORAGE:
-	        name = 'Storage';break;
-	      case STRUCTURE_WALL:
-	        name = 'Wall';break;
-	      case STRUCTURE_ROAD:
-	        name = 'Road';break;
-	      case STRUCTURE_LINK:
-	        name = 'Link';break;
-	      default:
-	        name = '???';break;
-	    }
-	    if (struc instanceof ConstructionSite) {
-	      return `ConstructionSite of ${ name }`;
-	    } else {
-	      return name;
-	    }
-	  };
-
-	  this.removeOldHiveMindItems = () => {
-	    let oldItemCount = 0;
-	    nextItem: for (let itemId in _hiveMind2.default.data) {
-	      let item = _hiveMind2.default.data[itemId];
-	      for (let creepName in Game.creeps) {
-	        let creep = Game.creeps[creepName];
-	        if (creep.memory.item && creep.memory.item.id == item.id) {
-	          continue nextItem;
-	        }
-	      }
-
-	      for (let roomName in Game.rooms) {
-	        let room = Game.rooms[roomName];
-	        if (room.memory.priorityQueues && Object.keys(room.memory.priorityQueues).length && Object.keys(room.memory.priorityQueues).some(queueName => room.memory.priorityQueues[queueName].some(queueItem => queueItem.id == item.id))) {
-	          continue nextItem;
-	        }
-	        // if(room.memory.priorityQueues && room.memory.priorityQueues.length) {
-	        //   for(let queueName in room.memory.priorityQueues) {
-	        //     for(let queueItem in room.memory.priorityQueues[queueName]) {
-	        //       if(queueItem.id == item.id) {
-	        //         break checkItem
-	        //       }
-	        //     }
-	        //   }
-	        // }u
-	      }
-	      console.log("<span style='color: #aadd33'>Item missing:</span>\n    ", JSON.stringify(item));
-	      delete _hiveMind2.default.data[itemId];
-	      oldItemCount += 1;
-	    }
-	    Memory.stats['hiveMind.oldItemCount'] = oldItemCount;
-	  };
-	};
-
 	module.exports = Overlord;
 
 /***/ },
-/* 19 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _hiveMind = __webpack_require__(17);
+	var _constants = __webpack_require__(4);
+
+	var _constants2 = _interopRequireDefault(_constants);
+
+	var _hiveMind = __webpack_require__(2);
 
 	var _hiveMind2 = _interopRequireDefault(_hiveMind);
 
-	var _Overlord = __webpack_require__(18);
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	/**
+	 * Inter-room control
+	 */
+	class Overseer {
+	  constructor() {
+	    var _this = this;
+
+	    this.removeOldHiveMindItems = () => {
+	      let oldItemCount = 0;
+	      nextItem: for (let itemId in _hiveMind2.default.data) {
+	        let item = _hiveMind2.default.data[itemId];
+	        for (let creepName in Game.creeps) {
+	          let creep = Game.creeps[creepName];
+	          if (creep.memory.item && creep.memory.item.id == item.id) {
+	            continue nextItem;
+	          }
+	        }
+
+	        for (let roomName in Game.rooms) {
+	          let room = Game.rooms[roomName];
+	          if (room.memory.priorityQueues && Object.keys(room.memory.priorityQueues).length && Object.keys(room.memory.priorityQueues).some(queueName => room.memory.priorityQueues[queueName].some(queueItem => queueItem.id == item.id))) {
+	            continue nextItem;
+	          }
+	          // if(room.memory.priorityQueues && room.memory.priorityQueues.length) {
+	          //   for(let queueName in room.memory.priorityQueues) {
+	          //     for(let queueItem in room.memory.priorityQueues[queueName]) {
+	          //       if(queueItem.id == item.id) {
+	          //         break checkItem
+	          //       }
+	          //     }
+	          //   }
+	          // }u
+	        }
+	        console.log("<span style='color: #aadd33'>Item missing:</span>\n    ", JSON.stringify(item));
+	        delete _hiveMind2.default.data[itemId];
+	        oldItemCount += 1;
+	      }
+	      Memory.stats['hiveMind.oldItemCount'] = oldItemCount;
+	    };
+
+	    this.maintainRoomMemory = () => {
+	      let rooms = this.myMainRooms();
+	      for (let room of rooms) {
+	        let mem = room.memory;
+	        if (!mem.priorityQueues) {
+	          mem.priorityQueues = {};
+	        }
+	        for (let prioType of _constants2.default.PRIO_QUEUES) {
+	          if (!mem.priorityQueues[prioType]) {
+	            mem.priorityQueues[prioType] = [];
+	          }
+	        }
+	        if (!mem.targetZergCount) {
+	          mem.targetZergCount = {};
+	        }
+	        for (let kind of _constants2.default.ZERG_KINDS) {
+	          if (!mem.targetZergCount[kind]) {
+	            mem.targetZergCount[kind] = _constants2.default.ROOM_DEFAULT_TARGET_ZERG_COUNT[kind];
+	          }
+	        }
+	        if (!mem.connectedRemoteRooms) {
+	          mem.connectedRemoteRooms = [];
+	        }
+	      }
+	    };
+
+	    this.generateRemoteRoom = function (remoteRoomName) {
+	      let targetRoomName = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
+
+	      if (targetRoomName === null) {
+	        let generalRemotePos = new RoomPosition(_constants2.default.ROOM_CENTER_X, _constants2.default.ROOM_CENTER_Y, remoteRoomName);
+	        let candidates = _this.myMainRooms();
+	        throw new Error('NOT IMPLEMENTED YET');
+	      } else {
+	        let targetRoom = Game.rooms[targetRoomName];
+	        if (!targetRoom) {
+	          throw new Error('targetRoom?');
+	        }
+	        if (!targetRoom.memory.connectedRemoteRooms[remoteRoomName]) {
+	          targetRoom.memory.connectedRemoteRooms[remoteRoomName] = {
+	            active: true
+	          };
+	        }
+	        return true;
+	      }
+	    };
+
+	    this.myMainRooms = () => {
+	      return _.uniq(_.mapValues(Game.spawns, spawn => spawn.room));
+	    };
+	  }
+
+	  /**
+	   * Integrity check of the data
+	   */
+	  check() {
+	    this.removeOldHiveMindItems();
+	    this.maintainRoomMemory();
+	  }
+
+	  /**
+	   * Parse simple user-commands into more complex things
+	   */
+	  parseCommands() {
+	    //Parse flags into memory
+	    for (let flagName in Game.flags) {
+	      let flag = Game.flags[flagName];
+	      if (flag.color == _constants2.default.FLAG_IDENTIFIERS.remoteRoom.color && flag.secondaryColor == _constants2.default.FLAG_IDENTIFIERS.remoteRoom.secondaryColor) {
+	        if (this.generateRemoteRoom(flag.pos.roomName)) {
+	          flag.remove();
+	        }
+	      }
+	    }
+	  }
+
+	  /**
+	   * Rooms with spawns in them
+	   */
+	}
+
+	module.exports = Overseer;
+
+/***/ },
+/* 22 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _hiveMind = __webpack_require__(2);
+
+	var _hiveMind2 = _interopRequireDefault(_hiveMind);
+
+	var _Overlord = __webpack_require__(20);
 
 	var _Overlord2 = _interopRequireDefault(_Overlord);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	const role = __webpack_require__(4);
+	const role = __webpack_require__(8);
 
 	const TYPE_SOURCE = 0;
 	const TYPE_TARGET = 1;
@@ -2284,14 +2512,13 @@ module.exports =
 	      let amount = data.toTarget.amount ? data.toTarget.amount : null;
 	      let res;
 	      if (target instanceof ConstructionSite) {
-	        console.log("Target before", JSON.stringify(target));
 	        res = this.zergling.build(target);
-	        console.log("Target after", JSON.stringify(target));
-	        console.log("Target reloaded", JSON.stringify(Game.getObjectById(target.id)));
 	        this.hasWorked = true;
-	        if (this.zergling.carry[RESOURCE_ENERGY] == 0) {
-	          this.done();
-	        }
+	        if (this.zergling.carry[RESOURCE_ENERGY] == 0
+	        // TODO: need to check if the target is done building in this tick
+	        ) {
+	            this.done();
+	          }
 	      } else if (target.structureType == STRUCTURE_CONTROLLER) {
 	        res = this.zergling.upgradeController(target);
 	        this.hasWorked = true;
@@ -2445,7 +2672,7 @@ module.exports =
 	module.exports = Zergling;
 
 /***/ },
-/* 20 */
+/* 23 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -2496,31 +2723,31 @@ module.exports =
 	module.exports = Stats;
 
 /***/ },
-/* 21 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// ES2017 w/ Node 5
-	__webpack_require__(22);
-	__webpack_require__(57);
-	__webpack_require__(59);
-	__webpack_require__(66);
-	__webpack_require__(70);
+	__webpack_require__(25);
+	__webpack_require__(60);
+	__webpack_require__(62);
+	__webpack_require__(69);
+	__webpack_require__(73);
 
 
 /***/ },
-/* 22 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
-	__webpack_require__(23);
-	module.exports = __webpack_require__(26).Object.entries;
+	__webpack_require__(26);
+	module.exports = __webpack_require__(29).Object.entries;
 
 /***/ },
-/* 23 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// https://github.com/tc39/proposal-object-values-entries
-	var $export  = __webpack_require__(24)
-	  , $entries = __webpack_require__(42)(true);
+	var $export  = __webpack_require__(27)
+	  , $entries = __webpack_require__(45)(true);
 
 	$export($export.S, 'Object', {
 	  entries: function entries(it){
@@ -2529,14 +2756,14 @@ module.exports =
 	});
 
 /***/ },
-/* 24 */
+/* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var global    = __webpack_require__(25)
-	  , core      = __webpack_require__(26)
-	  , hide      = __webpack_require__(27)
-	  , redefine  = __webpack_require__(37)
-	  , ctx       = __webpack_require__(40)
+	var global    = __webpack_require__(28)
+	  , core      = __webpack_require__(29)
+	  , hide      = __webpack_require__(30)
+	  , redefine  = __webpack_require__(40)
+	  , ctx       = __webpack_require__(43)
 	  , PROTOTYPE = 'prototype';
 
 	var $export = function(type, name, source){
@@ -2577,7 +2804,7 @@ module.exports =
 	module.exports = $export;
 
 /***/ },
-/* 25 */
+/* 28 */
 /***/ function(module, exports) {
 
 	// https://github.com/zloirock/core-js/issues/86#issuecomment-115759028
@@ -2586,19 +2813,19 @@ module.exports =
 	if(typeof __g == 'number')__g = global; // eslint-disable-line no-undef
 
 /***/ },
-/* 26 */
+/* 29 */
 /***/ function(module, exports) {
 
 	var core = module.exports = {version: '2.4.0'};
 	if(typeof __e == 'number')__e = core; // eslint-disable-line no-undef
 
 /***/ },
-/* 27 */
+/* 30 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var dP         = __webpack_require__(28)
-	  , createDesc = __webpack_require__(36);
-	module.exports = __webpack_require__(32) ? function(object, key, value){
+	var dP         = __webpack_require__(31)
+	  , createDesc = __webpack_require__(39);
+	module.exports = __webpack_require__(35) ? function(object, key, value){
 	  return dP.f(object, key, createDesc(1, value));
 	} : function(object, key, value){
 	  object[key] = value;
@@ -2606,15 +2833,15 @@ module.exports =
 	};
 
 /***/ },
-/* 28 */
+/* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var anObject       = __webpack_require__(29)
-	  , IE8_DOM_DEFINE = __webpack_require__(31)
-	  , toPrimitive    = __webpack_require__(35)
+	var anObject       = __webpack_require__(32)
+	  , IE8_DOM_DEFINE = __webpack_require__(34)
+	  , toPrimitive    = __webpack_require__(38)
 	  , dP             = Object.defineProperty;
 
-	exports.f = __webpack_require__(32) ? Object.defineProperty : function defineProperty(O, P, Attributes){
+	exports.f = __webpack_require__(35) ? Object.defineProperty : function defineProperty(O, P, Attributes){
 	  anObject(O);
 	  P = toPrimitive(P, true);
 	  anObject(Attributes);
@@ -2627,17 +2854,17 @@ module.exports =
 	};
 
 /***/ },
-/* 29 */
+/* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var isObject = __webpack_require__(30);
+	var isObject = __webpack_require__(33);
 	module.exports = function(it){
 	  if(!isObject(it))throw TypeError(it + ' is not an object!');
 	  return it;
 	};
 
 /***/ },
-/* 30 */
+/* 33 */
 /***/ function(module, exports) {
 
 	module.exports = function(it){
@@ -2645,24 +2872,24 @@ module.exports =
 	};
 
 /***/ },
-/* 31 */
+/* 34 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = !__webpack_require__(32) && !__webpack_require__(33)(function(){
-	  return Object.defineProperty(__webpack_require__(34)('div'), 'a', {get: function(){ return 7; }}).a != 7;
+	module.exports = !__webpack_require__(35) && !__webpack_require__(36)(function(){
+	  return Object.defineProperty(__webpack_require__(37)('div'), 'a', {get: function(){ return 7; }}).a != 7;
 	});
 
 /***/ },
-/* 32 */
+/* 35 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Thank's IE8 for his funny defineProperty
-	module.exports = !__webpack_require__(33)(function(){
+	module.exports = !__webpack_require__(36)(function(){
 	  return Object.defineProperty({}, 'a', {get: function(){ return 7; }}).a != 7;
 	});
 
 /***/ },
-/* 33 */
+/* 36 */
 /***/ function(module, exports) {
 
 	module.exports = function(exec){
@@ -2674,11 +2901,11 @@ module.exports =
 	};
 
 /***/ },
-/* 34 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var isObject = __webpack_require__(30)
-	  , document = __webpack_require__(25).document
+	var isObject = __webpack_require__(33)
+	  , document = __webpack_require__(28).document
 	  // in old IE typeof document.createElement is 'object'
 	  , is = isObject(document) && isObject(document.createElement);
 	module.exports = function(it){
@@ -2686,11 +2913,11 @@ module.exports =
 	};
 
 /***/ },
-/* 35 */
+/* 38 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// 7.1.1 ToPrimitive(input [, PreferredType])
-	var isObject = __webpack_require__(30);
+	var isObject = __webpack_require__(33);
 	// instead of the ES6 spec version, we didn't implement @@toPrimitive case
 	// and the second argument - flag - preferred type is a string
 	module.exports = function(it, S){
@@ -2703,7 +2930,7 @@ module.exports =
 	};
 
 /***/ },
-/* 36 */
+/* 39 */
 /***/ function(module, exports) {
 
 	module.exports = function(bitmap, value){
@@ -2716,18 +2943,18 @@ module.exports =
 	};
 
 /***/ },
-/* 37 */
+/* 40 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var global    = __webpack_require__(25)
-	  , hide      = __webpack_require__(27)
-	  , has       = __webpack_require__(38)
-	  , SRC       = __webpack_require__(39)('src')
+	var global    = __webpack_require__(28)
+	  , hide      = __webpack_require__(30)
+	  , has       = __webpack_require__(41)
+	  , SRC       = __webpack_require__(42)('src')
 	  , TO_STRING = 'toString'
 	  , $toString = Function[TO_STRING]
 	  , TPL       = ('' + $toString).split(TO_STRING);
 
-	__webpack_require__(26).inspectSource = function(it){
+	__webpack_require__(29).inspectSource = function(it){
 	  return $toString.call(it);
 	};
 
@@ -2753,7 +2980,7 @@ module.exports =
 	});
 
 /***/ },
-/* 38 */
+/* 41 */
 /***/ function(module, exports) {
 
 	var hasOwnProperty = {}.hasOwnProperty;
@@ -2762,7 +2989,7 @@ module.exports =
 	};
 
 /***/ },
-/* 39 */
+/* 42 */
 /***/ function(module, exports) {
 
 	var id = 0
@@ -2772,11 +2999,11 @@ module.exports =
 	};
 
 /***/ },
-/* 40 */
+/* 43 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// optional / simple context binding
-	var aFunction = __webpack_require__(41);
+	var aFunction = __webpack_require__(44);
 	module.exports = function(fn, that, length){
 	  aFunction(fn);
 	  if(that === undefined)return fn;
@@ -2797,7 +3024,7 @@ module.exports =
 	};
 
 /***/ },
-/* 41 */
+/* 44 */
 /***/ function(module, exports) {
 
 	module.exports = function(it){
@@ -2806,12 +3033,12 @@ module.exports =
 	};
 
 /***/ },
-/* 42 */
+/* 45 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var getKeys   = __webpack_require__(43)
-	  , toIObject = __webpack_require__(45)
-	  , isEnum    = __webpack_require__(56).f;
+	var getKeys   = __webpack_require__(46)
+	  , toIObject = __webpack_require__(48)
+	  , isEnum    = __webpack_require__(59).f;
 	module.exports = function(isEntries){
 	  return function(it){
 	    var O      = toIObject(it)
@@ -2827,25 +3054,25 @@ module.exports =
 	};
 
 /***/ },
-/* 43 */
+/* 46 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// 19.1.2.14 / 15.2.3.14 Object.keys(O)
-	var $keys       = __webpack_require__(44)
-	  , enumBugKeys = __webpack_require__(55);
+	var $keys       = __webpack_require__(47)
+	  , enumBugKeys = __webpack_require__(58);
 
 	module.exports = Object.keys || function keys(O){
 	  return $keys(O, enumBugKeys);
 	};
 
 /***/ },
-/* 44 */
+/* 47 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var has          = __webpack_require__(38)
-	  , toIObject    = __webpack_require__(45)
-	  , arrayIndexOf = __webpack_require__(49)(false)
-	  , IE_PROTO     = __webpack_require__(53)('IE_PROTO');
+	var has          = __webpack_require__(41)
+	  , toIObject    = __webpack_require__(48)
+	  , arrayIndexOf = __webpack_require__(52)(false)
+	  , IE_PROTO     = __webpack_require__(56)('IE_PROTO');
 
 	module.exports = function(object, names){
 	  var O      = toIObject(object)
@@ -2861,28 +3088,28 @@ module.exports =
 	};
 
 /***/ },
-/* 45 */
+/* 48 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// to indexed object, toObject with fallback for non-array-like ES3 strings
-	var IObject = __webpack_require__(46)
-	  , defined = __webpack_require__(48);
+	var IObject = __webpack_require__(49)
+	  , defined = __webpack_require__(51);
 	module.exports = function(it){
 	  return IObject(defined(it));
 	};
 
 /***/ },
-/* 46 */
+/* 49 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// fallback for non-array-like ES3 and non-enumerable old V8 strings
-	var cof = __webpack_require__(47);
+	var cof = __webpack_require__(50);
 	module.exports = Object('z').propertyIsEnumerable(0) ? Object : function(it){
 	  return cof(it) == 'String' ? it.split('') : Object(it);
 	};
 
 /***/ },
-/* 47 */
+/* 50 */
 /***/ function(module, exports) {
 
 	var toString = {}.toString;
@@ -2892,7 +3119,7 @@ module.exports =
 	};
 
 /***/ },
-/* 48 */
+/* 51 */
 /***/ function(module, exports) {
 
 	// 7.2.1 RequireObjectCoercible(argument)
@@ -2902,14 +3129,14 @@ module.exports =
 	};
 
 /***/ },
-/* 49 */
+/* 52 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// false -> Array#indexOf
 	// true  -> Array#includes
-	var toIObject = __webpack_require__(45)
-	  , toLength  = __webpack_require__(50)
-	  , toIndex   = __webpack_require__(52);
+	var toIObject = __webpack_require__(48)
+	  , toLength  = __webpack_require__(53)
+	  , toIndex   = __webpack_require__(55);
 	module.exports = function(IS_INCLUDES){
 	  return function($this, el, fromIndex){
 	    var O      = toIObject($this)
@@ -2928,18 +3155,18 @@ module.exports =
 	};
 
 /***/ },
-/* 50 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// 7.1.15 ToLength
-	var toInteger = __webpack_require__(51)
+	var toInteger = __webpack_require__(54)
 	  , min       = Math.min;
 	module.exports = function(it){
 	  return it > 0 ? min(toInteger(it), 0x1fffffffffffff) : 0; // pow(2, 53) - 1 == 9007199254740991
 	};
 
 /***/ },
-/* 51 */
+/* 54 */
 /***/ function(module, exports) {
 
 	// 7.1.4 ToInteger
@@ -2950,10 +3177,10 @@ module.exports =
 	};
 
 /***/ },
-/* 52 */
+/* 55 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var toInteger = __webpack_require__(51)
+	var toInteger = __webpack_require__(54)
 	  , max       = Math.max
 	  , min       = Math.min;
 	module.exports = function(index, length){
@@ -2962,20 +3189,20 @@ module.exports =
 	};
 
 /***/ },
-/* 53 */
+/* 56 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var shared = __webpack_require__(54)('keys')
-	  , uid    = __webpack_require__(39);
+	var shared = __webpack_require__(57)('keys')
+	  , uid    = __webpack_require__(42);
 	module.exports = function(key){
 	  return shared[key] || (shared[key] = uid(key));
 	};
 
 /***/ },
-/* 54 */
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var global = __webpack_require__(25)
+	var global = __webpack_require__(28)
 	  , SHARED = '__core-js_shared__'
 	  , store  = global[SHARED] || (global[SHARED] = {});
 	module.exports = function(key){
@@ -2983,7 +3210,7 @@ module.exports =
 	};
 
 /***/ },
-/* 55 */
+/* 58 */
 /***/ function(module, exports) {
 
 	// IE 8- don't enum bug keys
@@ -2992,25 +3219,25 @@ module.exports =
 	).split(',');
 
 /***/ },
-/* 56 */
+/* 59 */
 /***/ function(module, exports) {
 
 	exports.f = {}.propertyIsEnumerable;
 
 /***/ },
-/* 57 */
+/* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
-	__webpack_require__(58);
-	module.exports = __webpack_require__(26).Object.values;
+	__webpack_require__(61);
+	module.exports = __webpack_require__(29).Object.values;
 
 /***/ },
-/* 58 */
+/* 61 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// https://github.com/tc39/proposal-object-values-entries
-	var $export = __webpack_require__(24)
-	  , $values = __webpack_require__(42)(false);
+	var $export = __webpack_require__(27)
+	  , $values = __webpack_require__(45)(false);
 
 	$export($export.S, 'Object', {
 	  values: function values(it){
@@ -3019,22 +3246,22 @@ module.exports =
 	});
 
 /***/ },
-/* 59 */
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
-	__webpack_require__(60);
-	module.exports = __webpack_require__(26).Object.getOwnPropertyDescriptors;
+	__webpack_require__(63);
+	module.exports = __webpack_require__(29).Object.getOwnPropertyDescriptors;
 
 /***/ },
-/* 60 */
+/* 63 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// https://github.com/tc39/proposal-object-getownpropertydescriptors
-	var $export        = __webpack_require__(24)
-	  , ownKeys        = __webpack_require__(61)
-	  , toIObject      = __webpack_require__(45)
-	  , gOPD           = __webpack_require__(64)
-	  , createProperty = __webpack_require__(65);
+	var $export        = __webpack_require__(27)
+	  , ownKeys        = __webpack_require__(64)
+	  , toIObject      = __webpack_require__(48)
+	  , gOPD           = __webpack_require__(67)
+	  , createProperty = __webpack_require__(68);
 
 	$export($export.S, 'Object', {
 	  getOwnPropertyDescriptors: function getOwnPropertyDescriptors(object){
@@ -3050,14 +3277,14 @@ module.exports =
 	});
 
 /***/ },
-/* 61 */
+/* 64 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// all object keys, includes non-enumerable and symbols
-	var gOPN     = __webpack_require__(62)
-	  , gOPS     = __webpack_require__(63)
-	  , anObject = __webpack_require__(29)
-	  , Reflect  = __webpack_require__(25).Reflect;
+	var gOPN     = __webpack_require__(65)
+	  , gOPS     = __webpack_require__(66)
+	  , anObject = __webpack_require__(32)
+	  , Reflect  = __webpack_require__(28).Reflect;
 	module.exports = Reflect && Reflect.ownKeys || function ownKeys(it){
 	  var keys       = gOPN.f(anObject(it))
 	    , getSymbols = gOPS.f;
@@ -3065,36 +3292,36 @@ module.exports =
 	};
 
 /***/ },
-/* 62 */
+/* 65 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// 19.1.2.7 / 15.2.3.4 Object.getOwnPropertyNames(O)
-	var $keys      = __webpack_require__(44)
-	  , hiddenKeys = __webpack_require__(55).concat('length', 'prototype');
+	var $keys      = __webpack_require__(47)
+	  , hiddenKeys = __webpack_require__(58).concat('length', 'prototype');
 
 	exports.f = Object.getOwnPropertyNames || function getOwnPropertyNames(O){
 	  return $keys(O, hiddenKeys);
 	};
 
 /***/ },
-/* 63 */
+/* 66 */
 /***/ function(module, exports) {
 
 	exports.f = Object.getOwnPropertySymbols;
 
 /***/ },
-/* 64 */
+/* 67 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var pIE            = __webpack_require__(56)
-	  , createDesc     = __webpack_require__(36)
-	  , toIObject      = __webpack_require__(45)
-	  , toPrimitive    = __webpack_require__(35)
-	  , has            = __webpack_require__(38)
-	  , IE8_DOM_DEFINE = __webpack_require__(31)
+	var pIE            = __webpack_require__(59)
+	  , createDesc     = __webpack_require__(39)
+	  , toIObject      = __webpack_require__(48)
+	  , toPrimitive    = __webpack_require__(38)
+	  , has            = __webpack_require__(41)
+	  , IE8_DOM_DEFINE = __webpack_require__(34)
 	  , gOPD           = Object.getOwnPropertyDescriptor;
 
-	exports.f = __webpack_require__(32) ? gOPD : function getOwnPropertyDescriptor(O, P){
+	exports.f = __webpack_require__(35) ? gOPD : function getOwnPropertyDescriptor(O, P){
 	  O = toIObject(O);
 	  P = toPrimitive(P, true);
 	  if(IE8_DOM_DEFINE)try {
@@ -3104,12 +3331,12 @@ module.exports =
 	};
 
 /***/ },
-/* 65 */
+/* 68 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var $defineProperty = __webpack_require__(28)
-	  , createDesc      = __webpack_require__(36);
+	var $defineProperty = __webpack_require__(31)
+	  , createDesc      = __webpack_require__(39);
 
 	module.exports = function(object, index, value){
 	  if(index in object)$defineProperty.f(object, index, createDesc(0, value));
@@ -3117,21 +3344,21 @@ module.exports =
 	};
 
 /***/ },
-/* 66 */
+/* 69 */
 /***/ function(module, exports, __webpack_require__) {
 
-	__webpack_require__(67);
-	module.exports = __webpack_require__(26).String.padStart;
+	__webpack_require__(70);
+	module.exports = __webpack_require__(29).String.padStart;
 
 
 /***/ },
-/* 67 */
+/* 70 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	// https://github.com/tc39/proposal-string-pad-start-end
-	var $export = __webpack_require__(24)
-	  , $pad    = __webpack_require__(68);
+	var $export = __webpack_require__(27)
+	  , $pad    = __webpack_require__(71);
 
 	$export($export.P, 'String', {
 	  padStart: function padStart(maxLength /*, fillString = ' ' */){
@@ -3140,13 +3367,13 @@ module.exports =
 	});
 
 /***/ },
-/* 68 */
+/* 71 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// https://github.com/tc39/proposal-string-pad-start-end
-	var toLength = __webpack_require__(50)
-	  , repeat   = __webpack_require__(69)
-	  , defined  = __webpack_require__(48);
+	var toLength = __webpack_require__(53)
+	  , repeat   = __webpack_require__(72)
+	  , defined  = __webpack_require__(51);
 
 	module.exports = function(that, maxLength, fillString, left){
 	  var S            = String(defined(that))
@@ -3162,12 +3389,12 @@ module.exports =
 
 
 /***/ },
-/* 69 */
+/* 72 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var toInteger = __webpack_require__(51)
-	  , defined   = __webpack_require__(48);
+	var toInteger = __webpack_require__(54)
+	  , defined   = __webpack_require__(51);
 
 	module.exports = function repeat(count){
 	  var str = String(defined(this))
@@ -3179,21 +3406,21 @@ module.exports =
 	};
 
 /***/ },
-/* 70 */
+/* 73 */
 /***/ function(module, exports, __webpack_require__) {
 
-	__webpack_require__(71);
-	module.exports = __webpack_require__(26).String.padEnd;
+	__webpack_require__(74);
+	module.exports = __webpack_require__(29).String.padEnd;
 
 
 /***/ },
-/* 71 */
+/* 74 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	// https://github.com/tc39/proposal-string-pad-start-end
-	var $export = __webpack_require__(24)
-	  , $pad    = __webpack_require__(68);
+	var $export = __webpack_require__(27)
+	  , $pad    = __webpack_require__(71);
 
 	$export($export.P, 'String', {
 	  padEnd: function padEnd(maxLength /*, fillString = ' ' */){
@@ -3202,7 +3429,7 @@ module.exports =
 	});
 
 /***/ },
-/* 72 */
+/* 75 */
 /***/ function(module, exports) {
 
 	let usedOnStart = 0;

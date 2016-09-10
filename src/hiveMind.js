@@ -23,7 +23,7 @@ const hiveMind = {
     return _.filter(
       this.data, (entry)=> (
         (entry.fromSource && entry.fromSource.roomName == room.name) ||
-        entry.toTarget.roomName == room.name
+        (entry.toTarget && entry.toTarget.roomName == room.name)
       )
     )
   },
