@@ -42,6 +42,15 @@ class PriorityQueue {
     return this.data[0]
   }
 
+  filter = (filter)=> {
+    return _.filter(this.data, filter)
+  }
+
+  removeBy = (filter)=> {
+    _.remove(this.data, filter)
+    this._heapify()
+  }
+
   clear = ()=> {
     this.length = 0
     this.data.length = 0

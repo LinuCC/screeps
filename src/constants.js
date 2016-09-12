@@ -7,60 +7,105 @@ const KIND_MUTALISK = 5 /* Scout stuff */
 
 const SCOUT = 'scout'
 const SPAWN = 'spawn'
+const EXCAVATE = 'excavate'
+const UPGRADE = 'upgrade'
+
+const SOURCE = 'source'
+
+const CONSTRUCTION_SITE = "constrSite"
+const REMOTE_PRIORITIES_MODIFIER = 0.5
 
 const exports = Object.freeze({
-    ROOM_CENTER_X: 25,
-    ROOM_CENTER_Y: 25,
+  ROOM_CENTER_X: 25,
+  ROOM_CENTER_Y: 25,
 
-    SPAWN: SPAWN,
-    SCOUT: SCOUT,
+  SPAWN: SPAWN,
+  SCOUT: SCOUT,
+  EXCAVATE: EXCAVATE,
+  UPGRADE: UPGRADE,
 
-    ENERGY_COST: Object.freeze({
-      [WORK]: 100,
-      [CARRY]: 50,
-      [MOVE]: 50,
-      [ATTACK]: 80,
-      [RANGED_ATTACK]: 150,
-      [HEAL]: 250
-    }),
-    ZERG_KINDS: [
-      KIND_DRONE,
-      KIND_ZERGLING,
-      KIND_INFESTOR,
-      KIND_CORRUPTOR,
-      KIND_MUTALISK
-    ],
-    ZERG_PARTS_TEMPLATES: {
-      KIND_DRONE: [CARRY],
-      KIND_ZERGLING: [WORK, WORK, WORK, CARRY, CARRY]
+  ENERGY_COST: Object.freeze({
+    [WORK]: 100,
+    [CARRY]: 50,
+    [MOVE]: 50,
+    [ATTACK]: 80,
+    [RANGED_ATTACK]: 150,
+    [HEAL]: 250
+  }),
+  ZERG_KINDS: [
+    KIND_DRONE,
+    KIND_ZERGLING,
+    KIND_INFESTOR,
+    KIND_CORRUPTOR,
+    KIND_MUTALISK
+  ],
+  ZERG_PARTS_TEMPLATES: {
+    KIND_DRONE: [CARRY],
+    KIND_ZERGLING: [WORK, WORK, WORK, CARRY, CARRY]
+  },
+  PRIO_QUEUES: [
+    WORK,
+    CARRY,
+    CLAIM,
+    SCOUT,
+    EXCAVATE,
+    UPGRADE,
+
+    SPAWN
+  ],
+
+  QUEUES_FOR_KINDS: {
+    [KIND_DRONE]: [CARRY],
+    [KIND_ZERGLING]: [WORK, CARRY],
+    [KIND_INFESTOR]: [EXCAVATE],
+    [KIND_CORRUPTOR]: [CLAIM],
+    [KIND_MUTALISK]: [SCOUT],
+  },
+
+  PRIORITIES: {
+    [CARRY]: {
+      [STRUCTURE_SPAWN]: 1000,
+      [STRUCTURE_EXTENSION]: 1100,
+      [STRUCTURE_TOWER]: 1200,
+      [STRUCTURE_LINK]: 1800,
+      [CONSTRUCTION_SITE]: 1900,
+      [STRUCTURE_STORAGE]: 2000,
+      [STRUCTURE_CONTROLLER]: 9000,
+      [STRUCTURE_CONTAINER]: 10000,
     },
-    PRIO_QUEUES: [
-      WORK,
-      CARRY,
-      CLAIM,
-      SCOUT,
-      SPAWN
-    ],
-    ROLE_ZERG: ROLE_ZERG,
-    KIND_DRONE: KIND_DRONE,
-    KIND_ZERGLING: KIND_ZERGLING,
-    KIND_INFESTOR: KIND_INFESTOR,
-    KIND_CORRUPTOR: KIND_CORRUPTOR,
-    KIND_MUTALISK: KIND_MUTALISK,
-
-    ROOM_DEFAULT_TARGET_ZERG_COUNT: {
-      [KIND_DRONE]: 1,
-      [KIND_ZERGLING]: 1,
-      [KIND_INFESTOR]: 1,
-      [KIND_CORRUPTOR]: 0
+    [EXCAVATE]: {
+      [SOURCE]: 1000,
     },
-
-    FLAG_IDENTIFIERS: {
-      remoteRoom: {
-        color: COLOR_CYAN,
-        secondaryColor: COLOR_PURPLE
-      }
+    [SPAWN]: {
+      [KIND_INFESTOR]: 1000,
     }
+  },
+
+  SOURCE: SOURCE,
+
+  REMOTE_PRIORITIES_MODIFIER: REMOTE_PRIORITIES_MODIFIER,
+  CONSTRUCTION_SITE: CONSTRUCTION_SITE,
+
+  ROLE_ZERG: ROLE_ZERG,
+  KIND_DRONE: KIND_DRONE,
+  KIND_ZERGLING: KIND_ZERGLING,
+  KIND_INFESTOR: KIND_INFESTOR,
+  KIND_CORRUPTOR: KIND_CORRUPTOR,
+  KIND_MUTALISK: KIND_MUTALISK,
+
+  ROOM_DEFAULT_TARGET_ZERG_COUNT: {
+    [KIND_DRONE]: 1,
+    [KIND_ZERGLING]: 1,
+    [KIND_INFESTOR]: 1,
+    [KIND_CORRUPTOR]: 0
+  },
+
+  FLAG_IDENTIFIERS: {
+    remoteRoom: {
+      color: COLOR_CYAN,
+      secondaryColor: COLOR_PURPLE
+    }
+  }
 });
 
 module.exports = exports

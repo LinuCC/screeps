@@ -1,4 +1,5 @@
 import $ from './constants'
+import PriorityQueue from './priorityQueue'
 import hiveMind from './hiveMind'
 
 /**
@@ -58,7 +59,12 @@ class Overseer {
           Object.keys(room.memory.priorityQueues).length &&
           Object.keys(room.memory.priorityQueues).some((queueName)=> (
             room.memory.priorityQueues[queueName].some((queueItem)=> (
-              queueItem.id == item.id
+              queueItem.id == item.id || (
+                queueName === $.SPAWN &&
+                _.get(
+                  hiveMind.data[queueItem.id], ['memory', 'item', 'id']
+                ) === item.id
+              )
             ))
           ))
         ) {
@@ -81,6 +87,24 @@ class Overseer {
       delete hiveMind.data[itemId]
       oldItemCount += 1
     }
+
+    for(let roomName in Game.rooms) {
+      let room = Game.rooms[roomName]
+      if(!room.memory.priorityQueues) { continue }
+      for(let queueName in room.memory.priorityQueues) {
+        let queueData = room.memory.priorityQueues[queueName]
+        for(let queueItem of queueData) {
+          if(!hiveMind.data[queueItem.id]) {
+            console.log(
+              "<span style='color: #ddaa33'>Item missing:</span>\n    ",
+              JSON.stringify(queueItem)
+            )
+            new PriorityQueue(queueData).removeBy({id: queueItem.id})
+          }
+        }
+      }
+    }
+
     Memory.stats['hiveMind.oldItemCount'] = oldItemCount
   }
 
@@ -98,7 +122,8 @@ class Overseer {
           mem.targetZergCount[kind] = $.ROOM_DEFAULT_TARGET_ZERG_COUNT[kind]
         }
       }
-      if(!mem.connectedRemoteRooms) { mem.connectedRemoteRooms = [] }
+      if(!mem.connectedRemoteRooms) { mem.connectedRemoteRooms = {} }
+      if(!mem.links) { mem.links = {sources: [], providers: []} }
     }
   }
 

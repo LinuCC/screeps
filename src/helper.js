@@ -1,13 +1,3 @@
-
-/*
- * Module code goes here. Use 'module.exports' to export things:
- * module.exports.thing = 'a thing';
- *
- * You can import it from another modules like this:
- * var mod = require('helper');
- * mod.thing == 'a thing'; // true
- */
-
 modwide.log = {
   cyan: (str)=> console.log(`<span style="color: #00BFFF">${str}</span>`),
   red: (str)=> console.log(`<span style="color: red">${str}</span>`),
@@ -17,8 +7,17 @@ modwide.log = {
 
 module.exports = {
     randomProperty: function (obj) {
-        var keys = Object.keys(obj)
+        let keys = Object.keys(obj)
         return obj[keys[ keys.length * Math.random() << 0]];
+    },
+    encodeCoordinate: function(pos) {
+        return String.fromCodePoint(pos.x | (pos.y << 6));
+    },
+    decodeCoordinate: function(string, index) {
+        let val = string.charCodeAt(index);
+        let x = (val &  0x3F);
+        let y = ((val >> 6) & 0x3F);
+        return {x: x, y:y};
     }
 };
 

@@ -49,93 +49,95 @@ var modwide = global; module.exports =
 
 	__webpack_require__(1);
 
-	var _constants = __webpack_require__(4);
+	__webpack_require__(5);
+
+	var _constants = __webpack_require__(6);
 
 	var _constants2 = _interopRequireDefault(_constants);
 
-	var _defense = __webpack_require__(5);
+	var _defense = __webpack_require__(7);
 
 	var _defense2 = _interopRequireDefault(_defense);
 
-	var _harvester = __webpack_require__(7);
+	var _harvester = __webpack_require__(8);
 
 	var _harvester2 = _interopRequireDefault(_harvester);
 
-	var _upgrader = __webpack_require__(9);
+	var _upgrader = __webpack_require__(10);
 
 	var _upgrader2 = _interopRequireDefault(_upgrader);
 
-	var _builder = __webpack_require__(10);
+	var _builder = __webpack_require__(11);
 
 	var _builder2 = _interopRequireDefault(_builder);
 
-	var _excavator = __webpack_require__(11);
+	var _excavator = __webpack_require__(12);
 
 	var _excavator2 = _interopRequireDefault(_excavator);
 
-	var _repairer = __webpack_require__(12);
+	var _repairer = __webpack_require__(13);
 
 	var _repairer2 = _interopRequireDefault(_repairer);
 
-	var _transporter = __webpack_require__(13);
+	var _transporter = __webpack_require__(14);
 
 	var _transporter2 = _interopRequireDefault(_transporter);
 
-	var _creepWatcher = __webpack_require__(14);
+	var _creepWatcher = __webpack_require__(15);
 
 	var _creepWatcher2 = _interopRequireDefault(_creepWatcher);
 
-	var _fighter = __webpack_require__(16);
+	var _fighter = __webpack_require__(17);
 
 	var _fighter2 = _interopRequireDefault(_fighter);
 
-	var _healer = __webpack_require__(17);
+	var _healer = __webpack_require__(18);
 
 	var _healer2 = _interopRequireDefault(_healer);
 
-	var _rangedFighter = __webpack_require__(18);
+	var _rangedFighter = __webpack_require__(19);
 
 	var _rangedFighter2 = _interopRequireDefault(_rangedFighter);
 
-	var _assimilator = __webpack_require__(19);
+	var _assimilator = __webpack_require__(20);
 
 	var _assimilator2 = _interopRequireDefault(_assimilator);
 
-	var _priorityQueue = __webpack_require__(3);
+	var _priorityQueue = __webpack_require__(4);
 
 	var _priorityQueue2 = _interopRequireDefault(_priorityQueue);
 
-	var _hiveMind = __webpack_require__(2);
+	var _hiveMind = __webpack_require__(3);
 
 	var _hiveMind2 = _interopRequireDefault(_hiveMind);
 
-	var _Overlord = __webpack_require__(20);
+	var _Overlord = __webpack_require__(21);
 
 	var _Overlord2 = _interopRequireDefault(_Overlord);
 
-	var _Overseer = __webpack_require__(21);
+	var _Overseer = __webpack_require__(22);
 
 	var _Overseer2 = _interopRequireDefault(_Overseer);
 
-	var _Zergling = __webpack_require__(22);
+	var _Zergling = __webpack_require__(23);
 
 	var _Zergling2 = _interopRequireDefault(_Zergling);
 
-	var _spawner = __webpack_require__(15);
+	var _spawner = __webpack_require__(16);
 
 	var _spawner2 = _interopRequireDefault(_spawner);
 
-	var _Stats = __webpack_require__(23);
+	var _Stats = __webpack_require__(24);
 
 	var _Stats2 = _interopRequireDefault(_Stats);
 
-	__webpack_require__(24);
+	__webpack_require__(25);
 
-	var _screepsProfiler = __webpack_require__(75);
+	var _screepsProfiler = __webpack_require__(76);
 
 	var _screepsProfiler2 = _interopRequireDefault(_screepsProfiler);
 
-	var _helper = __webpack_require__(6);
+	var _helper = __webpack_require__(2);
 
 	var _helper2 = _interopRequireDefault(_helper);
 
@@ -165,6 +167,7 @@ var modwide = global; module.exports =
 	    new _Overseer2.default().check();
 	  }
 
+	  modwide.h = _helper2.default;
 	  modwide.$ = _constants2.default;
 	  modwide.Spawner = _spawner2.default;
 	  modwide.Overlord = _Overlord2.default;
@@ -172,6 +175,7 @@ var modwide = global; module.exports =
 	  modwide.logHiveMindOf = spawnName => {
 	    new _Overlord2.default(Game.spawns[spawnName].room.name).logQueuedItems();
 	  };
+	  new _Overseer2.default().parseCommands();
 	  modwide.resetHive = () => {
 	    Memory.hiveMind = {};
 	    Memory.hiveMindIndex = 0;
@@ -292,11 +296,15 @@ var modwide = global; module.exports =
 
 	'use strict';
 
-	var _hiveMind = __webpack_require__(2);
+	var _helper = __webpack_require__(2);
+
+	var _helper2 = _interopRequireDefault(_helper);
+
+	var _hiveMind = __webpack_require__(3);
 
 	var _hiveMind2 = _interopRequireDefault(_hiveMind);
 
-	var _priorityQueue = __webpack_require__(3);
+	var _priorityQueue = __webpack_require__(4);
 
 	var _priorityQueue2 = _interopRequireDefault(_priorityQueue);
 
@@ -337,8 +345,58 @@ var modwide = global; module.exports =
 	  }
 	};
 
+	Room.prototype.drawCoordinates = function (coordinates) {
+	  for (let i = 0, len = coordinates.length; i < len; i++) {
+	    let coordinate = _helper2.default.decodeCoordinate(coordinates, i);
+	    this.createFlag(this.posByXY(coordinate), `${ coordinate.x }-${ coordinate.y }`);
+	  }
+	};
+
+	Room.prototype.clearDrawings = function () {
+	  let flags = this.find(FIND_FLAGS, { filter: { color: COLOR_WHITE } });
+	  for (flag of flags) {
+	    flag.remove();
+	  }
+	};
+
+	Room.prototype.posByXY = function (_ref) {
+	  let x = _ref.x;
+	  let y = _ref.y;
+
+	  return new RoomPostion(x, y, this.name);
+	};
+
 /***/ },
 /* 2 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	modwide.log = {
+	    cyan: str => console.log(`<span style="color: #00BFFF">${ str }</span>`),
+	    red: str => console.log(`<span style="color: red">${ str }</span>`),
+	    green: str => console.log(`<span style="color: #aadd33">${ str }</span>`),
+	    blue: str => console.log(`<span style="color: blue">${ str }</span>`)
+	};
+
+	module.exports = {
+	    randomProperty: function (obj) {
+	        let keys = Object.keys(obj);
+	        return obj[keys[keys.length * Math.random() << 0]];
+	    },
+	    encodeCoordinate: function (pos) {
+	        return String.fromCodePoint(pos.x | pos.y << 6);
+	    },
+	    decodeCoordinate: function (string, index) {
+	        let val = string.charCodeAt(index);
+	        let x = val & 0x3F;
+	        let y = val >> 6 & 0x3F;
+	        return { x: x, y: y };
+	    }
+	};
+
+/***/ },
+/* 3 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -365,7 +423,11 @@ var modwide = global; module.exports =
 	  },
 
 	  allForRoom: function (room) {
-	    return _.filter(this.data, entry => entry.fromSource && entry.fromSource.roomName == room.name || entry.toTarget && entry.toTarget.roomName == room.name);
+	    return _.filter(this.data, entry => entry.fromSource && entry.fromSource.roomName == room.name || entry.toTarget && entry.toTarget.roomName == room.name || entry.byRoomName == room.name);
+	  },
+
+	  filter: function (filter) {
+	    return _.filter(this.data, filter);
 	  },
 
 	  _generateId: function () {
@@ -378,7 +440,7 @@ var modwide = global; module.exports =
 	module.exports = hiveMind;
 
 /***/ },
-/* 3 */
+/* 4 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -417,6 +479,15 @@ var modwide = global; module.exports =
 
 	    this.peek = () => {
 	      return this.data[0];
+	    };
+
+	    this.filter = filter => {
+	      return _.filter(this.data, filter);
+	    };
+
+	    this.removeBy = filter => {
+	      _.remove(this.data, filter);
+	      this._heapify();
 	    };
 
 	    this.clear = () => {
@@ -482,7 +553,37 @@ var modwide = global; module.exports =
 	module.exports = PriorityQueue;
 
 /***/ },
-/* 4 */
+/* 5 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _hiveMind = __webpack_require__(3);
+
+	var _hiveMind2 = _interopRequireDefault(_hiveMind);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	Creep.prototype.activeItem = function () {
+	  if (!this.memory.item || !this.memory.item.id) {
+	    return null;
+	  }
+	  return _hiveMind2.default[this.memory.item.id];
+	};
+
+	Creep.prototype.hasItem = function () {
+	  return this.memory.item && this.memory.item.id;
+	};
+
+	Creep.prototype.itemMatches = function (filter) {
+	  if (!this.hasItem()) {
+	    console.log('Item does not exist');return false;
+	  }
+	  return _.matches(filter)(this.activeItem());
+	};
+
+/***/ },
+/* 6 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -496,6 +597,13 @@ var modwide = global; module.exports =
 
 	const SCOUT = 'scout';
 	const SPAWN = 'spawn';
+	const EXCAVATE = 'excavate';
+	const UPGRADE = 'upgrade';
+
+	const SOURCE = 'source';
+
+	const CONSTRUCTION_SITE = "constrSite";
+	const REMOTE_PRIORITIES_MODIFIER = 0.5;
 
 	const _exports = Object.freeze({
 	  ROOM_CENTER_X: 25,
@@ -503,6 +611,8 @@ var modwide = global; module.exports =
 
 	  SPAWN: SPAWN,
 	  SCOUT: SCOUT,
+	  EXCAVATE: EXCAVATE,
+	  UPGRADE: UPGRADE,
 
 	  ENERGY_COST: Object.freeze({
 	    [WORK]: 100,
@@ -517,7 +627,40 @@ var modwide = global; module.exports =
 	    KIND_DRONE: [CARRY],
 	    KIND_ZERGLING: [WORK, WORK, WORK, CARRY, CARRY]
 	  },
-	  PRIO_QUEUES: [WORK, CARRY, CLAIM, SCOUT, SPAWN],
+	  PRIO_QUEUES: [WORK, CARRY, CLAIM, SCOUT, EXCAVATE, UPGRADE, SPAWN],
+
+	  QUEUES_FOR_KINDS: {
+	    [KIND_DRONE]: [CARRY],
+	    [KIND_ZERGLING]: [WORK, CARRY],
+	    [KIND_INFESTOR]: [EXCAVATE],
+	    [KIND_CORRUPTOR]: [CLAIM],
+	    [KIND_MUTALISK]: [SCOUT]
+	  },
+
+	  PRIORITIES: {
+	    [CARRY]: {
+	      [STRUCTURE_SPAWN]: 1000,
+	      [STRUCTURE_EXTENSION]: 1100,
+	      [STRUCTURE_TOWER]: 1200,
+	      [STRUCTURE_LINK]: 1800,
+	      [CONSTRUCTION_SITE]: 1900,
+	      [STRUCTURE_STORAGE]: 2000,
+	      [STRUCTURE_CONTROLLER]: 9000,
+	      [STRUCTURE_CONTAINER]: 10000
+	    },
+	    [EXCAVATE]: {
+	      [SOURCE]: 1000
+	    },
+	    [SPAWN]: {
+	      [KIND_INFESTOR]: 1000
+	    }
+	  },
+
+	  SOURCE: SOURCE,
+
+	  REMOTE_PRIORITIES_MODIFIER: REMOTE_PRIORITIES_MODIFIER,
+	  CONSTRUCTION_SITE: CONSTRUCTION_SITE,
+
 	  ROLE_ZERG: ROLE_ZERG,
 	  KIND_DRONE: KIND_DRONE,
 	  KIND_ZERGLING: KIND_ZERGLING,
@@ -543,7 +686,7 @@ var modwide = global; module.exports =
 	module.exports = _exports;
 
 /***/ },
-/* 5 */
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -557,7 +700,7 @@ var modwide = global; module.exports =
 	 * mod.thing == 'a thing'; // true
 	 */
 
-	const helper = __webpack_require__(6);
+	const helper = __webpack_require__(2);
 
 	module.exports = {
 	    defendRoom(room) {
@@ -620,41 +763,12 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 6 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	/*
-	 * Module code goes here. Use 'module.exports' to export things:
-	 * module.exports.thing = 'a thing';
-	 *
-	 * You can import it from another modules like this:
-	 * var mod = require('helper');
-	 * mod.thing == 'a thing'; // true
-	 */
-
-	modwide.log = {
-	    cyan: str => console.log(`<span style="color: #00BFFF">${ str }</span>`),
-	    red: str => console.log(`<span style="color: red">${ str }</span>`),
-	    green: str => console.log(`<span style="color: #aadd33">${ str }</span>`),
-	    blue: str => console.log(`<span style="color: blue">${ str }</span>`)
-	};
-
-	module.exports = {
-	    randomProperty: function (obj) {
-	        var keys = Object.keys(obj);
-	        return obj[keys[keys.length * Math.random() << 0]];
-	    }
-	};
-
-/***/ },
-/* 7 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	const role = __webpack_require__(8);
+	const role = __webpack_require__(9);
 
 	const roleHarvester = {
 
@@ -757,7 +871,7 @@ var modwide = global; module.exports =
 	module.exports = roleHarvester;
 
 /***/ },
-/* 8 */
+/* 9 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -842,12 +956,12 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 9 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	const role = __webpack_require__(8);
+	const role = __webpack_require__(9);
 
 	var roleUpgrader = {
 
@@ -884,12 +998,12 @@ var modwide = global; module.exports =
 	module.exports = roleUpgrader;
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	const role = __webpack_require__(8);
+	const role = __webpack_require__(9);
 
 	const roleBuilder = {
 
@@ -998,12 +1112,12 @@ var modwide = global; module.exports =
 	module.exports = roleBuilder;
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	const role = __webpack_require__(8);
+	const role = __webpack_require__(9);
 
 	/**
 	 * An Excavator should be defined by the following Memory-Vars:
@@ -1083,12 +1197,12 @@ var modwide = global; module.exports =
 	module.exports = roleExcavator;
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	const role = __webpack_require__(8);
+	const role = __webpack_require__(9);
 
 	const roleRepairer = {
 
@@ -1160,12 +1274,12 @@ var modwide = global; module.exports =
 	module.exports = roleRepairer;
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	const role = __webpack_require__(8);
+	const role = __webpack_require__(9);
 
 	/**
 	 * An Transporter should be defined by the following Memory-Vars:
@@ -1233,18 +1347,18 @@ var modwide = global; module.exports =
 	module.exports = roleTransporter;
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _constants = __webpack_require__(4);
+	var _constants = __webpack_require__(6);
 
 	var _constants2 = _interopRequireDefault(_constants);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	const Spawner = __webpack_require__(15);
+	const Spawner = __webpack_require__(16);
 
 	var spawnCreepWatcher = {
 	    run: function (spawn) {
@@ -1322,12 +1436,12 @@ var modwide = global; module.exports =
 	module.exports = spawnCreepWatcher;
 
 /***/ },
-/* 15 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	__webpack_require__(4);
+	__webpack_require__(6);
 
 	class Spawner {
 	  constructor() {
@@ -1475,7 +1589,7 @@ var modwide = global; module.exports =
 	module.exports = Spawner;
 
 /***/ },
-/* 16 */
+/* 17 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -1518,7 +1632,7 @@ var modwide = global; module.exports =
 	module.exports = roleFighter;
 
 /***/ },
-/* 17 */
+/* 18 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -1562,7 +1676,7 @@ var modwide = global; module.exports =
 	module.exports = roleHealer;
 
 /***/ },
-/* 18 */
+/* 19 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -1597,7 +1711,7 @@ var modwide = global; module.exports =
 	module.exports = roleRangedFighter;
 
 /***/ },
-/* 19 */
+/* 20 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -1628,18 +1742,22 @@ var modwide = global; module.exports =
 	module.exports = roleAssimilator;
 
 /***/ },
-/* 20 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _constants = __webpack_require__(4);
+	var _constants = __webpack_require__(6);
 
 	var _constants2 = _interopRequireDefault(_constants);
 
-	var _hiveMind = __webpack_require__(2);
+	var _hiveMind = __webpack_require__(3);
 
 	var _hiveMind2 = _interopRequireDefault(_hiveMind);
+
+	var _priorityQueue = __webpack_require__(4);
+
+	var _priorityQueue2 = _interopRequireDefault(_priorityQueue);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -1680,30 +1798,43 @@ var modwide = global; module.exports =
 	      if (queues[CARRY]) {
 	        this.carry(queues[CARRY]);
 	      }
+	      if (queues[_constants2.default.EXCAVATE]) {
+	        this.excavate(queues[_constants2.default.EXCAVATE]);
+	      }
 
-	      this.remote();
+	      this.remote(queues);
 	    };
 
 	    this.spawn = () => {
+	      // Explicit Spawns
 	      let queue = this.room.queue(_constants2.default.SPAWN);
 	      if (queue && queue.itemCount() > 0) {
 	        let spawningSpawns = [];
 	        while (queue.peek()) {
 	          let queueItem = queue.peek();
-	          let data = Memory['hiveMind'][queueItem.id];
-	          let body = data.body ? data.body : this.calcCreepBody(_constants2.default.ZERG_PARTS_TEMPLATES[data.kind]);
+	          let data = _hiveMind2.default.data[queueItem.id];
+	          let body = [];
+	          if (data.kind === _constants2.default.KIND_INFESTOR) {
+	            // FIXME: Hardcoded INFESTOR STUFF
+	            body = [WORK, WORK, WORK, WORK, WORK, MOVE, MOVE, MOVE];
+	            // body = [MOVE]
+	          } else {
+	            body = data.body ? data.body : this.calcCreepBody(_constants2.default.ZERG_PARTS_TEMPLATES[data.kind]);
+	          }
 	          let spawns = this.room.spawns(s => s.canCreateCreep(body) === OK && !(spawningSpawns.indexOf(s) !== -1));
 	          if (spawns.length) {
 	            let memory = data.memory ? data.memory : { role: _constants2.default.ROLE_ZERG };
+	            if (!memory.kind) {
+	              memory.kind = data.kind;
+	            }
+	            log.green(`Creating creep with mem ${ JSON.stringify(memory) }`);
 	            let res = spawns[0].createCreep(body, `${ data.kind }${ this.newCreepIndex() }`, memory);
 	            spawningSpawns.push(spawns[0]);
 	            if (typeof res === 'string') {
 	              queue.dequeue();
 	              _hiveMind2.default.remove(queueItem.id);
-	              console.log("DEQUEUE");
 	            } else {
 	              console.log("Spawn noped", res);
-	              break;
 	            }
 	          } else {
 	            break;
@@ -1726,7 +1857,7 @@ var modwide = global; module.exports =
 	      let conSites = this.room.find(FIND_CONSTRUCTION_SITES);
 	      if (conSites.length > 0) {
 	        for (let conSite of conSites) {
-	          let targetItems = _.filter(this.existingItems, item => item.toTarget.id == conSite.id);
+	          let targetItems = _.filter(this.existingItems, item => _.get(item, ['toTarget', 'id']) == conSite.id);
 	          let ullage = conSite.progressTotal - (conSite.progress + _.sum(targetItems, t => t.toTarget.amount));
 	          let itemCount = targetItems.length;
 	          let amount = ullage < this.creepCarryAmount ? ullage : this.creepCarryAmount;
@@ -1741,7 +1872,7 @@ var modwide = global; module.exports =
 	      let controllers = this.room.find(FIND_STRUCTURES, { filter: { structureType: STRUCTURE_CONTROLLER } });
 	      if (controllers) {
 	        let controller = controllers[0];
-	        let targetItems = _.filter(this.existingItems, item => item.toTarget.id == controller.id);
+	        let targetItems = _.filter(this.existingItems, item => _.get(item, ['toTarget', 'id']) == controller.id);
 	        let itemCount = targetItems.length;
 	        while (itemCount < this.maxItemsPerTask) {
 	          this.addItem(queue, false, controller, RESOURCE_ENERGY, this.creepCarryAmount, PRIOS[STRUCTURE_CONTROLLER]);
@@ -1781,13 +1912,35 @@ var modwide = global; module.exports =
 	          this.genTargetCarryTasksFor(target, queue, RESOURCE_ENERGY, PRIOS[target.structureType]);
 	        }
 	      }
+
+	      // Find the targets that have stuff and generate tasks for them
+	      let sources = this.room.find(FIND_DROPPED_RESOURCES);
+	      sources = sources.concat(this.room.find(FIND_STRUCTURES, { filter: this.filterNonVoidEnergyContainers }));
+	      sources = sources.concat(this.room.find(FIND_STRUCTURES, { filter: this.filterNonVoidEnergyContainers }));
+	      if (sources.length) {
+	        for (let source of sources) {
+	          this.genSourceTasks(source, queue, CARRY, { dontFindTarget: true });
+	        }
+	      }
+	      // let links = this.room.find(FIND_MY_STRUCTURES, {filter: (struc)=> (
+	      //   struc.structureType == STRUCTURE_LINK &&
+	      //   struc.energy > 0 &&
+	      //   this.room.memory.links.providers.includes(struc.id)
+	      // )})
+	      // if(sources.length) {
+	      //   for(let source of sources) {
+	      //     this.genSourceTasks(
+	      //       source, queue, CARRY, {dontFindTarget: true}
+	      //     )
+	      //   }
+	      // }
 	    };
 
 	    this.genTargetCarryTasksFor = (target, queue, resType, prio) => {
 	      let current = target.store ? _.sum(target.store) : target.energy;
 	      let max = target.storeCapacity ? target.storeCapacity : target.energyCapacity;
 
-	      let targetItems = _.filter(this.existingItems, item => item.toTarget.id == target.id);
+	      let targetItems = _.filter(this.existingItems, item => _.get(item, ['toTarget', 'id']) == target.id);
 	      let itemLength = targetItems.length;
 	      let existingAddAmount = targetItems.length * this.creepCarryAmount;
 	      let ullage = max - (current + existingAddAmount);
@@ -1812,12 +1965,57 @@ var modwide = global; module.exports =
 	      }
 	    };
 
-	    this.genSourceTasks = (source, queue, taskType) => {
+	    this.genSourceTasks = function (source, queue, taskType) {
+	      let options = arguments.length <= 3 || arguments[3] === undefined ? {} : arguments[3];
+
+	      let dontFindTarget = options.dontFindTarget || false;
+	      let sourceItems = _.filter(_this.existingItems, item => item.fromSource && item.fromSource.id == source.id && item.stage != TYPE_TARGET);
+	      log.red(JSON.stringify(sourceItems));
+	      let existingDrawAmount = _.sum(sourceItems, 'fromSource.amount');
+	      let stillStored = 0;
+	      if (source.store) {
+	        stillStored = source.store[RESOURCE_ENERGY] - existingDrawAmount;
+	      } else {
+	        stillStored = source.amount - existingDrawAmount;
+	      }
+	      log.green(`Exsiting: ${ existingDrawAmount }, Stored: ${ stillStored }`);
+	      let itemCount = sourceItems.length;
+	      log.green(`ItemCount: ${ JSON.stringify(sourceItems) }`);
+	      while (stillStored > _this.creepCarryAmount && itemCount < _this.maxItemsPerTask) {
+	        log.cyan(`Generating source-task for ${ source.id }, ${ source.pos.roomName }`);
+	        let targetData = null;
+	        if (taskType == CARRY && !dontFindTarget) {
+	          targetData = _this.findCarryTargetFor(source, RESOURCE_ENERGY);
+	        } else if (taskType == WORK && !dontFindTarget) {
+	          targetData = _this.findWorkTargetFor(source, RESOURCE_ENERGY);
+	        }
+
+	        let target = false;
+	        let prio = 6666;
+	        if (targetData && targetData.target) {
+	          target = targetData.target;
+	          prio = targetData.prio;
+	        } else if (dontFindTarget) {} else {
+	          break; // No suitable target found
+	        }
+	        console.log(`Adding source-task: ${ JSON.stringify(target.pos) } at ${ Game.time }.`);
+	        _this.addItem(queue, source, target, RESOURCE_ENERGY, _this.creepCarryAmount, prio);
+	        stillStored -= _this.creepCarryAmount;
+	        itemCount += 1;
+	      }
+	    };
+
+	    this.genSourceTask = (source, queue, taskType) => {
 	      let sourceItems = _.filter(this.existingItems, item => item.fromSource && item.fromSource.id == source.id && item.stage != TYPE_TARGET);
 	      let existingDrawAmount = _.sum(sourceItems, 'fromSource.amount');
-	      let stillStored = source.store[RESOURCE_ENERGY] - existingDrawAmount;
+	      let stillStored = 0;
+	      if (source.store) {
+	        stillStored = source.store[RESOURCE_ENERGY] - existingDrawAmount;
+	      } else {
+	        stillStored = source.amount - existingDrawAmount;
+	      }
 	      let itemCount = sourceItems.length;
-	      while (stillStored > this.creepCarryAmount && itemCount < this.maxItemsPerTask) {
+	      if (stillStored > this.creepCarryAmount && itemCount < this.maxItemsPerTask) {
 	        let targetData = null;
 	        if (taskType == CARRY) {
 	          targetData = this.findCarryTargetFor(source, RESOURCE_ENERGY);
@@ -1828,33 +2026,6 @@ var modwide = global; module.exports =
 	          var _targetData = targetData;
 	          let target = _targetData.target;
 	          let prio = _targetData.prio;
-
-	          console.log(`Adding target: ${ JSON.stringify(target.pos) } at ${ Game.time }.`);
-	          this.addItem(queue, source, target, RESOURCE_ENERGY, this.creepCarryAmount, prio);
-	          stillStored -= this.creepCarryAmount;
-	          itemCount += 1;
-	        } else {
-	          break; // No suitable target found
-	        }
-	      }
-	    };
-
-	    this.genSourceTask = (source, queue, taskType) => {
-	      let sourceItems = _.filter(this.existingItems, item => item.fromSource && item.fromSource.id == source.id && item.stage != TYPE_TARGET);
-	      let existingDrawAmount = _.sum(sourceItems, 'fromSource.amount');
-	      let stillStored = source.store[RESOURCE_ENERGY] - existingDrawAmount;
-	      let itemCount = sourceItems.length;
-	      if (stillStored > this.creepCarryAmount && itemCount < this.maxItemsPerTask) {
-	        let targetData = null;
-	        if (taskType == CARRY) {
-	          targetData = this.findCarryTargetFor(source, RESOURCE_ENERGY);
-	        } else if (taskType == WORK) {
-	          targetData = this.findWorkTargetFor(source, RESOURCE_ENERGY);
-	        }
-	        if (targetData && targetData.target) {
-	          var _targetData2 = targetData;
-	          let target = _targetData2.target;
-	          let prio = _targetData2.prio;
 
 	          console.log(`Adding target: ${ JSON.stringify(target.pos) } at ${ Game.time }.`);
 	          let res = this.addItem(queue, source, target, RESOURCE_ENERGY, this.creepCarryAmount, prio);
@@ -1911,7 +2082,7 @@ var modwide = global; module.exports =
 	      if (spawns.length > 0) {
 	        spawns = _.sortByOrder(spawns, 'energy', 'asc');
 	        for (let spawn of spawns) {
-	          let spawnItems = _.filter(this.existingItems, item => item.toTarget.id == spawn.id);
+	          let spawnItems = _.filter(this.existingItems, item => _.get(item, ['toTarget', 'id']) == spawn.id);
 	          let existingAddAmount = spawnItems.length * this.creepCarryAmount;
 	          let ullage = spawn.energyCapacity - (spawn.energy + existingAddAmount);
 	          if (ullage > 0) {
@@ -1930,7 +2101,7 @@ var modwide = global; module.exports =
 	      if (extensions.length > 0) {
 	        extensions = _.sortByOrder(extensions, 'energy', 'asc');
 	        for (let extension of extensions) {
-	          let extensionItems = _.filter(this.existingItems, item => item.toTarget.id == extension.id);
+	          let extensionItems = _.filter(this.existingItems, item => _.get(item, ['toTarget', 'id']) == extension.id);
 	          let existingAddAmount = extensionItems.length * this.creepCarryAmount;
 	          let ullage = extension.energyCapacity - (extension.energy + existingAddAmount);
 	          if (ullage > 0) {
@@ -1949,7 +2120,7 @@ var modwide = global; module.exports =
 	      if (towers.length > 0) {
 	        towers = _.sortByOrder(towers, 'energy', 'asc');
 	        for (let tower of towers) {
-	          let towerItems = _.filter(this.existingItems, item => item.toTarget.id == tower.id);
+	          let towerItems = _.filter(this.existingItems, item => _.get(item, ['toTarget', 'id']) == tower.id);
 	          let existingAddAmount = towerItems.length * this.creepCarryAmount;
 	          let ullage = tower.energyCapacity - (tower.energy + existingAddAmount);
 	          if (ullage > 0) {
@@ -1964,7 +2135,7 @@ var modwide = global; module.exports =
 	      let storages = this.room.find(FIND_MY_STRUCTURES, { filter: structure => structure.structureType == STRUCTURE_STORAGE && _.sum(structure.store) < structure.storeCapacity });
 	      if (storages.length > 0) {
 	        let storage = storages[0];
-	        let storageItems = _.filter(this.existingItems, item => item.toTarget.id == storage.id);
+	        let storageItems = _.filter(this.existingItems, item => _.get(item, ['toTarget', 'id']) == storage.id);
 	        let existingAddAmount = storageItems.length * this.creepCarryAmount;
 	        let ullage = storage.storeCapacity - (_.sum(storage.store) + existingAddAmount);
 	        if (ullage > 0) {
@@ -1973,22 +2144,26 @@ var modwide = global; module.exports =
 	      }
 	    };
 
-	    this.filterNonVoidEnergyContainers = object => object.structureType == STRUCTURE_CONTAINER && object.store[RESOURCE_ENERGY] > 200;
+	    this.filterNonVoidEnergyContainers = object => object.structureType == STRUCTURE_CONTAINER && object.store[RESOURCE_ENERGY] > this.creepCarryAmount;
 
 	    this.filterNonVoidEnergyStorage = object => object.structureType == STRUCTURE_STORAGE && object.store[RESOURCE_ENERGY] > 1000;
 
 	    this.addItem = (queue, source, target, res, targetAmount, priority) => {
 	      let data = {
-	        toTarget: {
+	        res: res,
+	        stage: null,
+	        assigned: false,
+	        byRoomName: this.room.name
+	      };
+	      if (target) {
+	        data['toTarget'] = {
 	          id: target.id,
 	          x: target.pos.x,
 	          y: target.pos.y,
 	          roomName: target.pos.roomName,
 	          amount: targetAmount
-	        },
-	        res: res,
-	        stage: null
-	      };
+	        };
+	      }
 	      if (source) {
 	        data['fromSource'] = {
 	          id: source.id,
@@ -2034,12 +2209,89 @@ var modwide = global; module.exports =
 	      }
 	    };
 
+	    this.getFloatingItems = function (queue) {
+	      let customFilter = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
+
+	      let filter = null;
+	      if (customFilter != null) {
+	        filter = q => {
+	          let item = _hiveMind2.default.data[q.id];
+	          return item && !item.toTarget && !item.assigned && item.fromSource && customFilter(q, item);
+	        };
+	      } else {
+	        filter = q => {
+	          let item = _hiveMind2.default.data[q.id];
+	          return item && !item.toTarget && item.fromSource && !item.assigned;
+	        };
+	      }
+	      return queue.filter(filter);
+	    };
+
+	    this.applyPathCostToQueueRating = function (startPosition, queueData, hiveAccessor) {
+	      let modifier = arguments.length <= 3 || arguments[3] === undefined ? 1.0 : arguments[3];
+
+	      return _.compact(queueData.map(data => {
+	        let objectDescriptor = _.get(_hiveMind2.default.data[data.id], hiveAccessor);
+	        let obj = Game.getObjectById(_.get(objectDescriptor, 'id'));
+	        if (!obj) {
+	          if (objectDescriptor.roomName && !Game.rooms[objectDescriptor.roomName]) {
+	            // No info on object, return some very high path
+	            return { id: data.id, prio: data['prio'] + 20000 * modifier };
+	          } else {
+	            // We can see its room, but it isnt there
+	            return null;
+	          }
+	          return { id: data.id, prio: data['prio'] + pathLength * modifier };
+	        }
+	        let pathLength = startPosition.findPathTo(obj).length;
+	        return { id: data.id, prio: data['prio'] + pathLength * modifier };
+	      }));
+	    };
+
 	    this.findSourceForCreep = (creep, item, resType) => {
+
+	      let queue = this.room.queue(CARRY);
+	      let queueItems = this.getFloatingItems(queue, (queueItem, item) => resType === item.res && (!_.get(item.toTarget, 'amount') || item.toTarget.amount <= item.fromSource.amount));
+	      let gameItems = queueItems.map(q => Game.getObjectById(_hiveMind2.default.data[q.id].fromSource.id));
+	      let pathAdjustedQueue = new _priorityQueue2.default(this.applyPathCostToQueueRating(creep.pos, queueItems, 'fromSource'));
+	      let queueItem = pathAdjustedQueue.dequeue();
+	      if (queueItem) {
+	        _hiveMind2.default.data[creep.memory.item.id].fromSource = _hiveMind2.default.data[queueItem.id].fromSource;
+	        _hiveMind2.default.data[creep.memory.item.id].assigned = true;
+	        let itemData = _hiveMind2.default.data[creep.memory.item.id];
+	        if (itemData.fromSource && !itemData.fromSource.amount) {
+	          itemData.fromSource.amount = creep.carryCapacity;
+	        }
+	        queue.removeBy({ id: queueItem.id }); // Keep original queue in sync
+	        _hiveMind2.default.remove(queueItem.id);
+	        return true;
+	      }
 
 	      // Try dropped resources first
 	      let droppedViableRes = creep.room.find(FIND_DROPPED_RESOURCES, { filter: res => res.resourceType == resType && res.amount > item.toTarget.amount && res.amount > _.sum(_.filter(this.existingItems, item => item.fromSource.id == res.id), 'fromSource.amount') + item.toTarget.amount });
 	      if (droppedViableRes.length) {
+
+	        // FIXME THIS IS THE ROOT OF THE FRIGGIN PROBLEMS! FIX IT
+	        // This is why all the creeps go to the same source
 	        return creep.pos.findClosestByPath(droppedViableRes);
+	      }
+
+	      // HAAACKS
+	      if (this.room.memory.connectedRemoteRooms) {
+	        for (let remoteName in this.room.memory.connectedRemoteRooms) {
+	          let data = this.room.memory.connectedRemoteRooms[remoteName];
+	          if (data.parsed) {
+	            if (Game.rooms[remoteName]) {
+	              let room = Game.rooms[remoteName];
+	              let sources = room.find(FIND_DROPPED_RESOURCES, { filter: res => res.resourceType == resType && res.amount > item.toTarget.amount && res.amount > _.sum(_.filter(this.existingItems, item => item.fromSource.id == res.id), 'fromSource.amount') + item.toTarget.amount + 1500 // HAAACKS
+	              });
+	              if (sources.length > 0) {
+	                return sources[0];
+	                // return creep.pos.findClosestByPath(sources)
+	              }
+	            }
+	          }
+	        }
 	      }
 
 	      // Try Container or storage
@@ -2070,21 +2322,107 @@ var modwide = global; module.exports =
 	      }
 	    };
 
-	    this.remote = () => {
+	    this.remote = queues => {
+	      // Controls the remote expansions
 	      if (this.room.memory.connectedRemoteRooms) {
-	        for (let remoteName of this.room.memory.connectedRemoteRooms) {
+	        for (let remoteName in this.room.memory.connectedRemoteRooms) {
 	          let data = this.room.memory.connectedRemoteRooms[remoteName];
-	          let remoteRoom = Game.rooms[remoteName];
-	          if (data.parsed) {} else {
-	            this.initiateRemoteRoomParsing();
+	          if (data.parsed) {
+	            // Make sure every source has an item assigned to it in the hiveMind
+	            for (let source of data.sources) {
+	              let x = source.x;
+	              let y = source.y;
+	              let id = source.id;
+
+	              let sourceItemExists = _hiveMind2.default.filter({ fromSource: { x: x, y: y, roomName: remoteName, id: id } }).length > 0;
+	              if (!sourceItemExists) {
+	                this.room.pushToQueue(_constants2.default.EXCAVATE, {
+	                  fromSource: { x: x, y: y, roomName: remoteName, id: id },
+	                  res: RESOURCE_ENERGY,
+	                  stage: null,
+	                  continuous: true
+	                }, _constants2.default.PRIORITIES[_constants2.default.EXCAVATE][_constants2.default.SOURCE] * _constants2.default.REMOTE_PRIORITIES_MODIFIER);
+	              }
+	            }
+
+	            // Generate carry-tasks for remote stuff
+	            if (Game.rooms[remoteName]) {
+	              let room = Game.rooms[remoteName];
+	              let sources = room.find(FIND_DROPPED_RESOURCES);
+	              if (sources.length) {
+	                for (let source of sources) {
+	                  this.genSourceTasks(source, queues[CARRY], CARRY, { dontFindTarget: true });
+	                }
+	              }
+	            }
+	          } else {
+	            this.initiateRemoteRoomParsing(remoteName);
 	          }
 	        }
 	      }
 	    };
 
-	    this.initiateRemoteRoomParsing = () => {
+	    this.spawnCreep = function (spawnPriority, creepMemory) {
+	      let opts = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+
+	      if (!_.isUndefined(opts.assignItem)) {
+	        creepMemory.item = creepMemory.item || {};
+	        let itemId = _hiveMind2.default.push(opts.assignItem.data);
+	        creepMemory.item.id = itemId;
+	        if (!_.isUndefined(opts.assignItem.priority)) {
+	          creepMemory.item.prio = opts.assignItem.priority;
+	        } else {
+	          creepMemory.item.prio = 0;
+	        }
+	      }
+	      if (_.isUndefined(creepMemory.myRoomName)) {
+	        creepMemory.myRoomName = _this.room.name;
+	      }
+	      _this.room.pushToQueue(_constants2.default.SPAWN, { memory: creepMemory, kind: creepMemory.kind }, spawnPriority);
+	    };
+
+	    this.initiateRemoteRoomParsing = remoteRoomName => {
+	      console.log(`Please give me info on remoteRoom ${ remoteRoomName }`);
 	      // Scout, cache & pave path with roads
-	      // TODO ADD ME
+	      // let mutalisks = _.filter(
+	      //   Game.creeps,
+	      //   (c)=> (
+	      //     c.hasItem() && _.get(
+	      //       c.activeItem(), ['toTarget', 'roomName']
+	      //     ) === remoteRoomName
+	      //   )
+	      // )
+	      // console.log(JSON.stringify(mutalisks))
+	      // if(mutalisks.length < 1) {
+	      // this.room.pushToQueue(
+	      //   $.SPAWN, {role: $.ROLE_ZERG, kind: $.KIND_MUTALISK, body: [MOVE]}
+	      // )
+	      // this.room.pushToQueue($.SCOUT, {toTarget: {roomName: remoteRoomName}})
+	      // }
+	    };
+
+	    this.excavate = queue => {
+	      if (queue && queue.itemCount() > 0) {
+	        log.cyan('Excavate queue has stuff!');
+	        let spawningSpawns = [];
+	        while (queue.peek()) {
+	          let queueItem = queue.dequeue();
+	          log.cyan(`Dequeuing ${ JSON.stringify(queueItem) }`);
+	          let itemData = _hiveMind2.default.data[queueItem.id];
+	          let spawnPrio = _constants2.default.PRIORITIES[_constants2.default.SPAWN][_constants2.default.KIND_INFESTOR];
+	          if (itemData.fromSource.roomName != this.room.name) {
+	            log.cyan(`Remote excavate`);
+	            // Remote work
+	            spawnPrio = spawnPrio * _constants2.default.REMOTE_PRIORITIES_MODIFIER;
+	          }
+	          log.cyan(`Pushing to spawn-queue`);
+	          this.room.pushToQueue(_constants2.default.SPAWN, {
+	            kind: _constants2.default.KIND_INFESTOR,
+	            memory: { role: _constants2.default.ROLE_ZERG, item: queueItem }
+	          }, spawnPrio);
+	          console.log(JSON.stringify(this.room.queue(_constants2.default.SPAWN)));
+	        }
+	      }
 	    };
 
 	    this.satisfyBoredCreep = creep => {
@@ -2112,6 +2450,10 @@ var modwide = global; module.exports =
 
 	        for (let queueItem of queue) {
 	          let item = Memory['hiveMind'][queueItem.id];
+	          if (!item) {
+	            log.red(`Item ${ queueItem.id } missing!`);
+	            continue;
+	          }
 	          let fromStr = '';
 	          if (item['fromSource']) {
 	            fromStr = ' from <span style="color:#dd6633">' + this.getStructureName(Game.getObjectById(item['fromSource'].id)) + '</span>' + `(<span style="color:#a6a">${ item['fromSource'].amount }</span>)`;
@@ -2202,6 +2544,14 @@ var modwide = global; module.exports =
 	  }
 
 	  /**
+	   * @var itemData {
+	   *    kind: [Calcs body from that],
+	   *    memory: [Puts into creeds memory, doesnt need kind]
+	   *  }
+	   */
+
+
+	  /**
 	   * Generates taskItems for the given source
 	   *
 	   * Checks how many items need to be generated to void the source and tries
@@ -2226,41 +2576,83 @@ var modwide = global; module.exports =
 	   */
 
 
-	  getLackingSourceLink(creep) {
-	    let sources = creep.room.find(FIND_MY_STRUCTURES, { filter: struc => struc.structureType == STRUCTURE_LINK && struc.energy < struc.energyCapacity });
+	  /**
+	   * Items that can be used to satisfy the demands of a target
+	   * Eg items that only have a source
+	   */
 
-	    if (sources.length) {
-	      return sources[0];
-	    } else {
-	      return null;
-	    }
-	  }
 
-	  getNonVoidProviderLink(creep) {
-	    let sources = creep.room.find(FIND_MY_STRUCTURES, { filter: struc => struc.structureType == STRUCTURE_LINK && struc.energy > 0 });
+	  /**
+	   * @param hiveAccessor - for example ['fromSource', 'id']
+	   */
 
-	    if (sources.length) {
-	      return sources[0];
-	    } else {
-	      return null;
-	    }
-	  }
 
+	  /**
+	   * Appends a creep to spawn to the spawn-queue
+	   *
+	   * TODO Possibly not necessary :(
+	   *
+	   * @param spawnPriority - The prio of the item in the spawn-queue
+	   * @param creepMemory - The memory of the creep.
+	   *    The value of myRoomName will be set automatically if not set here.
+	   * @param opts - Some options
+	   *    assignItem - Generates a new item in the hiveMind and assigns it
+	   *      directly to the spawned creep.
+	   *      If priority is not set, it will have a prio of 0.
+	   *      assignItem: {
+	   *        data: [ITEMDATA],
+	   *        priority: [ITEMPRIO]
+	   *      }
+	   */
+
+
+	  // getLackingSourceLink() {
+	  //   let sources = this.room.find(FIND_MY_STRUCTURES, {filter: (struc)=> (
+	  //     struc.structureType == STRUCTURE_LINK &&
+	  //     struc.energy < struc.energyCapacity
+	  //   )})
+	  //
+	  //   if(sources.length) {
+	  //     return sources[0]
+	  //   }
+	  //   else {
+	  //     return null
+	  //   }
+	  // }
+	  //
+	  // getNonVoidProviderLink() {
+	  //   let sources = this.room.find(FIND_MY_STRUCTURES, {filter: (struc)=> (
+	  //     struc.structureType == STRUCTURE_LINK &&
+	  //     struc.energy > 0
+	  //   )})
+	  //
+	  //   if(sources.length) {
+	  //     return sources[0]
+	  //   }
+	  //   else {
+	  //     return null
+	  //   }
+	  // }
+	  //
 	}
 
 	module.exports = Overlord;
 
 /***/ },
-/* 21 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _constants = __webpack_require__(4);
+	var _constants = __webpack_require__(6);
 
 	var _constants2 = _interopRequireDefault(_constants);
 
-	var _hiveMind = __webpack_require__(2);
+	var _priorityQueue = __webpack_require__(4);
+
+	var _priorityQueue2 = _interopRequireDefault(_priorityQueue);
+
+	var _hiveMind = __webpack_require__(3);
 
 	var _hiveMind2 = _interopRequireDefault(_hiveMind);
 
@@ -2286,7 +2678,7 @@ var modwide = global; module.exports =
 
 	        for (let roomName in Game.rooms) {
 	          let room = Game.rooms[roomName];
-	          if (room.memory.priorityQueues && Object.keys(room.memory.priorityQueues).length && Object.keys(room.memory.priorityQueues).some(queueName => room.memory.priorityQueues[queueName].some(queueItem => queueItem.id == item.id))) {
+	          if (room.memory.priorityQueues && Object.keys(room.memory.priorityQueues).length && Object.keys(room.memory.priorityQueues).some(queueName => room.memory.priorityQueues[queueName].some(queueItem => queueItem.id == item.id || queueName === _constants2.default.SPAWN && _.get(_hiveMind2.default.data[queueItem.id], ['memory', 'item', 'id']) === item.id))) {
 	            continue nextItem;
 	          }
 	          // if(room.memory.priorityQueues && room.memory.priorityQueues.length) {
@@ -2303,6 +2695,23 @@ var modwide = global; module.exports =
 	        delete _hiveMind2.default.data[itemId];
 	        oldItemCount += 1;
 	      }
+
+	      for (let roomName in Game.rooms) {
+	        let room = Game.rooms[roomName];
+	        if (!room.memory.priorityQueues) {
+	          continue;
+	        }
+	        for (let queueName in room.memory.priorityQueues) {
+	          let queueData = room.memory.priorityQueues[queueName];
+	          for (let queueItem of queueData) {
+	            if (!_hiveMind2.default.data[queueItem.id]) {
+	              console.log("<span style='color: #ddaa33'>Item missing:</span>\n    ", JSON.stringify(queueItem));
+	              new _priorityQueue2.default(queueData).removeBy({ id: queueItem.id });
+	            }
+	          }
+	        }
+	      }
+
 	      Memory.stats['hiveMind.oldItemCount'] = oldItemCount;
 	    };
 
@@ -2327,7 +2736,10 @@ var modwide = global; module.exports =
 	          }
 	        }
 	        if (!mem.connectedRemoteRooms) {
-	          mem.connectedRemoteRooms = [];
+	          mem.connectedRemoteRooms = {};
+	        }
+	        if (!mem.links) {
+	          mem.links = { sources: [], providers: [] };
 	        }
 	      }
 	    };
@@ -2394,22 +2806,26 @@ var modwide = global; module.exports =
 	module.exports = Overseer;
 
 /***/ },
-/* 22 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _hiveMind = __webpack_require__(2);
+	var _constants = __webpack_require__(6);
+
+	var _constants2 = _interopRequireDefault(_constants);
+
+	var _hiveMind = __webpack_require__(3);
 
 	var _hiveMind2 = _interopRequireDefault(_hiveMind);
 
-	var _Overlord = __webpack_require__(20);
+	var _Overlord = __webpack_require__(21);
 
 	var _Overlord2 = _interopRequireDefault(_Overlord);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	const role = __webpack_require__(8);
+	const role = __webpack_require__(9);
 
 	const TYPE_SOURCE = 0;
 	const TYPE_TARGET = 1;
@@ -2447,6 +2863,9 @@ var modwide = global; module.exports =
 	    this.run = priorityQueues => {
 
 	      try {
+	        if (this.zergling.ticksToLive == 1) {
+	          this.zergling.say('For the ☣');
+	        }
 
 	        this.priorityQueues = priorityQueues;
 	        if (!this.zergling.memory.item) {
@@ -2466,9 +2885,9 @@ var modwide = global; module.exports =
 	          } else {
 	            this.vacation();
 	          }
-	        } else if (this.zergling.memory.sourcing === null) {
+	        } else if (this.zergling.memory.sourcing === null || _.isUndefined(this.zergling.memory.sourcing)) {
 	          // Zerg has item, but hasnt found a source for it yet
-	          if (this.updateWorkStatus()) {
+	          if (this.initWorkStart()) {
 	            this.work();
 	          } else {
 	            this.vacation();
@@ -2494,6 +2913,10 @@ var modwide = global; module.exports =
 	    };
 
 	    this.calcKind = () => {
+	      if (_.isEqual(this.zergling.body, [MOVE])) {
+	        this.zergling.memory.kind = [_constants2.default.SCOUT];
+	        return;
+	      }
 	      let parts = [];
 	      for (let type of [WORK, CARRY]) {
 	        parts.push({ type: type, count: _.reduce(this.zergling.body, (sum, b) => b.type == type ? sum + 1 : sum, 0) });
@@ -2512,12 +2935,30 @@ var modwide = global; module.exports =
 	    };
 
 	    this.findWork = priorityQueues => {
-	      for (let queueName of this.zergling.memory.kind) {
+
+	      let queues = [];
+	      if (Array.isArray(this.zergling.memory.kind)) {
+	        // Old Style (kind contains the queuenames)
+	        queues = this.zergling.memory.kind;
+	      } else {
+	        // New Style (kind contains the kind)
+	        queues = _constants2.default.QUEUES_FOR_KINDS[this.zergling.memory.kind];
+	      }
+	      for (let queueName of queues) {
 	        let queue = priorityQueues[queueName];
+	        if (!queue) {
+	          //newstyle
+	          queue = priorityQueues[_constants2.default.QUEUES_FOR_KINDS[this.zergling.memory.kind]];
+	        }
 	        if (queue) {
 	          if (queue.peek()) {
 	            this.zergling.memory.item = queue.dequeue();
-	            return this.updateWorkStatus();
+	            let itemData = _hiveMind2.default.data[this.zergling.memory.item.id];
+	            itemData.assigned = true;
+	            if (itemData.fromSource && !itemData.fromSource.amount) {
+	              itemData.fromSource.amount = this.zergling.carryCapacity;
+	            }
+	            return this.initWorkStart();
 	          } else {
 	            if (this.bored()) {
 	              this.zergling.say('⚘☀', true); // No tasks, creep is on vacation
@@ -2531,17 +2972,22 @@ var modwide = global; module.exports =
 	      return false;
 	    };
 
-	    this.updateWorkStatus = () => {
-	      if (!_hiveMind2.default.data[this.zergling.memory.item.id].fromSource) {
+	    this.initWorkStart = () => {
+	      if (_.isUndefined(_hiveMind2.default.data[this.zergling.memory.item.id].fromSource)) {
+	        // fromSource does not exist
 	        let item = _hiveMind2.default.data[this.zergling.memory.item.id];
 	        if (this.zergling.carry[item.res] >= item.toTarget.amount) {
+	          // We have enough energy left for the target, dont need no source
 	          this.zergling.say('♻➟▣', true);
 	          _hiveMind2.default.data[this.zergling.memory.item.id].stage = TYPE_TARGET;
 	          this.zergling.memory.sourcing = false;
 	          return true;
 	        } else {
+	          // search for a source
 	          let source = new _Overlord2.default(this.zergling.pos.roomName).findSourceForCreep(this.zergling, _hiveMind2.default.data[this.zergling.memory.item.id], item.res);
-	          if (source) {
+	          if (source === true) {
+	            // Thanks, Overlord. You already assigned me the source
+	          } else if (source) {
 	            _hiveMind2.default.data[this.zergling.memory.item.id].fromSource = {
 	              id: source.id, x: source.pos.x, y: source.pos.y,
 	              roomName: source.pos.roomName,
@@ -2557,6 +3003,12 @@ var modwide = global; module.exports =
 	            return false;
 	          }
 	        }
+	      } else if (_hiveMind2.default.data[this.zergling.memory.item.id].fromSource === false) {
+	        // Theres explicitly no source, for example with continuous tasks
+	        this.zergling.say('▣ (✖⚗)', true);
+	        _hiveMind2.default.data[this.zergling.memory.item.id].stage = TYPE_TARGET;
+	        this.zergling.memory.sourcing = false;
+	        return true;
 	      } else {
 	        _hiveMind2.default.data[this.zergling.memory.item.id].stage = TYPE_SOURCE;
 	        this.zergling.memory.sourcing = true;
@@ -2583,9 +3035,14 @@ var modwide = global; module.exports =
 	      if (!memObject) {
 	        this.done(MY_ERR_WTF, 'workWith#memObject');return;
 	      }
+	      if (!memObject.id) {
+	        this.done(MY_ERR_WTF, 'No memObject.id; Not guessing.');return;
+	      }
 	      let object = Game.getObjectById(memObject.id);
-	      if (!object) {
-	        this.done(MY_ERR_WTF, 'workWith#object');return;
+	      if (!object && !_.isUndefined(Game.rooms[memObject.roomName])) {
+	        // Object doesnt exist but we can see the room. Nope
+	        this.done(MY_ERR_WTF, 'workWith#object');
+	        return;
 	      }
 	      let range = this.calcActionRange(type, object);
 	      if (object) {
@@ -2618,8 +3075,8 @@ var modwide = global; module.exports =
 	      let type = data.type || RESOURCE_ENERGY;
 	      // 0 amount == all you can
 	      let amount = data.fromSource.amount ? data.fromSource.amount : null;
-	      if (amount > this.zergling.carryCapacity) {
-	        amount = this.zergling.carryCapacity;
+	      if (amount >= this.zergling.carryCapacity) {
+	        amount = 0; // Withdraw all you can
 	      }
 	      let res;
 	      if (source instanceof Resource) {
@@ -2647,7 +3104,9 @@ var modwide = global; module.exports =
 	      // 0 amount == all you can
 	      let amount = data.toTarget.amount ? data.toTarget.amount : null;
 	      let res;
-	      if (target instanceof ConstructionSite) {
+	      if (this.zergling.carry[RESOURCE_ENERGY] == 0) {
+	        this.done();
+	      } else if (target instanceof ConstructionSite) {
 	        res = this.zergling.build(target);
 	        this.hasWorked = true;
 	        if (this.zergling.carry[RESOURCE_ENERGY] == 0
@@ -2675,22 +3134,42 @@ var modwide = global; module.exports =
 	    this.done = function (res) {
 	      let debugInfo = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
 
+	      let itemData = _hiveMind2.default.data[_.get(_this.zergling.memory, ['item', 'id'])];
 	      if (_this.zergling.memory.sourcing) {
-	        _hiveMind2.default.data[_this.zergling.memory.item.id].stage = TYPE_TARGET;
-	        _this.zergling.memory.sourcing = false;
-	        if (res == OK) {
-	          _this.zergling.say('▣', true);
+	        // Done SOURCING Stuff
+	        if (_.get(itemData, 'continuous') && !_this.zergling.memory.toTarget) {
+	          _this.zergling.say('↺⚗', true);
+	          return; // We just source stuff, continue to do so
 	        } else {
-	          _this.handleActionResult(res, null, null);
+	          _hiveMind2.default.data[_this.zergling.memory.item.id].stage = TYPE_TARGET;
+	          _this.zergling.memory.sourcing = false;
+	          if (res == OK) {
+	            _this.zergling.say('▣', true);
+	          } else {
+	            _this.handleActionResult(res, null, null, debugInfo);
+	          }
 	        }
 	      } else {
-	        _hiveMind2.default.remove(_this.zergling.memory.item.id);
-	        _this.zergling.memory.sourcing = null;
-	        _this.zergling.memory.item = null;
-	        if (res == OK) {
-	          _this.zergling.say('✓', true);
+	        // Done TARGETIING Stuff
+	        if (_.get(itemData, 'continuous')) {
+	          if (!_this.zergling.memory.fromSource) {
+	            _this.zergling.say('↺▣', true);
+	            return; // We just target stuff, continue to do so
+	          } else {
+	            _hiveMind2.default.data[_this.zergling.memory.item.id].stage = TYPE_SOURCE;
+	            _this.zergling.memory.sourcing = true;
+	            _this.zergling.say('↺ ➟ ⚗', true);
+	            return;
+	          }
 	        } else {
-	          _this.handleActionResult(res, null, null, debugInfo);
+	          _hiveMind2.default.remove(_this.zergling.memory.item.id);
+	          _this.zergling.memory.sourcing = null;
+	          _this.zergling.memory.item = null;
+	          if (res == OK) {
+	            _this.zergling.say('✓', true);
+	          } else {
+	            _this.handleActionResult(res, null, null, debugInfo);
+	          }
 	        }
 	      }
 	    };
@@ -2763,7 +3242,7 @@ var modwide = global; module.exports =
 	      let item = new _Overlord2.default(this.zergling.pos.roomName).satisfyBoredCreep(this.zergling);
 	      if (item) {
 	        this.zergling.memory.item = item;
-	        this.updateWorkStatus();
+	        this.initWorkStart();
 	        return false;
 	      } else {
 	        return true;
@@ -2796,6 +3275,11 @@ var modwide = global; module.exports =
 	    this.priorityQueues = null;
 	  }
 
+	  /**
+	   * Handles the memory-state for the new item, so that the creep starts working
+	   */
+
+
 	  /*
 	   * Zergling is idling
 	   */
@@ -2809,7 +3293,7 @@ var modwide = global; module.exports =
 	module.exports = Zergling;
 
 /***/ },
-/* 23 */
+/* 24 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -2860,31 +3344,31 @@ var modwide = global; module.exports =
 	module.exports = Stats;
 
 /***/ },
-/* 24 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// ES2017 w/ Node 5
-	__webpack_require__(25);
-	__webpack_require__(60);
-	__webpack_require__(62);
-	__webpack_require__(69);
-	__webpack_require__(73);
-
-
-/***/ },
 /* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
+	// ES2017 w/ Node 5
 	__webpack_require__(26);
-	module.exports = __webpack_require__(29).Object.entries;
+	__webpack_require__(61);
+	__webpack_require__(63);
+	__webpack_require__(70);
+	__webpack_require__(74);
+
 
 /***/ },
 /* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
+	__webpack_require__(27);
+	module.exports = __webpack_require__(30).Object.entries;
+
+/***/ },
+/* 27 */
+/***/ function(module, exports, __webpack_require__) {
+
 	// https://github.com/tc39/proposal-object-values-entries
-	var $export  = __webpack_require__(27)
-	  , $entries = __webpack_require__(45)(true);
+	var $export  = __webpack_require__(28)
+	  , $entries = __webpack_require__(46)(true);
 
 	$export($export.S, 'Object', {
 	  entries: function entries(it){
@@ -2893,14 +3377,14 @@ var modwide = global; module.exports =
 	});
 
 /***/ },
-/* 27 */
+/* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var global    = __webpack_require__(28)
-	  , core      = __webpack_require__(29)
-	  , hide      = __webpack_require__(30)
-	  , redefine  = __webpack_require__(40)
-	  , ctx       = __webpack_require__(43)
+	var global    = __webpack_require__(29)
+	  , core      = __webpack_require__(30)
+	  , hide      = __webpack_require__(31)
+	  , redefine  = __webpack_require__(41)
+	  , ctx       = __webpack_require__(44)
 	  , PROTOTYPE = 'prototype';
 
 	var $export = function(type, name, source){
@@ -2941,7 +3425,7 @@ var modwide = global; module.exports =
 	module.exports = $export;
 
 /***/ },
-/* 28 */
+/* 29 */
 /***/ function(module, exports) {
 
 	// https://github.com/zloirock/core-js/issues/86#issuecomment-115759028
@@ -2950,19 +3434,19 @@ var modwide = global; module.exports =
 	if(typeof __g == 'number')__g = global; // eslint-disable-line no-undef
 
 /***/ },
-/* 29 */
+/* 30 */
 /***/ function(module, exports) {
 
 	var core = module.exports = {version: '2.4.0'};
 	if(typeof __e == 'number')__e = core; // eslint-disable-line no-undef
 
 /***/ },
-/* 30 */
+/* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var dP         = __webpack_require__(31)
-	  , createDesc = __webpack_require__(39);
-	module.exports = __webpack_require__(35) ? function(object, key, value){
+	var dP         = __webpack_require__(32)
+	  , createDesc = __webpack_require__(40);
+	module.exports = __webpack_require__(36) ? function(object, key, value){
 	  return dP.f(object, key, createDesc(1, value));
 	} : function(object, key, value){
 	  object[key] = value;
@@ -2970,15 +3454,15 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 31 */
+/* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var anObject       = __webpack_require__(32)
-	  , IE8_DOM_DEFINE = __webpack_require__(34)
-	  , toPrimitive    = __webpack_require__(38)
+	var anObject       = __webpack_require__(33)
+	  , IE8_DOM_DEFINE = __webpack_require__(35)
+	  , toPrimitive    = __webpack_require__(39)
 	  , dP             = Object.defineProperty;
 
-	exports.f = __webpack_require__(35) ? Object.defineProperty : function defineProperty(O, P, Attributes){
+	exports.f = __webpack_require__(36) ? Object.defineProperty : function defineProperty(O, P, Attributes){
 	  anObject(O);
 	  P = toPrimitive(P, true);
 	  anObject(Attributes);
@@ -2991,17 +3475,17 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 32 */
+/* 33 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var isObject = __webpack_require__(33);
+	var isObject = __webpack_require__(34);
 	module.exports = function(it){
 	  if(!isObject(it))throw TypeError(it + ' is not an object!');
 	  return it;
 	};
 
 /***/ },
-/* 33 */
+/* 34 */
 /***/ function(module, exports) {
 
 	module.exports = function(it){
@@ -3009,24 +3493,24 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 34 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = !__webpack_require__(35) && !__webpack_require__(36)(function(){
-	  return Object.defineProperty(__webpack_require__(37)('div'), 'a', {get: function(){ return 7; }}).a != 7;
-	});
-
-/***/ },
 /* 35 */
 /***/ function(module, exports, __webpack_require__) {
 
-	// Thank's IE8 for his funny defineProperty
-	module.exports = !__webpack_require__(36)(function(){
-	  return Object.defineProperty({}, 'a', {get: function(){ return 7; }}).a != 7;
+	module.exports = !__webpack_require__(36) && !__webpack_require__(37)(function(){
+	  return Object.defineProperty(__webpack_require__(38)('div'), 'a', {get: function(){ return 7; }}).a != 7;
 	});
 
 /***/ },
 /* 36 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// Thank's IE8 for his funny defineProperty
+	module.exports = !__webpack_require__(37)(function(){
+	  return Object.defineProperty({}, 'a', {get: function(){ return 7; }}).a != 7;
+	});
+
+/***/ },
+/* 37 */
 /***/ function(module, exports) {
 
 	module.exports = function(exec){
@@ -3038,11 +3522,11 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 37 */
+/* 38 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var isObject = __webpack_require__(33)
-	  , document = __webpack_require__(28).document
+	var isObject = __webpack_require__(34)
+	  , document = __webpack_require__(29).document
 	  // in old IE typeof document.createElement is 'object'
 	  , is = isObject(document) && isObject(document.createElement);
 	module.exports = function(it){
@@ -3050,11 +3534,11 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 38 */
+/* 39 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// 7.1.1 ToPrimitive(input [, PreferredType])
-	var isObject = __webpack_require__(33);
+	var isObject = __webpack_require__(34);
 	// instead of the ES6 spec version, we didn't implement @@toPrimitive case
 	// and the second argument - flag - preferred type is a string
 	module.exports = function(it, S){
@@ -3067,7 +3551,7 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 39 */
+/* 40 */
 /***/ function(module, exports) {
 
 	module.exports = function(bitmap, value){
@@ -3080,18 +3564,18 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 40 */
+/* 41 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var global    = __webpack_require__(28)
-	  , hide      = __webpack_require__(30)
-	  , has       = __webpack_require__(41)
-	  , SRC       = __webpack_require__(42)('src')
+	var global    = __webpack_require__(29)
+	  , hide      = __webpack_require__(31)
+	  , has       = __webpack_require__(42)
+	  , SRC       = __webpack_require__(43)('src')
 	  , TO_STRING = 'toString'
 	  , $toString = Function[TO_STRING]
 	  , TPL       = ('' + $toString).split(TO_STRING);
 
-	__webpack_require__(29).inspectSource = function(it){
+	__webpack_require__(30).inspectSource = function(it){
 	  return $toString.call(it);
 	};
 
@@ -3117,7 +3601,7 @@ var modwide = global; module.exports =
 	});
 
 /***/ },
-/* 41 */
+/* 42 */
 /***/ function(module, exports) {
 
 	var hasOwnProperty = {}.hasOwnProperty;
@@ -3126,7 +3610,7 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 42 */
+/* 43 */
 /***/ function(module, exports) {
 
 	var id = 0
@@ -3136,11 +3620,11 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 43 */
+/* 44 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// optional / simple context binding
-	var aFunction = __webpack_require__(44);
+	var aFunction = __webpack_require__(45);
 	module.exports = function(fn, that, length){
 	  aFunction(fn);
 	  if(that === undefined)return fn;
@@ -3161,7 +3645,7 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 44 */
+/* 45 */
 /***/ function(module, exports) {
 
 	module.exports = function(it){
@@ -3170,12 +3654,12 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 45 */
+/* 46 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var getKeys   = __webpack_require__(46)
-	  , toIObject = __webpack_require__(48)
-	  , isEnum    = __webpack_require__(59).f;
+	var getKeys   = __webpack_require__(47)
+	  , toIObject = __webpack_require__(49)
+	  , isEnum    = __webpack_require__(60).f;
 	module.exports = function(isEntries){
 	  return function(it){
 	    var O      = toIObject(it)
@@ -3191,25 +3675,25 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 46 */
+/* 47 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// 19.1.2.14 / 15.2.3.14 Object.keys(O)
-	var $keys       = __webpack_require__(47)
-	  , enumBugKeys = __webpack_require__(58);
+	var $keys       = __webpack_require__(48)
+	  , enumBugKeys = __webpack_require__(59);
 
 	module.exports = Object.keys || function keys(O){
 	  return $keys(O, enumBugKeys);
 	};
 
 /***/ },
-/* 47 */
+/* 48 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var has          = __webpack_require__(41)
-	  , toIObject    = __webpack_require__(48)
-	  , arrayIndexOf = __webpack_require__(52)(false)
-	  , IE_PROTO     = __webpack_require__(56)('IE_PROTO');
+	var has          = __webpack_require__(42)
+	  , toIObject    = __webpack_require__(49)
+	  , arrayIndexOf = __webpack_require__(53)(false)
+	  , IE_PROTO     = __webpack_require__(57)('IE_PROTO');
 
 	module.exports = function(object, names){
 	  var O      = toIObject(object)
@@ -3225,28 +3709,28 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 48 */
+/* 49 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// to indexed object, toObject with fallback for non-array-like ES3 strings
-	var IObject = __webpack_require__(49)
-	  , defined = __webpack_require__(51);
+	var IObject = __webpack_require__(50)
+	  , defined = __webpack_require__(52);
 	module.exports = function(it){
 	  return IObject(defined(it));
 	};
 
 /***/ },
-/* 49 */
+/* 50 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// fallback for non-array-like ES3 and non-enumerable old V8 strings
-	var cof = __webpack_require__(50);
+	var cof = __webpack_require__(51);
 	module.exports = Object('z').propertyIsEnumerable(0) ? Object : function(it){
 	  return cof(it) == 'String' ? it.split('') : Object(it);
 	};
 
 /***/ },
-/* 50 */
+/* 51 */
 /***/ function(module, exports) {
 
 	var toString = {}.toString;
@@ -3256,7 +3740,7 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 51 */
+/* 52 */
 /***/ function(module, exports) {
 
 	// 7.2.1 RequireObjectCoercible(argument)
@@ -3266,14 +3750,14 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 52 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// false -> Array#indexOf
 	// true  -> Array#includes
-	var toIObject = __webpack_require__(48)
-	  , toLength  = __webpack_require__(53)
-	  , toIndex   = __webpack_require__(55);
+	var toIObject = __webpack_require__(49)
+	  , toLength  = __webpack_require__(54)
+	  , toIndex   = __webpack_require__(56);
 	module.exports = function(IS_INCLUDES){
 	  return function($this, el, fromIndex){
 	    var O      = toIObject($this)
@@ -3292,18 +3776,18 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 53 */
+/* 54 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// 7.1.15 ToLength
-	var toInteger = __webpack_require__(54)
+	var toInteger = __webpack_require__(55)
 	  , min       = Math.min;
 	module.exports = function(it){
 	  return it > 0 ? min(toInteger(it), 0x1fffffffffffff) : 0; // pow(2, 53) - 1 == 9007199254740991
 	};
 
 /***/ },
-/* 54 */
+/* 55 */
 /***/ function(module, exports) {
 
 	// 7.1.4 ToInteger
@@ -3314,10 +3798,10 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 55 */
+/* 56 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var toInteger = __webpack_require__(54)
+	var toInteger = __webpack_require__(55)
 	  , max       = Math.max
 	  , min       = Math.min;
 	module.exports = function(index, length){
@@ -3326,20 +3810,20 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 56 */
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var shared = __webpack_require__(57)('keys')
-	  , uid    = __webpack_require__(42);
+	var shared = __webpack_require__(58)('keys')
+	  , uid    = __webpack_require__(43);
 	module.exports = function(key){
 	  return shared[key] || (shared[key] = uid(key));
 	};
 
 /***/ },
-/* 57 */
+/* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var global = __webpack_require__(28)
+	var global = __webpack_require__(29)
 	  , SHARED = '__core-js_shared__'
 	  , store  = global[SHARED] || (global[SHARED] = {});
 	module.exports = function(key){
@@ -3347,7 +3831,7 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 58 */
+/* 59 */
 /***/ function(module, exports) {
 
 	// IE 8- don't enum bug keys
@@ -3356,25 +3840,25 @@ var modwide = global; module.exports =
 	).split(',');
 
 /***/ },
-/* 59 */
+/* 60 */
 /***/ function(module, exports) {
 
 	exports.f = {}.propertyIsEnumerable;
 
 /***/ },
-/* 60 */
-/***/ function(module, exports, __webpack_require__) {
-
-	__webpack_require__(61);
-	module.exports = __webpack_require__(29).Object.values;
-
-/***/ },
 /* 61 */
 /***/ function(module, exports, __webpack_require__) {
 
+	__webpack_require__(62);
+	module.exports = __webpack_require__(30).Object.values;
+
+/***/ },
+/* 62 */
+/***/ function(module, exports, __webpack_require__) {
+
 	// https://github.com/tc39/proposal-object-values-entries
-	var $export = __webpack_require__(27)
-	  , $values = __webpack_require__(45)(false);
+	var $export = __webpack_require__(28)
+	  , $values = __webpack_require__(46)(false);
 
 	$export($export.S, 'Object', {
 	  values: function values(it){
@@ -3383,22 +3867,22 @@ var modwide = global; module.exports =
 	});
 
 /***/ },
-/* 62 */
-/***/ function(module, exports, __webpack_require__) {
-
-	__webpack_require__(63);
-	module.exports = __webpack_require__(29).Object.getOwnPropertyDescriptors;
-
-/***/ },
 /* 63 */
 /***/ function(module, exports, __webpack_require__) {
 
+	__webpack_require__(64);
+	module.exports = __webpack_require__(30).Object.getOwnPropertyDescriptors;
+
+/***/ },
+/* 64 */
+/***/ function(module, exports, __webpack_require__) {
+
 	// https://github.com/tc39/proposal-object-getownpropertydescriptors
-	var $export        = __webpack_require__(27)
-	  , ownKeys        = __webpack_require__(64)
-	  , toIObject      = __webpack_require__(48)
-	  , gOPD           = __webpack_require__(67)
-	  , createProperty = __webpack_require__(68);
+	var $export        = __webpack_require__(28)
+	  , ownKeys        = __webpack_require__(65)
+	  , toIObject      = __webpack_require__(49)
+	  , gOPD           = __webpack_require__(68)
+	  , createProperty = __webpack_require__(69);
 
 	$export($export.S, 'Object', {
 	  getOwnPropertyDescriptors: function getOwnPropertyDescriptors(object){
@@ -3414,14 +3898,14 @@ var modwide = global; module.exports =
 	});
 
 /***/ },
-/* 64 */
+/* 65 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// all object keys, includes non-enumerable and symbols
-	var gOPN     = __webpack_require__(65)
-	  , gOPS     = __webpack_require__(66)
-	  , anObject = __webpack_require__(32)
-	  , Reflect  = __webpack_require__(28).Reflect;
+	var gOPN     = __webpack_require__(66)
+	  , gOPS     = __webpack_require__(67)
+	  , anObject = __webpack_require__(33)
+	  , Reflect  = __webpack_require__(29).Reflect;
 	module.exports = Reflect && Reflect.ownKeys || function ownKeys(it){
 	  var keys       = gOPN.f(anObject(it))
 	    , getSymbols = gOPS.f;
@@ -3429,36 +3913,36 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 65 */
+/* 66 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// 19.1.2.7 / 15.2.3.4 Object.getOwnPropertyNames(O)
-	var $keys      = __webpack_require__(47)
-	  , hiddenKeys = __webpack_require__(58).concat('length', 'prototype');
+	var $keys      = __webpack_require__(48)
+	  , hiddenKeys = __webpack_require__(59).concat('length', 'prototype');
 
 	exports.f = Object.getOwnPropertyNames || function getOwnPropertyNames(O){
 	  return $keys(O, hiddenKeys);
 	};
 
 /***/ },
-/* 66 */
+/* 67 */
 /***/ function(module, exports) {
 
 	exports.f = Object.getOwnPropertySymbols;
 
 /***/ },
-/* 67 */
+/* 68 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var pIE            = __webpack_require__(59)
-	  , createDesc     = __webpack_require__(39)
-	  , toIObject      = __webpack_require__(48)
-	  , toPrimitive    = __webpack_require__(38)
-	  , has            = __webpack_require__(41)
-	  , IE8_DOM_DEFINE = __webpack_require__(34)
+	var pIE            = __webpack_require__(60)
+	  , createDesc     = __webpack_require__(40)
+	  , toIObject      = __webpack_require__(49)
+	  , toPrimitive    = __webpack_require__(39)
+	  , has            = __webpack_require__(42)
+	  , IE8_DOM_DEFINE = __webpack_require__(35)
 	  , gOPD           = Object.getOwnPropertyDescriptor;
 
-	exports.f = __webpack_require__(35) ? gOPD : function getOwnPropertyDescriptor(O, P){
+	exports.f = __webpack_require__(36) ? gOPD : function getOwnPropertyDescriptor(O, P){
 	  O = toIObject(O);
 	  P = toPrimitive(P, true);
 	  if(IE8_DOM_DEFINE)try {
@@ -3468,12 +3952,12 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 68 */
+/* 69 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var $defineProperty = __webpack_require__(31)
-	  , createDesc      = __webpack_require__(39);
+	var $defineProperty = __webpack_require__(32)
+	  , createDesc      = __webpack_require__(40);
 
 	module.exports = function(object, index, value){
 	  if(index in object)$defineProperty.f(object, index, createDesc(0, value));
@@ -3481,21 +3965,21 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 69 */
+/* 70 */
 /***/ function(module, exports, __webpack_require__) {
 
-	__webpack_require__(70);
-	module.exports = __webpack_require__(29).String.padStart;
+	__webpack_require__(71);
+	module.exports = __webpack_require__(30).String.padStart;
 
 
 /***/ },
-/* 70 */
+/* 71 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	// https://github.com/tc39/proposal-string-pad-start-end
-	var $export = __webpack_require__(27)
-	  , $pad    = __webpack_require__(71);
+	var $export = __webpack_require__(28)
+	  , $pad    = __webpack_require__(72);
 
 	$export($export.P, 'String', {
 	  padStart: function padStart(maxLength /*, fillString = ' ' */){
@@ -3504,13 +3988,13 @@ var modwide = global; module.exports =
 	});
 
 /***/ },
-/* 71 */
+/* 72 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// https://github.com/tc39/proposal-string-pad-start-end
-	var toLength = __webpack_require__(53)
-	  , repeat   = __webpack_require__(72)
-	  , defined  = __webpack_require__(51);
+	var toLength = __webpack_require__(54)
+	  , repeat   = __webpack_require__(73)
+	  , defined  = __webpack_require__(52);
 
 	module.exports = function(that, maxLength, fillString, left){
 	  var S            = String(defined(that))
@@ -3526,12 +4010,12 @@ var modwide = global; module.exports =
 
 
 /***/ },
-/* 72 */
+/* 73 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var toInteger = __webpack_require__(54)
-	  , defined   = __webpack_require__(51);
+	var toInteger = __webpack_require__(55)
+	  , defined   = __webpack_require__(52);
 
 	module.exports = function repeat(count){
 	  var str = String(defined(this))
@@ -3543,21 +4027,21 @@ var modwide = global; module.exports =
 	};
 
 /***/ },
-/* 73 */
+/* 74 */
 /***/ function(module, exports, __webpack_require__) {
 
-	__webpack_require__(74);
-	module.exports = __webpack_require__(29).String.padEnd;
+	__webpack_require__(75);
+	module.exports = __webpack_require__(30).String.padEnd;
 
 
 /***/ },
-/* 74 */
+/* 75 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	// https://github.com/tc39/proposal-string-pad-start-end
-	var $export = __webpack_require__(27)
-	  , $pad    = __webpack_require__(71);
+	var $export = __webpack_require__(28)
+	  , $pad    = __webpack_require__(72);
 
 	$export($export.P, 'String', {
 	  padEnd: function padEnd(maxLength /*, fillString = ' ' */){
@@ -3566,7 +4050,7 @@ var modwide = global; module.exports =
 	});
 
 /***/ },
-/* 75 */
+/* 76 */
 /***/ function(module, exports) {
 
 	let usedOnStart = 0;

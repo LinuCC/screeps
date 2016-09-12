@@ -23,9 +23,14 @@ const hiveMind = {
     return _.filter(
       this.data, (entry)=> (
         (entry.fromSource && entry.fromSource.roomName == room.name) ||
-        (entry.toTarget && entry.toTarget.roomName == room.name)
+        (entry.toTarget && entry.toTarget.roomName == room.name) ||
+        (entry.byRoomName == room.name)
       )
     )
+  },
+
+  filter: function(filter) {
+    return _.filter(this.data, filter)
   },
 
   _generateId: function() {

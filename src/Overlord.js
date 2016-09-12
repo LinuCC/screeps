@@ -1,5 +1,6 @@
 import $ from './constants'
 import hiveMind from './hiveMind'
+import PriorityQueue from './priorityQueue'
 
 const TYPE_SOURCE = 0
 const TYPE_TARGET = 1
@@ -46,24 +47,44 @@ class Overlord {
     if(queues[CARRY]) {
       this.carry(queues[CARRY])
     }
+    if(queues[$.EXCAVATE]) {
+      this.excavate(queues[$.EXCAVATE])
+    }
 
-    this.remote()
+    this.remote(queues)
   }
 
+  /**
+   * @var itemData {
+   *    kind: [Calcs body from that],
+   *    memory: [Puts into creeds memory, doesnt need kind]
+   *  }
+   */
   spawn = ()=> {
+    // Explicit Spawns
     let queue = this.room.queue($.SPAWN)
     if(queue && queue.itemCount() > 0) {
       let spawningSpawns = []
       while(queue.peek()) {
         let queueItem = queue.peek()
-        let data = Memory['hiveMind'][queueItem.id]
-        let body = (data.body) ?
-          data.body : this.calcCreepBody($.ZERG_PARTS_TEMPLATES[data.kind])
+        let data = hiveMind.data[queueItem.id]
+        let body = []
+        if(data.kind === $.KIND_INFESTOR) {
+          // FIXME: Hardcoded INFESTOR STUFF
+          body = [WORK, WORK, WORK, WORK, WORK, MOVE, MOVE, MOVE]
+          // body = [MOVE]
+        }
+        else {
+          body = (data.body) ?
+            data.body : this.calcCreepBody($.ZERG_PARTS_TEMPLATES[data.kind])
+        }
         let spawns = this.room.spawns(
           (s)=> s.canCreateCreep(body) === OK && !spawningSpawns.includes(s)
         )
         if(spawns.length) {
           let memory = (data.memory) ? data.memory : {role: $.ROLE_ZERG}
+          if(!memory.kind) { memory.kind = data.kind }
+          log.green(`Creating creep with mem ${JSON.stringify(memory)}`)
           let res = spawns[0].createCreep(
             body, `${data.kind}${this.newCreepIndex()}`, memory
           )
@@ -71,11 +92,9 @@ class Overlord {
           if(typeof res === 'string') {
             queue.dequeue()
             hiveMind.remove(queueItem.id)
-            console.log("DEQUEUE")
           }
           else {
             console.log("Spawn noped", res)
-            break
           }
         }
         else {
@@ -100,7 +119,7 @@ class Overlord {
     if(conSites.length > 0) {
       for(let conSite of conSites) {
         let targetItems = _.filter(this.existingItems, (item)=> (
-          item.toTarget.id == conSite.id
+          _.get(item, ['toTarget', 'id']) == conSite.id
         ))
         let ullage = conSite.progressTotal -
           (conSite.progress + _.sum(targetItems, (t)=> t.toTarget.amount))
@@ -125,7 +144,7 @@ class Overlord {
     if(controllers) {
         let controller = controllers[0]
         let targetItems = _.filter(this.existingItems, (item)=> (
-          item.toTarget.id == controller.id
+          _.get(item, ['toTarget', 'id']) == controller.id
         ))
         let itemCount = targetItems.length
         while(itemCount < this.maxItemsPerTask) {
@@ -187,6 +206,37 @@ class Overlord {
         )
       }
     }
+
+    // Find the targets that have stuff and generate tasks for them
+    let sources = this.room.find(FIND_DROPPED_RESOURCES)
+    sources = sources.concat(this.room.find(
+      FIND_STRUCTURES, {filter: this.filterNonVoidEnergyContainers}
+    ))
+    sources = sources.concat(this.room.find(
+      FIND_STRUCTURES, {filter: this.filterNonVoidEnergyContainers}
+    ))
+    if(sources.length) {
+      for(let source of sources) {
+        this.genSourceTasks(
+          source, queue, CARRY, {dontFindTarget: true}
+        )
+      }
+    }
+
+    /// TODO Add A passive queue?!?!
+
+    // let links = this.room.find(FIND_MY_STRUCTURES, {filter: (struc)=> (
+    //   struc.structureType == STRUCTURE_LINK &&
+    //   struc.energy > 0 &&
+    //   this.room.memory.links.providers.includes(struc.id)
+    // )})
+    // if(sources.length) {
+    //   for(let source of sources) {
+    //     this.genSourceTasks(
+    //       source, queue, CARRY, {dontFindTarget: true}
+    //     )
+    //   }
+    // }
   }
 
   genTargetCarryTasksFor = (target, queue, resType, prio)=> {
@@ -195,7 +245,7 @@ class Overlord {
       target.storeCapacity : target.energyCapacity
 
     let targetItems = _.filter(this.existingItems, (item)=> (
-      item.toTarget.id == target.id
+      _.get(item, ['toTarget', 'id']) == target.id
     ))
     let itemLength = targetItems.length
     let existingAddAmount = targetItems.length * this.creepCarryAmount
@@ -232,39 +282,57 @@ class Overlord {
    * If a target cant be found for the resource, this task will not be
    * generated.
    */
-  genSourceTasks = (source, queue, taskType)=> {
+  genSourceTasks = (source, queue, taskType, options = {})=> {
+    let dontFindTarget = options.dontFindTarget || false
     let sourceItems = _.filter(this.existingItems, (item)=> (
       item.fromSource && item.fromSource.id == source.id &&
       item.stage != TYPE_TARGET
     ))
+    log.red(JSON.stringify(sourceItems))
     let existingDrawAmount = _.sum(sourceItems, 'fromSource.amount')
-    let stillStored = source.store[RESOURCE_ENERGY] - existingDrawAmount
+    let stillStored = 0
+    if(source.store) {
+      stillStored = source.store[RESOURCE_ENERGY] - existingDrawAmount
+    }
+    else {
+      stillStored = source.amount - existingDrawAmount
+    }
+    log.green(`Exsiting: ${existingDrawAmount}, Stored: ${stillStored}`)
     let itemCount = sourceItems.length
+    log.green(`ItemCount: ${JSON.stringify(sourceItems)}`)
     while(
       stillStored > this.creepCarryAmount && itemCount < this.maxItemsPerTask
     ) {
+      log.cyan(`Generating source-task for ${source.id}, ${source.pos.roomName}`)
       let targetData = null
-      if(taskType == CARRY) {
+      if(taskType == CARRY && !dontFindTarget) {
         targetData = this.findCarryTargetFor(source, RESOURCE_ENERGY)
       }
-      else if(taskType == WORK) {
+      else if(taskType == WORK && !dontFindTarget) {
         targetData = this.findWorkTargetFor(source, RESOURCE_ENERGY)
       }
+
+      let target = false
+      let prio = 6666
       if(targetData && targetData.target) {
-        let {target, prio} = targetData
-        console.log(
-          `Adding target: ${JSON.stringify(target.pos)} at ${Game.time}.`
-        )
-        this.addItem(
-          queue, source, target, RESOURCE_ENERGY, this.creepCarryAmount,
-          prio
-        )
-        stillStored -= this.creepCarryAmount
-        itemCount += 1
+        target = targetData.target
+        prio = targetData.prio
+      }
+      else if(dontFindTarget) {
+
       }
       else {
         break // No suitable target found
       }
+      console.log(
+        `Adding source-task: ${JSON.stringify(target.pos)} at ${Game.time}.`
+      )
+      this.addItem(
+        queue, source, target, RESOURCE_ENERGY, this.creepCarryAmount,
+        prio
+      )
+      stillStored -= this.creepCarryAmount
+      itemCount += 1
     }
   }
 
@@ -282,7 +350,13 @@ class Overlord {
       item.stage != TYPE_TARGET
     ))
     let existingDrawAmount = _.sum(sourceItems, 'fromSource.amount')
-    let stillStored = source.store[RESOURCE_ENERGY] - existingDrawAmount
+    let stillStored = 0
+    if(source.store) {
+      stillStored = source.store[RESOURCE_ENERGY] - existingDrawAmount
+    }
+    else {
+      stillStored = source.amount - existingDrawAmount
+    }
     let itemCount = sourceItems.length
     if(
       stillStored > this.creepCarryAmount && itemCount < this.maxItemsPerTask
@@ -354,7 +428,7 @@ class Overlord {
       spawns = _.sortByOrder(spawns, 'energy', 'asc')
       for(let spawn of spawns) {
         let spawnItems = _.filter(this.existingItems, (item)=> (
-          item.toTarget.id == spawn.id
+          _.get(item, ['toTarget', 'id']) == spawn.id
         ))
         let existingAddAmount = spawnItems.length * this.creepCarryAmount
         let ullage = spawn.energyCapacity - (spawn.energy + existingAddAmount)
@@ -378,7 +452,7 @@ class Overlord {
       extensions = _.sortByOrder(extensions, 'energy', 'asc')
       for(let extension of extensions) {
         let extensionItems = _.filter(this.existingItems, (item)=> (
-          item.toTarget.id == extension.id
+          _.get(item, ['toTarget', 'id']) == extension.id
         ))
         let existingAddAmount = extensionItems.length * this.creepCarryAmount
         let ullage = (
@@ -401,7 +475,7 @@ class Overlord {
       towers = _.sortByOrder(towers, 'energy', 'asc')
       for(let tower of towers) {
         let towerItems = _.filter(this.existingItems, (item)=> (
-          item.toTarget.id == tower.id
+          _.get(item, ['toTarget', 'id']) == tower.id
         ))
         let existingAddAmount = towerItems.length * this.creepCarryAmount
         let ullage = (
@@ -422,7 +496,7 @@ class Overlord {
     if(storages.length > 0) {
       let storage = storages[0]
       let storageItems = _.filter(this.existingItems, (item)=> (
-        item.toTarget.id == storage.id
+        _.get(item, ['toTarget', 'id']) == storage.id
       ))
       let existingAddAmount = storageItems.length * this.creepCarryAmount
       let ullage = (
@@ -435,7 +509,7 @@ class Overlord {
 
   filterNonVoidEnergyContainers = (object)=> (
     object.structureType == STRUCTURE_CONTAINER &&
-    object.store[RESOURCE_ENERGY] > 200
+    object.store[RESOURCE_ENERGY] > this.creepCarryAmount
   )
 
   filterNonVoidEnergyStorage = (object)=> (
@@ -445,16 +519,20 @@ class Overlord {
 
   addItem = (queue, source, target, res, targetAmount, priority)=> {
     let data = {
-      toTarget: {
+      res: res,
+      stage: null,
+      assigned: false,
+      byRoomName: this.room.name
+    }
+    if(target) {
+      data['toTarget'] = {
         id: target.id,
         x: target.pos.x,
         y: target.pos.y,
         roomName: target.pos.roomName,
         amount: targetAmount,
         // amount: (target.amount !== null) ? target.amount : this.creepCarryAmount,
-      },
-      res: res,
-      stage: null
+      }
     }
     if(source) {
       data['fromSource'] = {
@@ -498,7 +576,86 @@ class Overlord {
     }
   }
 
+  /**
+   * Items that can be used to satisfy the demands of a target
+   * Eg items that only have a source
+   */
+  getFloatingItems = (queue, customFilter = null)=> {
+    let filter = null
+    if(customFilter != null) {
+     filter = (q)=> {
+        let item = hiveMind.data[q.id];
+        return (
+          item && !item.toTarget && !item.assigned && item.fromSource &&
+          customFilter(q, item)
+        )
+      }
+    }
+    else {
+      filter = (q)=> {
+        let item = hiveMind.data[q.id];
+        return (item && !item.toTarget && item.fromSource && !item.assigned)
+      }
+    }
+    return queue.filter(filter)
+  }
+
+  /**
+   * @param hiveAccessor - for example ['fromSource', 'id']
+   */
+  applyPathCostToQueueRating = (
+    startPosition, queueData, hiveAccessor, modifier = 1.0
+  )=> {
+    return _.compact(queueData.map((data)=> {
+      let objectDescriptor = _.get(hiveMind.data[data.id], hiveAccessor)
+      let obj = Game.getObjectById(_.get(objectDescriptor, 'id'))
+      if(!obj) {
+        if(
+          objectDescriptor.roomName && !
+          Game.rooms[objectDescriptor.roomName]
+        ) {
+          // No info on object, return some very high path
+          return {id: data.id, prio: data['prio'] + (20000 * modifier)}
+        }
+        else {
+          // We can see its room, but it isnt there
+          return null
+        }
+        return {id: data.id, prio: data['prio'] + (pathLength * modifier)}
+      }
+      let pathLength = startPosition.findPathTo(obj).length
+      return {id: data.id, prio: data['prio'] + (pathLength * modifier)}
+    }))
+  }
+
   findSourceForCreep = (creep, item, resType)=> {
+
+    let queue = this.room.queue(CARRY)
+    let queueItems = this.getFloatingItems(queue, (queueItem, item)=> (
+      resType === item.res && (
+        !_.get(item.toTarget, 'amount') ||
+        item.toTarget.amount <= item.fromSource.amount
+      )
+    ))
+    let gameItems = queueItems.map(
+      (q)=> Game.getObjectById(hiveMind.data[q.id].fromSource.id)
+    )
+    let pathAdjustedQueue = new PriorityQueue(
+      this.applyPathCostToQueueRating(creep.pos, queueItems, 'fromSource')
+    )
+    let queueItem = pathAdjustedQueue.dequeue()
+    if(queueItem) {
+      hiveMind.data[creep.memory.item.id].fromSource =
+        hiveMind.data[queueItem.id].fromSource
+      hiveMind.data[creep.memory.item.id].assigned = true
+      let itemData = hiveMind.data[creep.memory.item.id]
+      if(itemData.fromSource && !itemData.fromSource.amount) {
+        itemData.fromSource.amount = creep.carryCapacity
+      }
+      queue.removeBy({id: queueItem.id}) // Keep original queue in sync
+      hiveMind.remove(queueItem.id)
+      return true
+    }
 
     // Try dropped resources first
     let droppedViableRes = creep.room.find(
@@ -514,8 +671,40 @@ class Overlord {
       )}
     )
     if(droppedViableRes.length) {
+
+      // FIXME THIS IS THE ROOT OF THE FRIGGIN PROBLEMS! FIX IT
+      // This is why all the creeps go to the same source
       return creep.pos.findClosestByPath(droppedViableRes)
     }
+
+    // HAAACKS
+    if(this.room.memory.connectedRemoteRooms) {
+      for(let remoteName in this.room.memory.connectedRemoteRooms) {
+        let data = this.room.memory.connectedRemoteRooms[remoteName]
+        if(data.parsed) {
+          if(Game.rooms[remoteName]) {
+            let room = Game.rooms[remoteName]
+            let sources = room.find(
+              FIND_DROPPED_RESOURCES,
+              {filter: (res)=> (
+                res.resourceType == resType &&
+                res.amount > item.toTarget.amount &&
+                res.amount > _.sum(
+                  _.filter(this.existingItems, (item)=> (
+                    item.fromSource.id == res.id
+                  )), 'fromSource.amount'
+                ) + item.toTarget.amount + 1500 // HAAACKS
+              )}
+            )
+            if(sources.length > 0) {
+              return sources[0]
+              // return creep.pos.findClosestByPath(sources)
+            }
+          }
+        }
+      }
+    }
+
 
     // Try Container or storage
     let structures = this.room.find(
@@ -568,24 +757,139 @@ class Overlord {
     }
   }
 
-  remote = ()=> {
+  remote = (queues)=> {
+    // Controls the remote expansions
     if(this.room.memory.connectedRemoteRooms) {
-      for(let remoteName of this.room.memory.connectedRemoteRooms) {
+      for(let remoteName in this.room.memory.connectedRemoteRooms) {
         let data = this.room.memory.connectedRemoteRooms[remoteName]
-        let remoteRoom = Game.rooms[remoteName]
         if(data.parsed) {
+          // Make sure every source has an item assigned to it in the hiveMind
+          for(let source of data.sources) {
+            let {x, y, id} = source
+            let sourceItemExists = hiveMind.filter(
+              {fromSource: {x: x, y: y, roomName: remoteName, id: id}}
+            ).length > 0
+            if(!sourceItemExists) {
+              this.room.pushToQueue(
+                $.EXCAVATE, {
+                  fromSource: {x: x, y: y, roomName: remoteName, id: id},
+                  res: RESOURCE_ENERGY,
+                  stage: null,
+                  continuous: true
+                },
+                (
+                  $.PRIORITIES[$.EXCAVATE][$.SOURCE] *
+                  $.REMOTE_PRIORITIES_MODIFIER
+                )
+              )
+            }
+          }
 
+          // Generate carry-tasks for remote stuff
+          if(Game.rooms[remoteName]) {
+            let room = Game.rooms[remoteName]
+            let sources = room.find(FIND_DROPPED_RESOURCES)
+            if(sources.length) {
+              for(let source of sources) {
+                this.genSourceTasks(
+                  source, queues[CARRY], CARRY, {dontFindTarget: true}
+                )
+              }
+            }
+          }
         }
         else {
-          this.initiateRemoteRoomParsing()
+          this.initiateRemoteRoomParsing(remoteName)
         }
       }
     }
   }
 
-  initiateRemoteRoomParsing = ()=> {
+  /**
+   * Appends a creep to spawn to the spawn-queue
+   *
+   * TODO Possibly not necessary :(
+   *
+   * @param spawnPriority - The prio of the item in the spawn-queue
+   * @param creepMemory - The memory of the creep.
+   *    The value of myRoomName will be set automatically if not set here.
+   * @param opts - Some options
+   *    assignItem - Generates a new item in the hiveMind and assigns it
+   *      directly to the spawned creep.
+   *      If priority is not set, it will have a prio of 0.
+   *      assignItem: {
+   *        data: [ITEMDATA],
+   *        priority: [ITEMPRIO]
+   *      }
+   */
+  spawnCreep = (spawnPriority, creepMemory, opts = {})=> {
+    if(!_.isUndefined(opts.assignItem)) {
+      creepMemory.item = creepMemory.item || {}
+      let itemId = hiveMind.push(opts.assignItem.data)
+      creepMemory.item.id = itemId
+      if(!_.isUndefined(opts.assignItem.priority)) {
+        creepMemory.item.prio = opts.assignItem.priority
+      }
+      else {
+        creepMemory.item.prio = 0
+      }
+    }
+    if(_.isUndefined(creepMemory.myRoomName)) {
+      creepMemory.myRoomName = this.room.name
+    }
+    this.room.pushToQueue(
+      $.SPAWN,
+      {memory: creepMemory, kind: creepMemory.kind},
+      spawnPriority
+    )
+  }
+
+  initiateRemoteRoomParsing = (remoteRoomName)=> {
+    console.log(`Please give me info on remoteRoom ${remoteRoomName}`)
     // Scout, cache & pave path with roads
-    // TODO ADD ME
+    // let mutalisks = _.filter(
+    //   Game.creeps,
+    //   (c)=> (
+    //     c.hasItem() && _.get(
+    //       c.activeItem(), ['toTarget', 'roomName']
+    //     ) === remoteRoomName
+    //   )
+    // )
+    // console.log(JSON.stringify(mutalisks))
+    // if(mutalisks.length < 1) {
+      // this.room.pushToQueue(
+      //   $.SPAWN, {role: $.ROLE_ZERG, kind: $.KIND_MUTALISK, body: [MOVE]}
+      // )
+      // this.room.pushToQueue($.SCOUT, {toTarget: {roomName: remoteRoomName}})
+    // }
+  }
+
+  excavate = (queue)=> {
+    if(queue && queue.itemCount() > 0) {
+      log.cyan('Excavate queue has stuff!')
+      let spawningSpawns = []
+      while(queue.peek()) {
+        let queueItem = queue.dequeue()
+        log.cyan(`Dequeuing ${JSON.stringify(queueItem)}`)
+        let itemData = hiveMind.data[queueItem.id]
+        let spawnPrio = $.PRIORITIES[$.SPAWN][$.KIND_INFESTOR]
+        if(itemData.fromSource.roomName != this.room.name) {
+          log.cyan(`Remote excavate`)
+          // Remote work
+          spawnPrio = spawnPrio * $.REMOTE_PRIORITIES_MODIFIER
+        }
+        log.cyan(`Pushing to spawn-queue`)
+        this.room.pushToQueue(
+          $.SPAWN,
+          {
+            kind: $.KIND_INFESTOR,
+            memory: {role: $.ROLE_ZERG, item: queueItem}
+          },
+          spawnPrio
+        )
+        console.log(JSON.stringify(this.room.queue($.SPAWN)))
+      }
+    }
   }
 
   satisfyBoredCreep = (creep)=> {
@@ -618,6 +922,10 @@ class Overlord {
 
       for(let queueItem of queue) {
         let item = Memory['hiveMind'][queueItem.id]
+        if(!item) {
+          log.red(`Item ${queueItem.id} missing!`)
+          continue
+        }
         let fromStr = ''
         if(item['fromSource']) {
           fromStr = ' from <span style="color:#dd6633">' +
@@ -663,34 +971,34 @@ class Overlord {
     }
   }
 
-  getLackingSourceLink(creep) {
-    let sources = creep.room.find(FIND_MY_STRUCTURES, {filter: (struc)=> (
-      struc.structureType == STRUCTURE_LINK &&
-      struc.energy < struc.energyCapacity
-    )})
-
-    if(sources.length) {
-      return sources[0]
-    }
-    else {
-      return null
-    }
-  }
-
-  getNonVoidProviderLink(creep) {
-    let sources = creep.room.find(FIND_MY_STRUCTURES, {filter: (struc)=> (
-      struc.structureType == STRUCTURE_LINK &&
-      struc.energy > 0
-    )})
-
-    if(sources.length) {
-      return sources[0]
-    }
-    else {
-      return null
-    }
-  }
-
+  // getLackingSourceLink() {
+  //   let sources = this.room.find(FIND_MY_STRUCTURES, {filter: (struc)=> (
+  //     struc.structureType == STRUCTURE_LINK &&
+  //     struc.energy < struc.energyCapacity
+  //   )})
+  //
+  //   if(sources.length) {
+  //     return sources[0]
+  //   }
+  //   else {
+  //     return null
+  //   }
+  // }
+  //
+  // getNonVoidProviderLink() {
+  //   let sources = this.room.find(FIND_MY_STRUCTURES, {filter: (struc)=> (
+  //     struc.structureType == STRUCTURE_LINK &&
+  //     struc.energy > 0
+  //   )})
+  //
+  //   if(sources.length) {
+  //     return sources[0]
+  //   }
+  //   else {
+  //     return null
+  //   }
+  // }
+  //
   calcCreepBody = (parts, maxCost = 0, usingStreet = true)=> {
     let partCost = {
       [WORK]: 100,

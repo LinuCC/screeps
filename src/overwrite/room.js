@@ -1,3 +1,4 @@
+import helper from './../helper'
 import hiveMind from './../hiveMind'
 import PriorityQueue from './../priorityQueue'
 
@@ -32,4 +33,22 @@ Room.prototype.pushToQueue = function(queue, item, priority) {
   else {
     throw new Error('Queue?')
   }
+}
+
+Room.prototype.drawCoordinates = function(coordinates) {
+  for (let i = 0, len = coordinates.length; i < len; i++) {
+    let coordinate = helper.decodeCoordinate(coordinates, i)
+    this.createFlag(this.posByXY(coordinate), `${coordinate.x}-${coordinate.y}`)
+  }
+}
+
+Room.prototype.clearDrawings = function() {
+  let flags = this.find(FIND_FLAGS, {filter: {color: COLOR_WHITE}})
+  for(flag of flags) {
+    flag.remove()
+  }
+}
+
+Room.prototype.posByXY = function({x, y}) {
+  return new RoomPostion(x, y, this.name)
 }

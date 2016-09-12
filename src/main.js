@@ -1,4 +1,5 @@
 import './overwrite/room'
+import './overwrite/creep'
 
 import $ from './constants'
 import defense from './defense'
@@ -48,6 +49,7 @@ module.exports.loop = ()=> profiler.wrap(()=> {
     new Overseer().check()
   }
 
+  modwide.h = helper
   modwide.$ = $
   modwide.Spawner = Spawner
   modwide.Overlord = Overlord
@@ -55,6 +57,7 @@ module.exports.loop = ()=> profiler.wrap(()=> {
   modwide.logHiveMindOf = (spawnName)=> {
     new Overlord(Game.spawns[spawnName].room.name).logQueuedItems()
   }
+  new Overseer().parseCommands()
   modwide.resetHive = ()=> {
     Memory.hiveMind = {}
     Memory.hiveMindIndex = 0
