@@ -15,6 +15,15 @@ const SOURCE = 'source'
 const CONSTRUCTION_SITE = "constrSite"
 const REMOTE_PRIORITIES_MODIFIER = 0.5
 
+const SEED = 'seed'
+
+const RESERVE = 'reserve'
+const DOWNGRADE = 'downgrade'
+
+const CONTROLLER_CLAIM = 'claim'
+const CONTROLLER_RESERVE = 'reserve'
+const CONTROLLER_DOWNGRADE = 'downgrade'
+
 const exports = Object.freeze({
   ROOM_CENTER_X: 25,
   ROOM_CENTER_Y: 25,
@@ -46,7 +55,7 @@ const exports = Object.freeze({
   PRIO_QUEUES: [
     WORK,
     CARRY,
-    CLAIM,
+    SEED,
     SCOUT,
     EXCAVATE,
     UPGRADE,
@@ -58,9 +67,13 @@ const exports = Object.freeze({
     [KIND_DRONE]: [CARRY],
     [KIND_ZERGLING]: [WORK, CARRY],
     [KIND_INFESTOR]: [EXCAVATE],
-    [KIND_CORRUPTOR]: [CLAIM],
+    [KIND_CORRUPTOR]: [SEED],
     [KIND_MUTALISK]: [SCOUT],
   },
+
+  CONTROLLER_CLAIM: CONTROLLER_CLAIM,
+  CONTROLLER_RESERVE: CONTROLLER_RESERVE,
+  CONTROLLER_DOWNGRADE: CONTROLLER_DOWNGRADE,
 
   PRIORITIES: {
     [CARRY]: {
@@ -105,7 +118,13 @@ const exports = Object.freeze({
       color: COLOR_CYAN,
       secondaryColor: COLOR_PURPLE
     }
-  }
+  },
+
+  SEED: SEED,
+
+  CLAIM: CLAIM,
+  RESERVE: RESERVE,
+  DOWNGRADE: DOWNGRADE,
 });
 
 module.exports = exports

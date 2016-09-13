@@ -144,3 +144,11 @@
         reserve.
         Ah fuck calculating, guessing is much easier
     - CLAIM would only need 1 CLAIM-Part
+* HiveMind & Queues
+  - Use Cases:
+    - I want to generate (HiveMind) & queue a new item
+    - The data of the item should go through a method thats specific to a
+      queue
+      -> Data is dependend on queue, but should be put into the hiveMind
+      - Own class for every queue? What to call it?
+        SeedManager? SeedQueueManager? Seeding?

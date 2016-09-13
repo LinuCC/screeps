@@ -1,6 +1,6 @@
 import $ from './constants'
 import hiveMind from './hiveMind'
-import PriorityQueue from './priorityQueue'
+import PriorityQueue from './PriorityQueue'
 
 const TYPE_SOURCE = 0
 const TYPE_TARGET = 1

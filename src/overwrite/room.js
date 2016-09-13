@@ -1,6 +1,6 @@
 import helper from './../helper'
 import hiveMind from './../hiveMind'
-import PriorityQueue from './../priorityQueue'
+import PriorityQueue from './../PriorityQueue'
 
 Room.prototype.spawns = function(filter = {}) {
   let findFilter = null

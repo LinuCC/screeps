@@ -1,5 +1,5 @@
 import $ from './constants'
-import PriorityQueue from './priorityQueue'
+import PriorityQueue from './PriorityQueue'
 import hiveMind from './hiveMind'
 
 /**
