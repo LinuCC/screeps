@@ -103,9 +103,9 @@ var modwide = global; module.exports =
 
 	var _assimilator2 = _interopRequireDefault(_assimilator);
 
-	var _priorityQueue = __webpack_require__(4);
+	var _PriorityQueue = __webpack_require__(4);
 
-	var _priorityQueue2 = _interopRequireDefault(_priorityQueue);
+	var _PriorityQueue2 = _interopRequireDefault(_PriorityQueue);
 
 	var _hiveMind = __webpack_require__(3);
 
@@ -141,6 +141,10 @@ var modwide = global; module.exports =
 
 	var _helper2 = _interopRequireDefault(_helper);
 
+	var _Seeding = __webpack_require__(77);
+
+	var _Seeding2 = _interopRequireDefault(_Seeding);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	// Maximum range for a remote mine, assuming 100% effectiveness: 190 squares
@@ -165,6 +169,12 @@ var modwide = global; module.exports =
 	    // log.cyan('Removing Old HiveMindItems')
 	    // new Overlord('NoFrigginRoom').removeOldHiveMindItems()
 	    new _Overseer2.default().check();
+	  }
+	  if (Game.time % 3 === 0) {
+	    for (let room of new _Overseer2.default().myMainRooms()) {
+	      let seeder = new _Seeding2.default(room);
+	      seeder.itemGenerator();
+	    }
 	  }
 
 	  modwide.h = _helper2.default;
@@ -217,7 +227,7 @@ var modwide = global; module.exports =
 	        let room = Game.rooms[roomName];
 	        let priorityQueues = false;
 	        if (room.memory.priorityQueues && Object.keys(room.memory.priorityQueues).length > 0) {
-	          priorityQueues = _.mapValues(room.memory.priorityQueues, queue => new _priorityQueue2.default(queue));
+	          priorityQueues = _.mapValues(room.memory.priorityQueues, queue => new _PriorityQueue2.default(queue));
 	        }
 	        if (Game.time % 3 == 0) {
 	          let overlord = new _Overlord2.default(roomName);
@@ -304,9 +314,9 @@ var modwide = global; module.exports =
 
 	var _hiveMind2 = _interopRequireDefault(_hiveMind);
 
-	var _priorityQueue = __webpack_require__(4);
+	var _PriorityQueue = __webpack_require__(4);
 
-	var _priorityQueue2 = _interopRequireDefault(_priorityQueue);
+	var _PriorityQueue2 = _interopRequireDefault(_PriorityQueue);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -323,8 +333,8 @@ var modwide = global; module.exports =
 	  return this.find(FIND_MY_STRUCTURES, options);
 	};
 
-	Room.prototype.queue = function (name) {
-	  return new _priorityQueue2.default(this.memory.priorityQueues[name]);
+	Room.prototype.queue = function (queueName) {
+	  return new _PriorityQueue2.default(this.memory.priorityQueues[queueName]);
 	};
 
 	Room.prototype.pushToQueue = function (queue, item, priority) {
@@ -332,7 +342,7 @@ var modwide = global; module.exports =
 	    if (!this.memory.priorityQueues[queue]) {
 	      throw new Error('Queue?');
 	    }
-	    queue = new _priorityQueue2.default(this.memory.priorityQueues[queue]);
+	    queue = new _PriorityQueue2.default(this.memory.priorityQueues[queue]);
 	  }
 
 	  if (queue) {
@@ -423,7 +433,8 @@ var modwide = global; module.exports =
 	  },
 
 	  allForRoom: function (room) {
-	    return _.filter(this.data, entry => entry.fromSource && entry.fromSource.roomName == room.name || entry.toTarget && entry.toTarget.roomName == room.name || entry.byRoomName == room.name);
+	    const roomName = typeof room === 'string' ? room : room.name;
+	    return _.filter(this.data, entry => entry.fromSource && entry.fromSource.roomName == roomName || entry.toTarget && entry.toTarget.roomName == roomName || entry.byRoomName == roomName);
 	  },
 
 	  filter: function (filter) {
@@ -605,6 +616,15 @@ var modwide = global; module.exports =
 	const CONSTRUCTION_SITE = "constrSite";
 	const REMOTE_PRIORITIES_MODIFIER = 0.5;
 
+	const SEED = 'seed';
+
+	const RESERVE = 'reserve';
+	const DOWNGRADE = 'downgrade';
+
+	const CONTROLLER_CLAIM = 'claim';
+	const CONTROLLER_RESERVE = 'reserve';
+	const CONTROLLER_DOWNGRADE = 'downgrade';
+
 	const _exports = Object.freeze({
 	  ROOM_CENTER_X: 25,
 	  ROOM_CENTER_Y: 25,
@@ -627,15 +647,21 @@ var modwide = global; module.exports =
 	    KIND_DRONE: [CARRY],
 	    KIND_ZERGLING: [WORK, WORK, WORK, CARRY, CARRY]
 	  },
-	  PRIO_QUEUES: [WORK, CARRY, CLAIM, SCOUT, EXCAVATE, UPGRADE, SPAWN],
+	  PRIO_QUEUES: [WORK, CARRY, SEED, SCOUT, EXCAVATE, UPGRADE, SPAWN],
 
 	  QUEUES_FOR_KINDS: {
 	    [KIND_DRONE]: [CARRY],
 	    [KIND_ZERGLING]: [WORK, CARRY],
 	    [KIND_INFESTOR]: [EXCAVATE],
-	    [KIND_CORRUPTOR]: [CLAIM],
+	    [KIND_CORRUPTOR]: [SEED],
 	    [KIND_MUTALISK]: [SCOUT]
 	  },
+
+	  CONTROLLER_CLAIM: CONTROLLER_CLAIM,
+	  CONTROLLER_RESERVE: CONTROLLER_RESERVE,
+	  CONTROLLER_DOWNGRADE: CONTROLLER_DOWNGRADE,
+
+	  CONTROLLER_RESERVE_MAX: 5000,
 
 	  PRIORITIES: {
 	    [CARRY]: {
@@ -652,7 +678,13 @@ var modwide = global; module.exports =
 	      [SOURCE]: 1000
 	    },
 	    [SPAWN]: {
-	      [KIND_INFESTOR]: 1000
+	      [KIND_INFESTOR]: 1000,
+	      [KIND_CORRUPTOR]: 5000
+	    },
+	    [SEED]: {
+	      [CLAIM]: 1000,
+	      [RESERVE]: 2000,
+	      [DOWNGRADE]: 3000
 	    }
 	  },
 
@@ -680,7 +712,13 @@ var modwide = global; module.exports =
 	      color: COLOR_CYAN,
 	      secondaryColor: COLOR_PURPLE
 	    }
-	  }
+	  },
+
+	  SEED: SEED,
+
+	  CLAIM: CLAIM,
+	  RESERVE: RESERVE,
+	  DOWNGRADE: DOWNGRADE
 	});
 
 	module.exports = _exports;
@@ -1755,9 +1793,9 @@ var modwide = global; module.exports =
 
 	var _hiveMind2 = _interopRequireDefault(_hiveMind);
 
-	var _priorityQueue = __webpack_require__(4);
+	var _PriorityQueue = __webpack_require__(4);
 
-	var _priorityQueue2 = _interopRequireDefault(_priorityQueue);
+	var _PriorityQueue2 = _interopRequireDefault(_PriorityQueue);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -1922,6 +1960,9 @@ var modwide = global; module.exports =
 	          this.genSourceTasks(source, queue, CARRY, { dontFindTarget: true });
 	        }
 	      }
+
+	      /// TODO Add A passive queue?!?!
+
 	      // let links = this.room.find(FIND_MY_STRUCTURES, {filter: (struc)=> (
 	      //   struc.structureType == STRUCTURE_LINK &&
 	      //   struc.energy > 0 &&
@@ -2253,7 +2294,7 @@ var modwide = global; module.exports =
 	      let queue = this.room.queue(CARRY);
 	      let queueItems = this.getFloatingItems(queue, (queueItem, item) => resType === item.res && (!_.get(item.toTarget, 'amount') || item.toTarget.amount <= item.fromSource.amount));
 	      let gameItems = queueItems.map(q => Game.getObjectById(_hiveMind2.default.data[q.id].fromSource.id));
-	      let pathAdjustedQueue = new _priorityQueue2.default(this.applyPathCostToQueueRating(creep.pos, queueItems, 'fromSource'));
+	      let pathAdjustedQueue = new _PriorityQueue2.default(this.applyPathCostToQueueRating(creep.pos, queueItems, 'fromSource'));
 	      let queueItem = pathAdjustedQueue.dequeue();
 	      if (queueItem) {
 	        _hiveMind2.default.data[creep.memory.item.id].fromSource = _hiveMind2.default.data[queueItem.id].fromSource;
@@ -2648,9 +2689,9 @@ var modwide = global; module.exports =
 
 	var _constants2 = _interopRequireDefault(_constants);
 
-	var _priorityQueue = __webpack_require__(4);
+	var _PriorityQueue = __webpack_require__(4);
 
-	var _priorityQueue2 = _interopRequireDefault(_priorityQueue);
+	var _PriorityQueue2 = _interopRequireDefault(_PriorityQueue);
 
 	var _hiveMind = __webpack_require__(3);
 
@@ -2706,7 +2747,7 @@ var modwide = global; module.exports =
 	          for (let queueItem of queueData) {
 	            if (!_hiveMind2.default.data[queueItem.id]) {
 	              console.log("<span style='color: #ddaa33'>Item missing:</span>\n    ", JSON.stringify(queueItem));
-	              new _priorityQueue2.default(queueData).removeBy({ id: queueItem.id });
+	              new _PriorityQueue2.default(queueData).removeBy({ id: queueItem.id });
 	            }
 	          }
 	        }
@@ -4308,6 +4349,228 @@ var modwide = global; module.exports =
 	  },
 	};
 
+
+/***/ },
+/* 77 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _constants = __webpack_require__(6);
+
+	var _constants2 = _interopRequireDefault(_constants);
+
+	var _Queueing = __webpack_require__(78);
+
+	var _Queueing2 = _interopRequireDefault(_Queueing);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	/**
+	 * Claim, reserve, downgrade Controllers of other rooms
+	 */
+	class Seeding extends _Queueing2.default {
+
+	  constructor(room) {
+	    let queue = arguments.length <= 1 || arguments[1] === undefined ? _constants2.default.SEED : arguments[1];
+
+	    super(room, queue);
+	  }
+
+	  /**
+	   * Generates a new Seeding-item.
+	   * @param opts - {
+	   *      room: <Room>(If given, will calculate missing values based on this)
+	   *   }
+	   */
+	  newItem(data, prio, controller) {
+	    // Set toTarget if not defined
+	    if (!data.toTarget) {
+	      if (!controller) {
+	        return ERR_NOT_FOUND;
+	      }
+	      data.toTarget = {
+	        x: controller.pos.x,
+	        y: controller.pos.y,
+	        id: controller.id,
+	        roomName: controller.room.name
+	      };
+	    }
+	    // Calculate the steps
+	    let steps = null;
+	    if (data.steps) {
+	      steps = data.steps;
+	    } else {
+	      if (!controller) {
+	        return ERR_NOT_FOUND;
+	      }
+	      steps = this.calculateStepsFromSpawnOf(this.room, controller.pos);
+	    }
+	    // Set the data
+	    const hiveMindData = {
+	      type: data.type || _constants2.default.RESERVE,
+	      amount: data.amount || 0, // amount of 0 = all ye can
+	      steps: steps,
+	      byRoomName: this.room.name,
+	      toTarget: {
+	        x: _.get(data, ['toTarget', 'x']),
+	        y: _.get(data, ['toTarget', 'y']),
+	        roomName: _.get(data, ['toTarget', 'roomName']),
+	        id: _.get(data, ['toTarget', 'id'])
+	      }
+	    };
+	    return super.newItem(hiveMindData, prio);
+	  }
+
+	  itemDone(itemId) {
+	    super.itemDone(itemId);
+	  }
+
+	  itemGenerator() {
+	    // Reserve remote rooms
+	    const remoteRooms = this.room.memory.connectedRemoteRooms;
+	    for (let remoteName in remoteRooms) {
+	      let remoteRoomData = remoteRooms[remoteName];
+	      if (remoteRoomData.parsed) {
+	        const remoteRoom = Game.rooms[remoteName];
+	        if (remoteRoom) {
+	          const controller = remoteRoom.controller;
+	          if (controller) {
+	            const pos = controller.pos;
+
+	            let existingItems = _.filter(this.allItems(), {
+	              toTarget: { x: pos.x, y: pos.y, roomName: pos.roomName }
+	            });
+	            while (_constants2.default.CONTROLLER_RESERVE_MAX - ((_.get(controller, ['reservation', 'ticksToEnd']) || 0) + _.sum(existingItems, 'amount')) > 1000 && existingItems.length < 10) {
+	              log.cyan(`Generating Reserve-item for room ${ controller.room.name }`);
+	              console.log(`  Amount: ${ JSON.stringify(_.sum(existingItems, 'amount')) }`);
+	              console.log(`  Calc: ${ _constants2.default.CONTROLLER_RESERVE_MAX - ((_.get(controller, ['reservation', 'ticksToEnd']) || 0) + _.sum(existingItems, 'amount')) }`);
+	              console.log(`ExistingItems: ${ JSON.stringify(existingItems) }`);
+	              this.newItem({
+	                type: _constants2.default.RESERVE,
+	                amount: 1000
+	              }, _constants2.default.PRIORITIES[_constants2.default.SEED][_constants2.default.RESERVE], controller);
+	              existingItems.push({ amount: 1000 });
+	            }
+	          } else {
+	            // Room has no controller, maybe a sourcekeeper-room?
+	          }
+	        } else {
+	            // Can't see, dunno
+	          }
+	      } else {
+	          // Room-Layout should be investigated, but not my task
+	        }
+	    }
+	  }
+
+	  /**
+	   * TODO Probably doesnt belong here
+	   */
+	  itemVerwertor() {
+	    if (this.queue.itemCount() > 0) {
+	      while (queue.peek()) {
+	        const queueItem = queue.peek();
+	        const itemData = hiveMind.data[queueItem.id];
+	        const spawnPriority = _constants2.default.PRIORITIES[_constants2.default.SPAWN][_constants2.default.KIND_CORRUPTOR];
+	        const memory = {
+	          kind: _constants2.default.KIND_CORRUPTOR,
+	          memory: {
+	            role: _constants2.default.ZERG,
+	            item: queueItem
+	          }
+	        };
+	        const res = this.room.pushToQueue(_constants2.default.SPAWN, { memory: creepMemory, kind: creepMemory.kind }, spawnPriority);
+	        if (res) {
+	          queue.dequeue();
+	        }
+	      }
+	    }
+	  }
+
+	  spawnCreep(spawnPriority, creepMemory) {
+	    let opts = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+
+	    if (!_.isUndefined(opts.assignItem)) {
+	      creepMemory.item = creepMemory.item || {};
+	      let itemId = hiveMind.push(opts.assignItem.data);
+	      creepMemory.item.id = itemId;
+	      if (!_.isUndefined(opts.assignItem.priority)) {
+	        creepMemory.item.prio = opts.assignItem.priority;
+	      } else {
+	        creepMemory.item.prio = 0;
+	      }
+	    }
+	    if (_.isUndefined(creepMemory.myRoomName)) {
+	      creepMemory.myRoomName = this.room.name;
+	    }
+	    this.room.pushToQueue(_constants2.default.SPAWN, { memory: creepMemory, kind: creepMemory.kind }, spawnPriority);
+	  }
+
+	  calculateStepsFromSpawnOf(room, targetPos) {
+	    //TODO Implement me
+	    return 0;
+	  }
+	}
+
+	module.exports = Seeding;
+
+/***/ },
+/* 78 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _hiveMind = __webpack_require__(3);
+
+	var _hiveMind2 = _interopRequireDefault(_hiveMind);
+
+	var _PriorityQueue = __webpack_require__(4);
+
+	var _PriorityQueue2 = _interopRequireDefault(_PriorityQueue);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	/**
+	 * Basic helper-class for Queueing stuff
+	 * Combines hiveMind & PriorityQueue for some noice helper-methods
+	 */
+	class Queueing {
+	  constructor(room, queue) {
+	    if (typeof room === 'string') {
+	      this.roomName = room;
+	      this.room = Game.rooms[this.roomName];
+	    } else {
+	      this.roomName = room.name;
+	      this.room = room;
+	    }
+	    if (typeof queue === 'string') {
+	      this.queue = this.room.queue(queue);
+	    } else {
+	      this.queue = queue;
+	    }
+	  }
+
+	  newItem(data, prio) {
+	    const itemId = _hiveMind2.default.push(data);
+	    this.queue.queue({ id: itemId, prio: prio });
+	    return itemId;
+	  }
+
+	  itemDone(itemId) {
+	    _hiveMind2.default.delete(itemId);
+	  }
+
+	  allItems() {
+	    if (_.isUndefined(this._allItems)) {
+	      this._allItems = _hiveMind2.default.allForRoom(this.room || this.roomName);
+	    }
+	    return this._allItems;
+	  }
+
+	}
+
+	module.exports = Queueing;
 
 /***/ }
 /******/ ]);

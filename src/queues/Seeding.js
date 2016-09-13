@@ -1,13 +1,13 @@
 import $ from '../constants'
-import Queueing from '../Queueing'
+import Queueing from './Queueing'
 
 /**
  * Claim, reserve, downgrade Controllers of other rooms
  */
 class Seeding extends Queueing {
 
-  constructor(room) {
-    super($.SEED, room)
+  constructor(room, queue = $.SEED) {
+    super(room, queue)
   }
 
   TYPES: [
@@ -22,15 +22,15 @@ class Seeding extends Queueing {
    *      room: <Room>(If given, will calculate missing values based on this)
    *   }
    */
-  newItem = (data, prio)=> {
+  newItem(data, prio, controller) {
     // Set toTarget if not defined
     if(!data.toTarget) {
-      let controller = this.room.controller()
       if(!controller) { return ERR_NOT_FOUND }
       data.toTarget = {
-        data.toTarget.x = controller.pos.x
-        data.toTarget.y = controller.pos.y
-        data.toTarget.roomName = room.name
+        x: controller.pos.x,
+        y: controller.pos.y,
+        id: controller.id,
+        roomName: controller.room.name
       }
     }
     // Calculate the steps
@@ -39,48 +39,71 @@ class Seeding extends Queueing {
       steps = data.steps
     }
     else {
-      let controller = this.room.controller()
       if(!controller) { return ERR_NOT_FOUND }
       steps = this.calculateStepsFromSpawnOf(this.room, controller.pos)
     }
     // Set the data
-    let hiveMindData = {
+    const hiveMindData = {
       type: data.type || $.RESERVE,
       amount: data.amount || 0, // amount of 0 = all ye can
       steps: steps,
+      byRoomName: this.room.name,
       toTarget: {
         x: _.get(data, ['toTarget', 'x']),
         y: _.get(data, ['toTarget', 'y']),
         roomName: _.get(data, ['toTarget', 'roomName']),
+        id: _.get(data, ['toTarget', 'id'])
       }
     }
-    return super.newItem(this.queue, data, prio)
+    return super.newItem(hiveMindData, prio)
   }
 
-  itemDone = (itemId)=> {
+  itemDone(itemId) {
     super.itemDone(itemId)
   }
 
-  itemGenerator = ()=> {
+  itemGenerator() {
     // Reserve remote rooms
     const remoteRooms = this.room.memory.connectedRemoteRooms
-    for(remoteName of remoteRooms) {
+    for(let remoteName in remoteRooms) {
       let remoteRoomData = remoteRooms[remoteName]
       if(remoteRoomData.parsed) {
         const remoteRoom = Game.rooms[remoteName]
         if(remoteRoom) {
-          const controller = remoteRoom.controller()
-          if(
-            controller &&
-            controller.ticksMax - controller.ticksToDecay > 1000
-          ) {
+          const controller = remoteRoom.controller
+          if(controller) {
             const pos = controller.pos
-            const itemsExist = _.filter(this.allItems(), {
-              toTarget: {x: pos.x, y: pos.y, id: controller.id}
-            }).length > 0
-            if(!itemsExist) {
-              this.newItem()
+
+            let existingItems = _.filter(this.allItems(), {
+              toTarget: {x: pos.x, y: pos.y, roomName: pos.roomName}
+            })
+            while((
+                $.CONTROLLER_RESERVE_MAX - (
+                  (_.get(controller, ['reservation', 'ticksToEnd']) || 0) +
+                  _.sum(existingItems, 'amount')
+                )
+              ) > 1000 &&
+              existingItems.length < 10
+            ) {
+              log.cyan(`Generating Reserve-item for room ${controller.room.name}`)
+              console.log(`  Amount: ${JSON.stringify(_.sum(existingItems, 'amount'))}`)
+              console.log(`  Calc: ${$.CONTROLLER_RESERVE_MAX - (
+                  (_.get(controller, ['reservation', 'ticksToEnd']) || 0) +
+                  _.sum(existingItems, 'amount')
+                )}`)
+              console.log(`ExistingItems: ${JSON.stringify(existingItems)}`)
+              this.newItem({
+                  type: $.RESERVE,
+                  amount: 1000
+                },
+                $.PRIORITIES[$.SEED][$.RESERVE],
+                controller
+              )
+              existingItems.push({amount: 1000})
             }
+          }
+          else {
+            // Room has no controller, maybe a sourcekeeper-room?
           }
         }
         else {
@@ -88,12 +111,65 @@ class Seeding extends Queueing {
         }
       }
       else {
-        // Room should be looked at, but not my task
+        // Room-Layout should be investigated, but not my task
       }
     }
   }
 
-  calculateStepsFromSpawnOf = (room, targetPos)=> {
+  /**
+   * TODO Probably doesnt belong here
+   */
+  itemVerwertor() {
+    if(this.queue.itemCount() > 0) {
+      while(queue.peek()) {
+        const queueItem = queue.peek()
+        const itemData = hiveMind.data[queueItem.id]
+        const spawnPriority = $.PRIORITIES[$.SPAWN][$.KIND_CORRUPTOR]
+        const memory = {
+          kind: $.KIND_CORRUPTOR,
+          memory: {
+            role: $.ZERG,
+            item: queueItem
+          }
+        }
+        const res = this.room.pushToQueue(
+          $.SPAWN,
+          {memory: creepMemory, kind: creepMemory.kind},
+          spawnPriority
+        )
+        if(res) {
+          queue.dequeue()
+        }
+
+      }
+    }
+  }
+
+
+  spawnCreep(spawnPriority, creepMemory, opts = {}) {
+    if(!_.isUndefined(opts.assignItem)) {
+      creepMemory.item = creepMemory.item || {}
+      let itemId = hiveMind.push(opts.assignItem.data)
+      creepMemory.item.id = itemId
+      if(!_.isUndefined(opts.assignItem.priority)) {
+        creepMemory.item.prio = opts.assignItem.priority
+      }
+      else {
+        creepMemory.item.prio = 0
+      }
+    }
+    if(_.isUndefined(creepMemory.myRoomName)) {
+      creepMemory.myRoomName = this.room.name
+    }
+    this.room.pushToQueue(
+      $.SPAWN,
+      {memory: creepMemory, kind: creepMemory.kind},
+      spawnPriority
+    )
+  }
+
+
+  calculateStepsFromSpawnOf(room, targetPos) {
     //TODO Implement me
     return 0
   }

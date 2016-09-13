@@ -25,6 +25,8 @@ import 'babel-preset-es2017/polyfill'
 import profiler from 'screeps-profiler'
 import helper from './helper'
 
+import Seeding from './queues/Seeding.js'
+
 // Maximum range for a remote mine, assuming 100% effectiveness: 190 squares
 
 // QueueData:
@@ -47,6 +49,12 @@ module.exports.loop = ()=> profiler.wrap(()=> {
     // log.cyan('Removing Old HiveMindItems')
     // new Overlord('NoFrigginRoom').removeOldHiveMindItems()
     new Overseer().check()
+  }
+  if(Game.time % 3 === 0) {
+    for(let room of new Overseer().myMainRooms()) {
+      let seeder = new Seeding(room)
+      seeder.itemGenerator()
+    }
   }
 
   modwide.h = helper

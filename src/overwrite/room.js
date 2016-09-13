@@ -14,8 +14,8 @@ Room.prototype.spawns = function(filter = {}) {
   return this.find(FIND_MY_STRUCTURES, options)
 }
 
-Room.prototype.queue = function(name) {
-  return new PriorityQueue(this.memory.priorityQueues[name])
+Room.prototype.queue = function(queueName) {
+  return new PriorityQueue(this.memory.priorityQueues[queueName])
 }
 
 Room.prototype.pushToQueue = function(queue, item, priority) {

@@ -75,6 +75,8 @@ const exports = Object.freeze({
   CONTROLLER_RESERVE: CONTROLLER_RESERVE,
   CONTROLLER_DOWNGRADE: CONTROLLER_DOWNGRADE,
 
+  CONTROLLER_RESERVE_MAX: 5000,
+
   PRIORITIES: {
     [CARRY]: {
       [STRUCTURE_SPAWN]: 1000,
@@ -91,6 +93,12 @@ const exports = Object.freeze({
     },
     [SPAWN]: {
       [KIND_INFESTOR]: 1000,
+      [KIND_CORRUPTOR]: 5000,
+    },
+    [SEED]: {
+      [CLAIM]: 1000,
+      [RESERVE]: 2000,
+      [DOWNGRADE]: 3000
     }
   },
 

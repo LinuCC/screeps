@@ -20,11 +20,12 @@ const hiveMind = {
   },
 
   allForRoom: function(room) {
+    const roomName = (typeof room === 'string') ? room : room.name
     return _.filter(
       this.data, (entry)=> (
-        (entry.fromSource && entry.fromSource.roomName == room.name) ||
-        (entry.toTarget && entry.toTarget.roomName == room.name) ||
-        (entry.byRoomName == room.name)
+        (entry.fromSource && entry.fromSource.roomName == roomName) ||
+        (entry.toTarget && entry.toTarget.roomName == roomName) ||
+        (entry.byRoomName == roomName)
       )
     )
   },
