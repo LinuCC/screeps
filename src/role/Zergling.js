@@ -241,8 +241,10 @@ class Zergling {
     let memObject = false
     switch(type) {
       case TYPE_SOURCE:
-        memObject = hiveMind.data[this.zergling.memory.item.id].fromSource; break
+        memObject = hiveMind.data[this.zergling.memory.item.id].fromSource;
+        break
       case TYPE_TARGET:
+      case $.TYPE_SEED:
         memObject = hiveMind.data[this.zergling.memory.item.id].toTarget; break
     }
     if(!memObject) { this.done(MY_ERR_WTF, 'workWith#memObject'); return; }
@@ -259,10 +261,15 @@ class Zergling {
     if(object) {
       if(this.zergling.pos.inRangeTo(object, range)) {
         switch(type) {
-          case TYPE_SOURCE:
-            this.withdrawFrom(object); break
+          case TYPE_SOURCE: this.withdrawFrom(object); break
           case TYPE_TARGET:
-            this.transferTo(object); break
+            if(memObject.workType === $.SEED) {
+              $.TYPE_SEED: this.seedTo(object);
+            }
+            else {
+              this.transferTo(object)
+            }
+            break
         }
       }
       else {
@@ -353,6 +360,19 @@ class Zergling {
     if(res != OK) { this.handleActionResult(res, TYPE_TARGET, target) }
   }
 
+  /**
+   * Work with controllers
+   */
+  seedTo = (object) => {
+    let data = hiveMind.data[this.zergling.memory.item.id]
+    let type = data.type
+    switch(type) {
+      case $.RESERVE: this.zergling.reserveController(object); break
+      case $.CLAIM: this.zergling.claimController(object); break
+      case $.DOWNGRADE: this.zergling.attackController(object); break
+    }
+  }
+
   done = (res, debugInfo = false)=> {
     let itemData = hiveMind.data[_.get(this.zergling.memory, ['item', 'id'])]
     if(this.zergling.memory.sourcing) {
@@ -403,6 +423,7 @@ class Zergling {
   calcActionRange = (type, object)=> {
     switch(type) {
       case TYPE_SOURCE:
+      case $.TYPE_SEED:
         return 1; break
       case TYPE_TARGET:
         return (

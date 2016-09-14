@@ -45,6 +45,7 @@ class Seeding extends Queueing {
     // Set the data
     const hiveMindData = {
       type: data.type || $.RESERVE,
+      workType: $.SEED,
       amount: data.amount || 0, // amount of 0 = all ye can
       steps: steps,
       byRoomName: this.room.name,

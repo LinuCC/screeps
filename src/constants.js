@@ -24,6 +24,10 @@ const CONTROLLER_CLAIM = 'claim'
 const CONTROLLER_RESERVE = 'reserve'
 const CONTROLLER_DOWNGRADE = 'downgrade'
 
+const TYPE_SOURCE = 0
+const TYPE_TARGET = 1
+const TYPE_SEED = 2
+
 const exports = Object.freeze({
   ROOM_CENTER_X: 25,
   ROOM_CENTER_Y: 25,
@@ -133,6 +137,10 @@ const exports = Object.freeze({
   CLAIM: CLAIM,
   RESERVE: RESERVE,
   DOWNGRADE: DOWNGRADE,
+
+  TYPE_SOURCE: TYPE_SOURCE,
+  TYPE_TARGET: TYPE_TARGET,
+  TYPE_SEED: TYPE_SEED,
 });
 
 module.exports = exports
