@@ -52,3 +52,14 @@ Room.prototype.clearDrawings = function() {
 Room.prototype.posByXY = function({x, y}) {
   return new RoomPostion(x, y, this.name)
 }
+
+Room.prototype.maxSpawnCost = function() {
+  throw new Error('WATT IS EnerGYMAZ')
+  return _.sum(
+    room.find(FIND_MY_STRUCTURES, {filter: (struc)=> (
+      struc.structureType == STRUCTURE_EXTENSION ||
+      struc.structureType == STRUCTURE_SPAWN
+    )}),
+    'energyMax'
+  )
+}
