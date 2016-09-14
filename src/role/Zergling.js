@@ -176,7 +176,10 @@ class Zergling {
    * Handles the memory-state for the new item, so that the creep starts working
    */
   initWorkStart = ()=> {
-    if(_.isUndefined(hiveMind.data[this.zergling.memory.item.id].fromSource)) {
+    if(
+      _.isUndefined(hiveMind.data[this.zergling.memory.item.id].fromSource) &&
+      this.zergling.memory.kind !== $.KIND_CORRUPTOR
+    ) {
       // fromSource does not exist
       let item = hiveMind.data[this.zergling.memory.item.id]
       if(this.zergling.carry[item.res] >= item.toTarget.amount) {
@@ -239,13 +242,13 @@ class Zergling {
 
   workWith = (type)=> {
     let memObject = false
+    const itemData = hiveMind.data[this.zergling.memory.item.id]
     switch(type) {
       case TYPE_SOURCE:
-        memObject = hiveMind.data[this.zergling.memory.item.id].fromSource;
+        memObject = itemData.fromSource;
         break
       case TYPE_TARGET:
-      case $.TYPE_SEED:
-        memObject = hiveMind.data[this.zergling.memory.item.id].toTarget; break
+        memObject = itemData.toTarget; break
     }
     if(!memObject) { this.done(MY_ERR_WTF, 'workWith#memObject'); return; }
     if(!memObject.id) {
@@ -257,14 +260,14 @@ class Zergling {
       this.done(MY_ERR_WTF, 'workWith#object');
       return;
     }
-    let range = this.calcActionRange(type, object)
+    let range = this.calcActionRange(type, object, itemData)
     if(object) {
       if(this.zergling.pos.inRangeTo(object, range)) {
         switch(type) {
           case TYPE_SOURCE: this.withdrawFrom(object); break
           case TYPE_TARGET:
-            if(memObject.workType === $.SEED) {
-              $.TYPE_SEED: this.seedTo(object);
+            if(itemData.workType === $.SEED) {
+              this.seedTo(object);
             }
             else {
               this.transferTo(object)
@@ -420,10 +423,10 @@ class Zergling {
     }
   }
 
-  calcActionRange = (type, object)=> {
+  calcActionRange = (type, object, itemData)=> {
+    if(itemData.workType === $.SEED) { return 1 }
     switch(type) {
       case TYPE_SOURCE:
-      case $.TYPE_SEED:
         return 1; break
       case TYPE_TARGET:
         return (

@@ -17,7 +17,7 @@ class Spawning extends Queueing {
    * Generates a new Spawning-item.
    */
   newItem(data, prio, opts = {}) {
-    let creepMemory = opts.memory || {}
+    let creepMemory = data.memory || {}
     if(!_.isUndefined(opts.assignItem)) {
       creepMemory.item = creepMemory.item || {}
       let itemId = hiveMind.push(opts.assignItem.data)
@@ -32,12 +32,16 @@ class Spawning extends Queueing {
     if(_.isUndefined(creepMemory.myRoomName)) {
       creepMemory.myRoomName = this.room.name
     }
+    if(_.isUndefined(creepMemory.role)) {
+      creepMemory.role = data.role
+    }
 
     // Set the data
     const hiveMindData = {
       memory: creepMemory,
       kind: data.kind || $.KIND_ZERGLING,
-      role: data.role || $.ROLE_ZERG
+      role: data.role || $.ROLE_ZERG,
+      body: data.body || undefined
     }
     return super.newItem(hiveMindData, prio)
   }
@@ -63,10 +67,7 @@ class Spawning extends Queueing {
         this.newItem({
           role: $.ZERG,
           kind: type,
-          memory: {
-            byRoomName: this.room.name,
-            body: this.bodyFor(type)
-          }
+          memory: {body: this.bodyFor(type)}
         })
       }
     }
@@ -175,4 +176,4 @@ class Spawning extends Queueing {
   }
 }
 
-module.exports = Seeding
+module.exports = Spawning

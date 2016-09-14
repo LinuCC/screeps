@@ -288,7 +288,6 @@ class Overlord {
       item.fromSource && item.fromSource.id == source.id &&
       item.stage != TYPE_TARGET
     ))
-    log.red(JSON.stringify(sourceItems))
     let existingDrawAmount = _.sum(sourceItems, 'fromSource.amount')
     let stillStored = 0
     if(source.store) {
@@ -297,13 +296,10 @@ class Overlord {
     else {
       stillStored = source.amount - existingDrawAmount
     }
-    log.green(`Exsiting: ${existingDrawAmount}, Stored: ${stillStored}`)
     let itemCount = sourceItems.length
-    log.green(`ItemCount: ${JSON.stringify(sourceItems)}`)
     while(
       stillStored > this.creepCarryAmount && itemCount < this.maxItemsPerTask
     ) {
-      log.cyan(`Generating source-task for ${source.id}, ${source.pos.roomName}`)
       let targetData = null
       if(taskType == CARRY && !dontFindTarget) {
         targetData = this.findCarryTargetFor(source, RESOURCE_ENERGY)
@@ -324,9 +320,6 @@ class Overlord {
       else {
         break // No suitable target found
       }
-      console.log(
-        `Adding source-task: ${JSON.stringify(target.pos)} at ${Game.time}.`
-      )
       this.addItem(
         queue, source, target, RESOURCE_ENERGY, this.creepCarryAmount,
         prio
@@ -845,7 +838,7 @@ class Overlord {
   }
 
   initiateRemoteRoomParsing = (remoteRoomName)=> {
-    console.log(`Please give me info on remoteRoom ${remoteRoomName}`)
+    log.cyan(`Please give me info on remoteRoom ${remoteRoomName}`)
     // Scout, cache & pave path with roads
     // let mutalisks = _.filter(
     //   Game.creeps,
@@ -923,7 +916,6 @@ class Overlord {
       for(let queueItem of queue) {
         let item = Memory['hiveMind'][queueItem.id]
         if(!item) {
-          log.red(`Item ${queueItem.id} missing!`)
           continue
         }
         let fromStr = ''

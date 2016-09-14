@@ -152,7 +152,7 @@ var modwide = global; module.exports =
 	// QueueData:
 	// data[roomName][id]
 
-	_screepsProfiler2.default.enable();
+	// profiler.enable()
 
 	module.exports.loop = () => _screepsProfiler2.default.wrap(() => {
 
@@ -164,7 +164,7 @@ var modwide = global; module.exports =
 	  if (Game.time % 5000 == 0) {
 	    _creepWatcher2.default.cleanupMemory();
 	  }
-	  if (Game.time % 1 == 0) {
+	  if (Game.time % 5 == 0) {
 	    // Logging purposes
 	    // log.cyan('Removing Old HiveMindItems')
 	    // new Overlord('NoFrigginRoom').removeOldHiveMindItems()
@@ -174,6 +174,7 @@ var modwide = global; module.exports =
 	    for (let room of new _Overseer2.default().myMainRooms()) {
 	      let seeder = new _Seeding2.default(room);
 	      seeder.itemGenerator();
+	      seeder.itemVerwertor();
 	    }
 	  }
 
@@ -374,6 +375,11 @@ var modwide = global; module.exports =
 	  let y = _ref.y;
 
 	  return new RoomPostion(x, y, this.name);
+	};
+
+	Room.prototype.maxSpawnCost = function () {
+	  throw new Error('WATT IS EnerGYMAZ');
+	  return _.sum(room.find(FIND_MY_STRUCTURES, { filter: struc => struc.structureType == STRUCTURE_EXTENSION || struc.structureType == STRUCTURE_SPAWN }), 'energyMax');
 	};
 
 /***/ },
@@ -625,6 +631,10 @@ var modwide = global; module.exports =
 	const CONTROLLER_RESERVE = 'reserve';
 	const CONTROLLER_DOWNGRADE = 'downgrade';
 
+	const TYPE_SOURCE = 0;
+	const TYPE_TARGET = 1;
+	const TYPE_SEED = 2;
+
 	const _exports = Object.freeze({
 	  ROOM_CENTER_X: 25,
 	  ROOM_CENTER_Y: 25,
@@ -644,8 +654,11 @@ var modwide = global; module.exports =
 	  }),
 	  ZERG_KINDS: [KIND_DRONE, KIND_ZERGLING, KIND_INFESTOR, KIND_CORRUPTOR, KIND_MUTALISK],
 	  ZERG_PARTS_TEMPLATES: {
-	    KIND_DRONE: [CARRY],
-	    KIND_ZERGLING: [WORK, WORK, WORK, CARRY, CARRY]
+	    [KIND_DRONE]: [CARRY],
+	    [KIND_ZERGLING]: [WORK, WORK, WORK, CARRY, CARRY],
+	    [KIND_INFESTOR]: [WORK],
+	    [KIND_CORRUPTOR]: [CLAIM],
+	    [KIND_MUTALISK]: [MOVE]
 	  },
 	  PRIO_QUEUES: [WORK, CARRY, SEED, SCOUT, EXCAVATE, UPGRADE, SPAWN],
 
@@ -718,7 +731,11 @@ var modwide = global; module.exports =
 
 	  CLAIM: CLAIM,
 	  RESERVE: RESERVE,
-	  DOWNGRADE: DOWNGRADE
+	  DOWNGRADE: DOWNGRADE,
+
+	  TYPE_SOURCE: TYPE_SOURCE,
+	  TYPE_TARGET: TYPE_TARGET,
+	  TYPE_SEED: TYPE_SEED
 	});
 
 	module.exports = _exports;
@@ -2011,7 +2028,6 @@ var modwide = global; module.exports =
 
 	      let dontFindTarget = options.dontFindTarget || false;
 	      let sourceItems = _.filter(_this.existingItems, item => item.fromSource && item.fromSource.id == source.id && item.stage != TYPE_TARGET);
-	      log.red(JSON.stringify(sourceItems));
 	      let existingDrawAmount = _.sum(sourceItems, 'fromSource.amount');
 	      let stillStored = 0;
 	      if (source.store) {
@@ -2019,11 +2035,8 @@ var modwide = global; module.exports =
 	      } else {
 	        stillStored = source.amount - existingDrawAmount;
 	      }
-	      log.green(`Exsiting: ${ existingDrawAmount }, Stored: ${ stillStored }`);
 	      let itemCount = sourceItems.length;
-	      log.green(`ItemCount: ${ JSON.stringify(sourceItems) }`);
 	      while (stillStored > _this.creepCarryAmount && itemCount < _this.maxItemsPerTask) {
-	        log.cyan(`Generating source-task for ${ source.id }, ${ source.pos.roomName }`);
 	        let targetData = null;
 	        if (taskType == CARRY && !dontFindTarget) {
 	          targetData = _this.findCarryTargetFor(source, RESOURCE_ENERGY);
@@ -2039,7 +2052,6 @@ var modwide = global; module.exports =
 	        } else if (dontFindTarget) {} else {
 	          break; // No suitable target found
 	        }
-	        console.log(`Adding source-task: ${ JSON.stringify(target.pos) } at ${ Game.time }.`);
 	        _this.addItem(queue, source, target, RESOURCE_ENERGY, _this.creepCarryAmount, prio);
 	        stillStored -= _this.creepCarryAmount;
 	        itemCount += 1;
@@ -2423,7 +2435,7 @@ var modwide = global; module.exports =
 	    };
 
 	    this.initiateRemoteRoomParsing = remoteRoomName => {
-	      console.log(`Please give me info on remoteRoom ${ remoteRoomName }`);
+	      log.cyan(`Please give me info on remoteRoom ${ remoteRoomName }`);
 	      // Scout, cache & pave path with roads
 	      // let mutalisks = _.filter(
 	      //   Game.creeps,
@@ -2492,7 +2504,6 @@ var modwide = global; module.exports =
 	        for (let queueItem of queue) {
 	          let item = Memory['hiveMind'][queueItem.id];
 	          if (!item) {
-	            log.red(`Item ${ queueItem.id } missing!`);
 	            continue;
 	          }
 	          let fromStr = '';
@@ -3014,7 +3025,7 @@ var modwide = global; module.exports =
 	    };
 
 	    this.initWorkStart = () => {
-	      if (_.isUndefined(_hiveMind2.default.data[this.zergling.memory.item.id].fromSource)) {
+	      if (_.isUndefined(_hiveMind2.default.data[this.zergling.memory.item.id].fromSource) && this.zergling.memory.kind !== _constants2.default.KIND_CORRUPTOR) {
 	        // fromSource does not exist
 	        let item = _hiveMind2.default.data[this.zergling.memory.item.id];
 	        if (this.zergling.carry[item.res] >= item.toTarget.amount) {
@@ -3067,11 +3078,13 @@ var modwide = global; module.exports =
 
 	    this.workWith = type => {
 	      let memObject = false;
+	      const itemData = _hiveMind2.default.data[this.zergling.memory.item.id];
 	      switch (type) {
 	        case TYPE_SOURCE:
-	          memObject = _hiveMind2.default.data[this.zergling.memory.item.id].fromSource;break;
+	          memObject = itemData.fromSource;
+	          break;
 	        case TYPE_TARGET:
-	          memObject = _hiveMind2.default.data[this.zergling.memory.item.id].toTarget;break;
+	          memObject = itemData.toTarget;break;
 	      }
 	      if (!memObject) {
 	        this.done(MY_ERR_WTF, 'workWith#memObject');return;
@@ -3085,14 +3098,19 @@ var modwide = global; module.exports =
 	        this.done(MY_ERR_WTF, 'workWith#object');
 	        return;
 	      }
-	      let range = this.calcActionRange(type, object);
+	      let range = this.calcActionRange(type, object, itemData);
 	      if (object) {
 	        if (this.zergling.pos.inRangeTo(object, range)) {
 	          switch (type) {
 	            case TYPE_SOURCE:
 	              this.withdrawFrom(object);break;
 	            case TYPE_TARGET:
-	              this.transferTo(object);break;
+	              if (itemData.workType === _constants2.default.SEED) {
+	                this.seedTo(object);
+	              } else {
+	                this.transferTo(object);
+	              }
+	              break;
 	          }
 	        } else {
 	          if (object.structureType == STRUCTURE_CONTROLLER) {
@@ -3172,6 +3190,19 @@ var modwide = global; module.exports =
 	      }
 	    };
 
+	    this.seedTo = object => {
+	      let data = _hiveMind2.default.data[this.zergling.memory.item.id];
+	      let type = data.type;
+	      switch (type) {
+	        case _constants2.default.RESERVE:
+	          this.zergling.reserveController(object);break;
+	        case _constants2.default.CLAIM:
+	          this.zergling.claimController(object);break;
+	        case _constants2.default.DOWNGRADE:
+	          this.zergling.attackController(object);break;
+	      }
+	    };
+
 	    this.done = function (res) {
 	      let debugInfo = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
 
@@ -3215,7 +3246,10 @@ var modwide = global; module.exports =
 	      }
 	    };
 
-	    this.calcActionRange = (type, object) => {
+	    this.calcActionRange = (type, object, itemData) => {
+	      if (itemData.workType === _constants2.default.SEED) {
+	        return 1;
+	      }
 	      switch (type) {
 	        case TYPE_SOURCE:
 	          return 1;break;
@@ -3318,6 +3352,11 @@ var modwide = global; module.exports =
 
 	  /**
 	   * Handles the memory-state for the new item, so that the creep starts working
+	   */
+
+
+	  /**
+	   * Work with controllers
 	   */
 
 
@@ -4364,6 +4403,14 @@ var modwide = global; module.exports =
 
 	var _Queueing2 = _interopRequireDefault(_Queueing);
 
+	var _Spawning = __webpack_require__(79);
+
+	var _Spawning2 = _interopRequireDefault(_Spawning);
+
+	var _hiveMind = __webpack_require__(3);
+
+	var _hiveMind2 = _interopRequireDefault(_hiveMind);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	/**
@@ -4379,9 +4426,12 @@ var modwide = global; module.exports =
 
 	  /**
 	   * Generates a new Seeding-item.
-	   * @param opts - {
-	   *      room: <Room>(If given, will calculate missing values based on this)
-	   *   }
+	   * @param data - The data of the item.
+	   *    If data.toTarget does not exist, it will be generated by getting the
+	   *    data from the given controller.
+	   *    If steps do not exist, they will be calculated.
+	   * @param prio - The priority of the item in the queue.
+	   * @param controller - The target-controller. We need dis.
 	   */
 	  newItem(data, prio, controller) {
 	    // Set toTarget if not defined
@@ -4409,6 +4459,7 @@ var modwide = global; module.exports =
 	    // Set the data
 	    const hiveMindData = {
 	      type: data.type || _constants2.default.RESERVE,
+	      workType: _constants2.default.SEED,
 	      amount: data.amount || 0, // amount of 0 = all ye can
 	      steps: steps,
 	      byRoomName: this.room.name,
@@ -4438,18 +4489,14 @@ var modwide = global; module.exports =
 	          if (controller) {
 	            const pos = controller.pos;
 
-	            let existingItems = _.filter(this.allItems(), {
-	              toTarget: { x: pos.x, y: pos.y, roomName: pos.roomName }
-	            });
-	            while (_constants2.default.CONTROLLER_RESERVE_MAX - ((_.get(controller, ['reservation', 'ticksToEnd']) || 0) + _.sum(existingItems, 'amount')) > 1000 && existingItems.length < 10) {
+	            let existingItems = _.filter(this.allItems().concat(new _Spawning2.default(this.room).allItems()), { toTarget: { x: pos.x, y: pos.y, roomName: pos.roomName } });
+	            while (_constants2.default.CONTROLLER_RESERVE_MAX - ((_.get(controller, ['reservation', 'ticksToEnd']) || 0) + _.sum(existingItems, 'amount')) > 2000 && existingItems.length < 10) {
 	              log.cyan(`Generating Reserve-item for room ${ controller.room.name }`);
 	              console.log(`  Amount: ${ JSON.stringify(_.sum(existingItems, 'amount')) }`);
 	              console.log(`  Calc: ${ _constants2.default.CONTROLLER_RESERVE_MAX - ((_.get(controller, ['reservation', 'ticksToEnd']) || 0) + _.sum(existingItems, 'amount')) }`);
 	              console.log(`ExistingItems: ${ JSON.stringify(existingItems) }`);
-	              this.newItem({
-	                type: _constants2.default.RESERVE,
-	                amount: 1000
-	              }, _constants2.default.PRIORITIES[_constants2.default.SEED][_constants2.default.RESERVE], controller);
+	              const prio = _constants2.default.PRIORITIES[_constants2.default.SEED][_constants2.default.RESERVE] + Math.floor(_.get(controller, ['reservation', 'ticksToEnd']) * 0.01);
+	              this.newItem({ type: _constants2.default.RESERVE, amount: 1000 }, prio, controller);
 	              existingItems.push({ amount: 1000 });
 	            }
 	          } else {
@@ -4469,20 +4516,23 @@ var modwide = global; module.exports =
 	   */
 	  itemVerwertor() {
 	    if (this.queue.itemCount() > 0) {
-	      while (queue.peek()) {
-	        const queueItem = queue.peek();
-	        const itemData = hiveMind.data[queueItem.id];
+	      while (this.queue.peek()) {
+	        const queueItem = this.queue.peek();
+	        const itemData = _hiveMind2.default.data[queueItem.id];
 	        const spawnPriority = _constants2.default.PRIORITIES[_constants2.default.SPAWN][_constants2.default.KIND_CORRUPTOR];
-	        const memory = {
-	          kind: _constants2.default.KIND_CORRUPTOR,
-	          memory: {
-	            role: _constants2.default.ZERG,
-	            item: queueItem
-	          }
-	        };
-	        const res = this.room.pushToQueue(_constants2.default.SPAWN, { memory: creepMemory, kind: creepMemory.kind }, spawnPriority);
+	        const memory = { item: queueItem };
+	        const res = new _Spawning2.default(this.room).newItem({
+	          role: _constants2.default.ROLE_ZERG, kind: _constants2.default.KIND_CORRUPTOR, memory: memory,
+	          body: [CLAIM, CLAIM, CLAIM, CLAIM, CLAIM, MOVE, MOVE, MOVE]
+	        }, spawnPriority);
+	        log.blue(`YAYY:: ${ res }`);
+	        // const res = this.room.pushToQueue(
+	        //   $.SPAWN,
+	        //   {memory: creepMemory, kind: creepMemory.kind},
+	        //   spawnPriority
+	        // )
 	        if (res) {
-	          queue.dequeue();
+	          this.queue.dequeue();
 	        }
 	      }
 	    }
@@ -4493,7 +4543,7 @@ var modwide = global; module.exports =
 
 	    if (!_.isUndefined(opts.assignItem)) {
 	      creepMemory.item = creepMemory.item || {};
-	      let itemId = hiveMind.push(opts.assignItem.data);
+	      let itemId = _hiveMind2.default.push(opts.assignItem.data);
 	      creepMemory.item.id = itemId;
 	      if (!_.isUndefined(opts.assignItem.priority)) {
 	        creepMemory.item.prio = opts.assignItem.priority;
@@ -4571,6 +4621,187 @@ var modwide = global; module.exports =
 	}
 
 	module.exports = Queueing;
+
+/***/ },
+/* 79 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _constants = __webpack_require__(6);
+
+	var _constants2 = _interopRequireDefault(_constants);
+
+	var _Queueing = __webpack_require__(78);
+
+	var _Queueing2 = _interopRequireDefault(_Queueing);
+
+	var _hiveMind = __webpack_require__(3);
+
+	var _hiveMind2 = _interopRequireDefault(_hiveMind);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	/**
+	 * Spawn creeps
+	 * TODO Maintain the queue by removing unspawnable items (for example if
+	 * extensions got destroyed)
+	 */
+	class Spawning extends _Queueing2.default {
+
+	  constructor(room) {
+	    let queue = arguments.length <= 1 || arguments[1] === undefined ? _constants2.default.SPAWN : arguments[1];
+
+	    super(room, queue);
+
+	    _initialiseProps.call(this);
+	  }
+
+	  /**
+	   * Generates a new Spawning-item.
+	   */
+	  newItem(data, prio) {
+	    let opts = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+
+	    let creepMemory = data.memory || {};
+	    if (!_.isUndefined(opts.assignItem)) {
+	      creepMemory.item = creepMemory.item || {};
+	      let itemId = _hiveMind2.default.push(opts.assignItem.data);
+	      creepMemory.item.id = itemId;
+	      if (!_.isUndefined(opts.assignItem.priority)) {
+	        creepMemory.item.prio = opts.assignItem.priority;
+	      } else {
+	        creepMemory.item.prio = 0;
+	      }
+	    }
+	    if (_.isUndefined(creepMemory.myRoomName)) {
+	      creepMemory.myRoomName = this.room.name;
+	    }
+	    if (_.isUndefined(creepMemory.role)) {
+	      creepMemory.role = data.role;
+	    }
+
+	    // Set the data
+	    const hiveMindData = {
+	      memory: creepMemory,
+	      kind: data.kind || _constants2.default.KIND_ZERGLING,
+	      role: data.role || _constants2.default.ROLE_ZERG,
+	      body: data.body || undefined
+	    };
+	    return super.newItem(hiveMindData, prio);
+	  }
+
+	  itemDone(itemId) {
+	    super.itemDone(itemId);
+	  }
+
+	  itemGenerator() {
+	    // Simple target-zerg-count
+	    for (let type of this.room.memory.targetZergCount) {
+	      const count = this.room.memory.targetZergCount[type];
+	      const existingZergs = _.filter(Game.creeps, zerg => zerg.memory.role === type && (zerg.memory.byRoomName === this.room.name || zerg.pos.roomName === this.room.name));
+	      let queuedCreeps = this.queue.filter({ memory: { kind: type, role: _constants2.default.ROLE_ZERG } }).length;
+	      while (count > existingZergs + queuedCreeps) {
+	        this.newItem({
+	          role: _constants2.default.ZERG,
+	          kind: type,
+	          memory: { body: this.bodyFor(type) }
+	        });
+	      }
+	    }
+	  }
+
+	  bodyFor(zergType) {
+	    const maxSpawnCost = this.room.maxSpawnCost();
+	    let body = _constants2.default.ZERG_PARTS_TEMPLATES[zergType];
+	    return this.calcCreepBody(this.room, body, maxSpawnCost);
+	  }
+
+	  /**
+	   * TODO Probably doesnt belong here
+	   */
+	  itemVerwertor() {
+	    if (this.queue.itemCount() > 0) {
+	      while (queue.peek()) {
+	        const queueItem = queue.peek();
+	        const itemData = _hiveMind2.default.data[queueItem.id];
+	        const spawnPriority = _constants2.default.PRIORITIES[_constants2.default.SPAWN][_constants2.default.KIND_CORRUPTOR];
+	        const memory = {
+	          kind: _constants2.default.KIND_CORRUPTOR,
+	          memory: {
+	            role: _constants2.default.ZERG,
+	            item: queueItem
+	          }
+	        };
+	        const res = this.room.pushToQueue(_constants2.default.SPAWN, { memory: creepMemory, kind: creepMemory.kind }, spawnPriority);
+	        if (res) {
+	          queue.dequeue();
+	        }
+	      }
+	    }
+	  }
+
+	  spawnCreep(spawnPriority, creepMemory) {
+	    let opts = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+
+	    if (!_.isUndefined(opts.assignItem)) {
+	      creepMemory.item = creepMemory.item || {};
+	      let itemId = _hiveMind2.default.push(opts.assignItem.data);
+	      creepMemory.item.id = itemId;
+	      if (!_.isUndefined(opts.assignItem.priority)) {
+	        creepMemory.item.prio = opts.assignItem.priority;
+	      } else {
+	        creepMemory.item.prio = 0;
+	      }
+	    }
+	    if (_.isUndefined(creepMemory.myRoomName)) {
+	      creepMemory.myRoomName = this.room.name;
+	    }
+	    this.room.pushToQueue(_constants2.default.SPAWN, { memory: creepMemory, kind: creepMemory.kind }, spawnPriority);
+	  }
+
+	  calculateStepsFromSpawnOf(room, targetPos) {
+	    //TODO Implement me
+	    return 0;
+	  }
+	}
+
+	var _initialiseProps = function () {
+	  this.calcCreepBody = function (room, parts) {
+	    let maxCost = arguments.length <= 2 || arguments[2] === undefined ? 0 : arguments[2];
+	    let usingStreet = arguments.length <= 3 || arguments[3] === undefined ? true : arguments[3];
+
+	    let partCost = {
+	      [WORK]: 100,
+	      [CARRY]: 50,
+	      [MOVE]: 50,
+	      [ATTACK]: 80,
+	      [RANGED_ATTACK]: 150,
+	      [HEAL]: 250
+	    };
+	    let roomMaxCost = _.sum(room.find(FIND_MY_STRUCTURES, { filter: struc => struc.structureType == STRUCTURE_EXTENSION || struc.structureType == STRUCTURE_SPAWN }), 'energy');
+	    let max = maxCost != 0 ? maxCost : roomMaxCost;
+	    let partBlockCost = parts.reduce((memo, part) => memo + partCost[part], 0);
+	    let moveRatio = usingStreet ? 1 / 2 : 1;
+	    let movesPerBlock = parts.length * moveRatio;
+	    let moveCost = movesPerBlock * partCost[MOVE];
+	    // We should add one MOVE to the 6 calculated MOVE if we have 13 parts
+	    let hiddenMoveCost = movesPerBlock % 1 > 0 ? partCost[MOVE] / 2 : 0;
+	    let wholeBlockCost = partBlockCost + moveCost;
+	    let maxBlockCount = Math.floor(50 / (parts.length + movesPerBlock));
+	    let blockCount = Math.floor((max - hiddenMoveCost) / wholeBlockCost);
+	    blockCount = maxBlockCount < blockCount ? maxBlockCount : blockCount;
+	    let moveBlockCount = Math.ceil(movesPerBlock * blockCount);
+	    let body = [];
+	    _.range(moveBlockCount).forEach(() => body.push(MOVE));
+	    for (let i = 0; i < blockCount; i += 1) {
+	      body = body.concat(parts);
+	    }
+	    return body;
+	  };
+	};
+
+	module.exports = Spawning;
 
 /***/ }
 /******/ ]);

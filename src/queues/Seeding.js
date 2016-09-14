@@ -1,5 +1,7 @@
 import $ from '../constants'
 import Queueing from './Queueing'
+import Spawning from './Spawning'
+import hiveMind from './../hiveMind'
 
 /**
  * Claim, reserve, downgrade Controllers of other rooms
@@ -78,15 +80,16 @@ class Seeding extends Queueing {
           if(controller) {
             const pos = controller.pos
 
-            let existingItems = _.filter(this.allItems(), {
-              toTarget: {x: pos.x, y: pos.y, roomName: pos.roomName}
-            })
+            let existingItems = _.filter(
+              this.allItems().concat(new Spawning(this.room).allItems()),
+              {toTarget: {x: pos.x, y: pos.y, roomName: pos.roomName}}
+            )
             while((
                 $.CONTROLLER_RESERVE_MAX - (
                   (_.get(controller, ['reservation', 'ticksToEnd']) || 0) +
                   _.sum(existingItems, 'amount')
                 )
-              ) > 1000 &&
+              ) > 2000 &&
               existingItems.length < 10
             ) {
               log.cyan(`Generating Reserve-item for room ${controller.room.name}`)
@@ -96,13 +99,13 @@ class Seeding extends Queueing {
                   _.sum(existingItems, 'amount')
                 )}`)
               console.log(`ExistingItems: ${JSON.stringify(existingItems)}`)
-              this.newItem({
-                  type: $.RESERVE,
-                  amount: 1000
-                },
-                $.PRIORITIES[$.SEED][$.RESERVE],
-                controller
+              const prio = (
+                $.PRIORITIES[$.SEED][$.RESERVE] +
+                Math.floor(
+                  _.get(controller, ['reservation', 'ticksToEnd']) * 0.01
+                )
               )
+              this.newItem({type: $.RESERVE, amount: 1000}, prio, controller)
               existingItems.push({amount: 1000})
             }
           }
@@ -125,24 +128,23 @@ class Seeding extends Queueing {
    */
   itemVerwertor() {
     if(this.queue.itemCount() > 0) {
-      while(queue.peek()) {
-        const queueItem = queue.peek()
+      while(this.queue.peek()) {
+        const queueItem = this.queue.peek()
         const itemData = hiveMind.data[queueItem.id]
         const spawnPriority = $.PRIORITIES[$.SPAWN][$.KIND_CORRUPTOR]
-        const memory = {
-          kind: $.KIND_CORRUPTOR,
-          memory: {
-            role: $.ZERG,
-            item: queueItem
-          }
-        }
-        const res = this.room.pushToQueue(
-          $.SPAWN,
-          {memory: creepMemory, kind: creepMemory.kind},
-          spawnPriority
-        )
+        const memory = {item: queueItem}
+        const res = new Spawning(this.room).newItem({
+          role: $.ROLE_ZERG, kind: $.KIND_CORRUPTOR, memory: memory,
+          body: [CLAIM, CLAIM, CLAIM, CLAIM, CLAIM, MOVE, MOVE, MOVE]
+        }, spawnPriority)
+        log.blue(`YAYY:: ${res}`)
+        // const res = this.room.pushToQueue(
+        //   $.SPAWN,
+        //   {memory: creepMemory, kind: creepMemory.kind},
+        //   spawnPriority
+        // )
         if(res) {
-          queue.dequeue()
+          this.queue.dequeue()
         }
 
       }
