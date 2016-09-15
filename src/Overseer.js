@@ -109,6 +109,7 @@ class Overseer {
   }
 
   maintainRoomMemory = ()=> {
+    // Only main rooms
     let rooms = this.myMainRooms()
     for(let room of rooms) {
       let mem = room.memory
@@ -124,6 +125,16 @@ class Overseer {
       }
       if(!mem.connectedRemoteRooms) { mem.connectedRemoteRooms = {} }
       if(!mem.links) { mem.links = {sources: [], providers: []} }
+    }
+
+    //For all rooms
+    for(let room of Game.rooms) {
+      let mem = room.memory
+      if(!mem.specialState) {
+        mem.specialState = {
+          [$.UNDER_ATTACK]: false
+        }
+      }
     }
   }
 

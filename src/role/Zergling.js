@@ -38,30 +38,38 @@ class Zergling {
     this.zergling = zergling
     this.hasWorked = false
     this.priorityQueues = null
+    this.mem = this.zergling.memory
+    this.kind = this.zergling.kind[0]
   }
 
-  run = (priorityQueues)=> {
+  run = (priorityQueues, opts = {})=> {
 
     try {
       if(this.zergling.ticksToLive == 1) {this.zergling.say('For the ☣')}
+      if(opts[$.UNDER_ATTACK]) {
+        if(this.flee()) {
+          this.zergling.say('Nope')
+          return
+        }
+      }
 
       this.priorityQueues = priorityQueues
-      if(!this.zergling.memory.item) {
+      if(!this.mem.item) {
         if(
-          this.zergling.memory.myRoomName &&
-          this.zergling.pos.roomName != this.zergling.memory.myRoomName
+          this.mem.myRoomName &&
+          this.zergling.pos.roomName != this.mem.myRoomName
         ) {
           this.zergling.moveTo(
-            Game.rooms[this.zergling.memory.myRoomName].controller
+            Game.rooms[this.mem.myRoomName].controller
           )
           return
         }
-        if(!this.zergling.memory.kind) {
+        if(!this.mem.kind) {
           this.zergling.say('calcKind')
           this.calcKind()
         }
-        if(!this.zergling.memory.myRoomName) {
-          this.zergling.memory.myRoomName = this.zergling.pos.roomName
+        if(!this.mem.myRoomName) {
+          this.mem.myRoomName = this.zergling.pos.roomName
         }
         if(this.findWork(priorityQueues)) {
           this.work()
@@ -71,8 +79,8 @@ class Zergling {
         }
       }
       else if(
-        this.zergling.memory.sourcing === null ||
-        _.isUndefined(this.zergling.memory.sourcing)
+        this.mem.sourcing === null ||
+        _.isUndefined(this.mem.sourcing)
       ) {
         // Zerg has item, but hasnt found a source for it yet
         if(this.initWorkStart()) {
@@ -85,19 +93,19 @@ class Zergling {
       else {
         this.work()
       }
-      if(!this.hasWorked && this.zergling.memory.kind[0] == WORK) {
+      if(!this.hasWorked && this.mem.kind[0] == WORK) {
         this.repairSurroundings()
       }
     }
     catch(e) {
       console.log('<span style="color: red">Creep Error`d:\n' + e.stack + '\n')
       if(
-        this.zergling.memory.item &&
-        !hiveMind.data[this.zergling.memory.item.id]
+        this.mem.item &&
+        !hiveMind.data[this.mem.item.id]
       ) {
         log.cyan('Cleaning up missing hiveMind-Data')
-        this.zergling.memory.item = null
-        this.zergling.memory.sourcing = null
+        this.mem.item = null
+        this.mem.sourcing = null
       }
     }
     finally {
@@ -109,7 +117,7 @@ class Zergling {
 
   calcKind = ()=> {
     if(_.isEqual(this.zergling.body, [MOVE])) {
-      this.zergling.memory.kind = [$.SCOUT]
+      this.mem.kind = [$.SCOUT]
       return
     }
     let parts = []
@@ -123,10 +131,10 @@ class Zergling {
     parts[workPartIndex].count = (parts[workPartIndex].count - 1) * 2
     parts = _.sortByOrder(parts, 'count', 'desc')
 
-    this.zergling.memory.kind = []
+    this.mem.kind = []
     parts.forEach((part)=> {
       if(part.count > 0) {
-        this.zergling.memory.kind.push(part.type)
+        this.mem.kind.push(part.type)
       }
     })
   }
@@ -134,24 +142,24 @@ class Zergling {
   findWork = (priorityQueues)=> {
 
     let queues = []
-    if(Array.isArray(this.zergling.memory.kind)) {
+    if(Array.isArray(this.mem.kind)) {
       // Old Style (kind contains the queuenames)
-      queues = this.zergling.memory.kind
+      queues = this.mem.kind
     }
     else {
       // New Style (kind contains the kind)
-      queues = $.QUEUES_FOR_KINDS[this.zergling.memory.kind]
+      queues = $.QUEUES_FOR_KINDS[this.mem.kind]
     }
     for(let queueName of queues) {
       let queue = priorityQueues[queueName]
       if(!queue) {
         //newstyle
-        queue = priorityQueues[$.QUEUES_FOR_KINDS[this.zergling.memory.kind]]
+        queue = priorityQueues[$.QUEUES_FOR_KINDS[this.mem.kind]]
       }
       if(queue) {
         if(queue.peek()) {
-          this.zergling.memory.item = queue.dequeue()
-          let itemData = hiveMind.data[this.zergling.memory.item.id]
+          this.mem.item = queue.dequeue()
+          let itemData = hiveMind.data[this.mem.item.id]
           itemData.assigned = true
           if(itemData.fromSource && !itemData.fromSource.amount) {
             itemData.fromSource.amount = this.zergling.carryCapacity
@@ -177,62 +185,62 @@ class Zergling {
    */
   initWorkStart = ()=> {
     if(
-      _.isUndefined(hiveMind.data[this.zergling.memory.item.id].fromSource) &&
-      this.zergling.memory.kind !== $.KIND_CORRUPTOR
+      _.isUndefined(hiveMind.data[this.mem.item.id].fromSource) &&
+      this.mem.kind !== $.KIND_CORRUPTOR
     ) {
       // fromSource does not exist
-      let item = hiveMind.data[this.zergling.memory.item.id]
+      let item = hiveMind.data[this.mem.item.id]
       if(this.zergling.carry[item.res] >= item.toTarget.amount) {
         // We have enough energy left for the target, dont need no source
         this.zergling.say('♻➟▣', true)
-        hiveMind.data[this.zergling.memory.item.id].stage = TYPE_TARGET
-        this.zergling.memory.sourcing = false
+        hiveMind.data[this.mem.item.id].stage = TYPE_TARGET
+        this.mem.sourcing = false
         return true
       }
       else {
         // search for a source
         let source = new Overlord(this.zergling.pos.roomName)
           .findSourceForCreep(
-            this.zergling, hiveMind.data[this.zergling.memory.item.id],
+            this.zergling, hiveMind.data[this.mem.item.id],
             item.res
           )
         if(source === true) {
           // Thanks, Overlord. You already assigned me the source
         }
         else if(source) {
-          hiveMind.data[this.zergling.memory.item.id].fromSource = {
+          hiveMind.data[this.mem.item.id].fromSource = {
             id: source.id, x: source.pos.x, y: source.pos.y,
             roomName: source.pos.roomName,
             amount: this.creepCarryCapacity,
           }
           this.zergling.say('⚗', true)
-          hiveMind.data[this.zergling.memory.item.id].stage = TYPE_SOURCE
-          this.zergling.memory.sourcing = true
+          hiveMind.data[this.mem.item.id].stage = TYPE_SOURCE
+          this.mem.sourcing = true
           return true
         }
         else {
           this.zergling.say('⚗?', true)
-          this.zergling.memory.sourcing = null
+          this.mem.sourcing = null
           return false
         }
       }
     }
-    else if(hiveMind.data[this.zergling.memory.item.id].fromSource === false) {
+    else if(hiveMind.data[this.mem.item.id].fromSource === false) {
       // Theres explicitly no source, for example with continuous tasks
       this.zergling.say('▣ (✖⚗)', true)
-      hiveMind.data[this.zergling.memory.item.id].stage = TYPE_TARGET
-      this.zergling.memory.sourcing = false
+      hiveMind.data[this.mem.item.id].stage = TYPE_TARGET
+      this.mem.sourcing = false
       return true
     }
     else {
-      hiveMind.data[this.zergling.memory.item.id].stage = TYPE_SOURCE
-      this.zergling.memory.sourcing = true
+      hiveMind.data[this.mem.item.id].stage = TYPE_SOURCE
+      this.mem.sourcing = true
       return true
     }
   }
 
   work = ()=> {
-    if(this.zergling.memory.sourcing) {
+    if(this.mem.sourcing) {
       this.workWith(TYPE_SOURCE)
     }
     else {
@@ -242,7 +250,7 @@ class Zergling {
 
   workWith = (type)=> {
     let memObject = false
-    const itemData = hiveMind.data[this.zergling.memory.item.id]
+    const itemData = hiveMind.data[this.mem.item.id]
     switch(type) {
       case TYPE_SOURCE:
         memObject = itemData.fromSource;
@@ -299,7 +307,7 @@ class Zergling {
   }
 
   withdrawFrom = (source)=> {
-    let data = hiveMind.data[this.zergling.memory.item.id]
+    let data = hiveMind.data[this.mem.item.id]
     let type = data.type || RESOURCE_ENERGY
     // 0 amount == all you can
     let amount = (data.fromSource.amount) ? data.fromSource.amount : null
@@ -331,7 +339,7 @@ class Zergling {
   }
 
   transferTo = (target)=> {
-    let data = hiveMind.data[this.zergling.memory.item.id]
+    let data = hiveMind.data[this.mem.item.id]
     let type = data.type || RESOURCE_ENERGY
     // 0 amount == all you can
     let amount = (data.toTarget.amount) ? data.toTarget.amount : null
@@ -367,7 +375,7 @@ class Zergling {
    * Work with controllers
    */
   seedTo = (object) => {
-    let data = hiveMind.data[this.zergling.memory.item.id]
+    let data = hiveMind.data[this.mem.item.id]
     let type = data.type
     switch(type) {
       case $.RESERVE: this.zergling.reserveController(object); break
@@ -377,16 +385,16 @@ class Zergling {
   }
 
   done = (res, debugInfo = false)=> {
-    let itemData = hiveMind.data[_.get(this.zergling.memory, ['item', 'id'])]
-    if(this.zergling.memory.sourcing) {
+    let itemData = hiveMind.data[_.get(this.mem, ['item', 'id'])]
+    if(this.mem.sourcing) {
       // Done SOURCING Stuff
-      if(_.get(itemData, 'continuous') && !this.zergling.memory.toTarget) {
+      if(_.get(itemData, 'continuous') && !this.mem.toTarget) {
         this.zergling.say('↺⚗', true)
         return // We just source stuff, continue to do so
       }
       else {
-        hiveMind.data[this.zergling.memory.item.id].stage = TYPE_TARGET
-        this.zergling.memory.sourcing = false
+        hiveMind.data[this.mem.item.id].stage = TYPE_TARGET
+        this.mem.sourcing = false
         if(res == OK) {
           this.zergling.say('▣', true)
         }
@@ -398,21 +406,21 @@ class Zergling {
     else {
       // Done TARGETIING Stuff
       if(_.get(itemData, 'continuous')) {
-        if(!this.zergling.memory.fromSource) {
+        if(!this.mem.fromSource) {
           this.zergling.say('↺▣', true)
           return // We just target stuff, continue to do so
         }
         else {
-          hiveMind.data[this.zergling.memory.item.id].stage = TYPE_SOURCE
-          this.zergling.memory.sourcing = true
+          hiveMind.data[this.mem.item.id].stage = TYPE_SOURCE
+          this.mem.sourcing = true
           this.zergling.say('↺ ➟ ⚗', true)
           return
         }
       }
       else {
-        hiveMind.remove(this.zergling.memory.item.id)
-        this.zergling.memory.sourcing = null
-        this.zergling.memory.item = null
+        hiveMind.remove(this.mem.item.id)
+        this.mem.sourcing = null
+        this.mem.item = null
         if(res == OK) {
           this.zergling.say('✓', true)
         }
@@ -468,7 +476,7 @@ class Zergling {
           `<span style="color: #33aadd">Pos</span>: ` +
           `"${JSON.stringify(this.zergling.pos)}"`,
           `<span style="color: #ddaa33">Mem</span>: "` +
-          `${JSON.stringify(this.zergling.memory)}"`,
+          `${JSON.stringify(this.mem)}"`,
           `<span style="color: #aa33dd">More Info</span>: "` +
           `${JSON.stringify(debugInfo)}"`
         )
@@ -498,7 +506,7 @@ class Zergling {
     let item = new Overlord(this.zergling.pos.roomName)
       .satisfyBoredCreep(this.zergling)
     if(item) {
-      this.zergling.memory.item = item
+      this.mem.item = item
       this.initWorkStart()
       return false
     }
@@ -513,7 +521,7 @@ class Zergling {
   vacation = ()=> {
     let statName = (
       `room.${this.zergling.room.name}.zergStats.` +
-      `${this.zergling.memory.kind[0]}.idleTicks`
+      `${this.mem.kind[0]}.idleTicks`
     )
     if(!Memory.stats[statName]) { Memory.stats[statName] = 0 }
     Memory.stats[statName] += 1
@@ -525,15 +533,31 @@ class Zergling {
     }
   }
 
+  flee = ()=> {
+    if(this.mem.byRoomName != this.zergling.room.name) {
+      // Somewhere remote
+        switch(this.kind) {
+          case $.KIND_INFESTOR:
+          case $.KIND_DRONE:
+            this.zergling.moveTo(Game.rooms[this.mem.byRoomName])
+            return true
+            break
+        }
+    }
+    else {
+      return false
+    }
+  }
+
   /*
    * Make sure that the hiveMind-Item gets deleted before the zergling dies
    */
   swarmPurposeFulfilled = ()=> {
     this.zergling.say('For the ☣')
-    if(this.zergling.memory.item) {
-      hiveMind.remove(this.zergling.memory.item.id)
-      this.zergling.memory.sourcing = null
-      this.zergling.memory.item = null
+    if(this.mem.item) {
+      hiveMind.remove(this.mem.item.id)
+      this.mem.sourcing = null
+      this.mem.item = null
     }
   }
 }

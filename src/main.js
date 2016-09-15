@@ -102,6 +102,7 @@ module.exports.loop = ()=> profiler.wrap(()=> {
     try {
       for(let roomName in Game.rooms) {
         let room = Game.rooms[roomName]
+        let specialRoomState = room.memory.specialState
         let priorityQueues = false
         if(
           room.memory.priorityQueues &&
@@ -124,7 +125,7 @@ module.exports.loop = ()=> profiler.wrap(()=> {
         if(zerglings.length > 0) {
           zerglings.forEach((zerglingCreep)=> {
             let zergling = new Zergling(zerglingCreep)
-            zergling.run(priorityQueues)
+            zergling.run(priorityQueues, specialRoomState)
           })
         }
 

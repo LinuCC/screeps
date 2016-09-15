@@ -37,6 +37,7 @@ class Overlord {
 
   update = (queues)=> {
 
+    this.defend()
     this.existingItems = hiveMind.allForRoom(this.room)
 
     this.spawn()
@@ -881,6 +882,33 @@ class Overlord {
           spawnPrio
         )
         console.log(JSON.stringify(this.room.queue($.SPAWN)))
+      }
+    }
+  }
+
+  defend = ()=> {
+    if(this.room.find(FIND_HOSTILE_CREEPS).length > 0) {
+      if(!this.room.memory.specialState[$.UNDER_ATTACK]) {
+        this.room.memory.specialState[$.UNDER_ATTACK] = true
+        // Respond
+        new Spawning(this.room).newItem(
+          {
+            role: $.KIND_SWEEPER,
+            kind: $.KIND_SWEEPER,
+            body: [
+              MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, ATTACK,
+              ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK
+            ],
+            memory: {
+              targetRoomName: this.room.name
+            }
+          }
+        )
+      }
+    }
+    else {
+      if(this.room.memory.specialState[$.UNDER_ATTACK]) {
+        this.room.memory.specialState[$.UNDER_ATTACK] = false
       }
     }
   }

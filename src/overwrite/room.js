@@ -63,3 +63,8 @@ Room.prototype.maxSpawnCost = function() {
     'energyMax'
   )
 }
+
+// TODO
+Room.prototype.safeArea = function() {
+  return this.posByXY($.ROOM_CENTER_X, ROOM_CENTER_Y})
+}

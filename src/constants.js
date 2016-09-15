@@ -99,7 +99,8 @@ const exports = Object.freeze({
       [SOURCE]: 1000,
     },
     [SPAWN]: {
-      [KIND_INFESTOR]: 1000,
+      [KIND_SWEEPER]: 1000,
+      [KIND_INFESTOR]: 2000,
       [KIND_CORRUPTOR]: 5000,
     },
     [SEED]: {
@@ -144,6 +145,8 @@ const exports = Object.freeze({
   TYPE_SOURCE: TYPE_SOURCE,
   TYPE_TARGET: TYPE_TARGET,
   TYPE_SEED: TYPE_SEED,
+
+  UNDER_ATTACK: 'uAtt',
 });
 
 module.exports = exports
