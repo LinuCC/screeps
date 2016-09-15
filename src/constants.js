@@ -4,6 +4,7 @@ const KIND_ZERGLING = 2 /* Work stuff */
 const KIND_INFESTOR = 3 /* Mine stuff from sources */
 const KIND_CORRUPTOR = 4 /* Claim Controller */
 const KIND_MUTALISK = 5 /* Scout stuff */
+const KIND_SWEEPER = 6
 
 const SCOUT = 'scout'
 const SPAWN = 'spawn'

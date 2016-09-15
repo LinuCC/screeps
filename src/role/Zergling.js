@@ -39,7 +39,7 @@ class Zergling {
     this.hasWorked = false
     this.priorityQueues = null
     this.mem = this.zergling.memory
-    this.kind = this.zergling.kind[0]
+    this.kind = this.mem.kind[0]
   }
 
   run = (priorityQueues, opts = {})=> {

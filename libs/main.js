@@ -161,7 +161,7 @@ var modwide = global; module.exports =
 	  let stats = new _Stats2.default();
 	  stats.begin();
 
-	  if (Game.time % 5000 == 0) {
+	  if (Game.time % 50 == 0) {
 	    _creepWatcher2.default.cleanupMemory();
 	  }
 	  if (Game.time % 5 == 0) {
@@ -226,6 +226,7 @@ var modwide = global; module.exports =
 	    try {
 	      for (let roomName in Game.rooms) {
 	        let room = Game.rooms[roomName];
+	        let specialRoomState = room.memory.specialState;
 	        let priorityQueues = false;
 	        if (room.memory.priorityQueues && Object.keys(room.memory.priorityQueues).length > 0) {
 	          priorityQueues = _.mapValues(room.memory.priorityQueues, queue => new _PriorityQueue2.default(queue));
@@ -241,7 +242,7 @@ var modwide = global; module.exports =
 	        if (zerglings.length > 0) {
 	          zerglings.forEach(zerglingCreep => {
 	            let zergling = new _Zergling2.default(zerglingCreep);
-	            zergling.run(priorityQueues);
+	            zergling.run(priorityQueues, specialRoomState);
 	          });
 	        }
 
@@ -380,6 +381,11 @@ var modwide = global; module.exports =
 	Room.prototype.maxSpawnCost = function () {
 	  throw new Error('WATT IS EnerGYMAZ');
 	  return _.sum(room.find(FIND_MY_STRUCTURES, { filter: struc => struc.structureType == STRUCTURE_EXTENSION || struc.structureType == STRUCTURE_SPAWN }), 'energyMax');
+	};
+
+	// TODO
+	Room.prototype.safeArea = function () {
+	  return this.posByXY($.ROOM_CENTER_X, $.ROOM_CENTER_Y);
 	};
 
 /***/ },
@@ -611,6 +617,7 @@ var modwide = global; module.exports =
 	const KIND_INFESTOR = 3; /* Mine stuff from sources */
 	const KIND_CORRUPTOR = 4; /* Claim Controller */
 	const KIND_MUTALISK = 5; /* Scout stuff */
+	const KIND_SWEEPER = 6;
 
 	const SCOUT = 'scout';
 	const SPAWN = 'spawn';
@@ -691,7 +698,8 @@ var modwide = global; module.exports =
 	      [SOURCE]: 1000
 	    },
 	    [SPAWN]: {
-	      [KIND_INFESTOR]: 1000,
+	      [KIND_SWEEPER]: 1000,
+	      [KIND_INFESTOR]: 2000,
 	      [KIND_CORRUPTOR]: 5000
 	    },
 	    [SEED]: {
@@ -735,7 +743,9 @@ var modwide = global; module.exports =
 
 	  TYPE_SOURCE: TYPE_SOURCE,
 	  TYPE_TARGET: TYPE_TARGET,
-	  TYPE_SEED: TYPE_SEED
+	  TYPE_SEED: TYPE_SEED,
+
+	  UNDER_ATTACK: 'uAtt'
 	});
 
 	module.exports = _exports;
@@ -1843,6 +1853,7 @@ var modwide = global; module.exports =
 
 	    this.update = queues => {
 
+	      this.defend();
 	      this.existingItems = _hiveMind2.default.allForRoom(this.room);
 
 	      this.spawn();
@@ -2478,6 +2489,27 @@ var modwide = global; module.exports =
 	      }
 	    };
 
+	    this.defend = () => {
+	      if (this.room.find(FIND_HOSTILE_CREEPS).length > 0) {
+	        if (!_.get(this.room.memory, ['specialState', _constants2.default.UNDER_ATTACK])) {
+	          this.room.memory.specialState[_constants2.default.UNDER_ATTACK] = true;
+	          // Respond
+	          new Spawning(this.room).newItem({
+	            role: _constants2.default.KIND_SWEEPER,
+	            kind: _constants2.default.KIND_SWEEPER,
+	            body: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK],
+	            memory: {
+	              targetRoomName: this.room.name
+	            }
+	          });
+	        }
+	      } else {
+	        if (_.get(this.room.memory, ['specialState', _constants2.default.UNDER_ATTACK])) {
+	          this.room.memory.specialState[_constants2.default.UNDER_ATTACK] = false;
+	        }
+	      }
+	    };
+
 	    this.satisfyBoredCreep = creep => {
 	      // Find Containers that have still stuff in them and take that stuff
 	      // somewhere else if possible
@@ -2730,7 +2762,17 @@ var modwide = global; module.exports =
 
 	        for (let roomName in Game.rooms) {
 	          let room = Game.rooms[roomName];
-	          if (room.memory.priorityQueues && Object.keys(room.memory.priorityQueues).length && Object.keys(room.memory.priorityQueues).some(queueName => room.memory.priorityQueues[queueName].some(queueItem => queueItem.id == item.id || queueName === _constants2.default.SPAWN && _.get(_hiveMind2.default.data[queueItem.id], ['memory', 'item', 'id']) === item.id))) {
+	          if (room.memory.priorityQueues && Object.keys(room.memory.priorityQueues).length && Object.keys(room.memory.priorityQueues).some(queueName => room.memory.priorityQueues[queueName].some(queueItem => {
+	            const queueItemData = _hiveMind2.default.data[queueItem.id];
+	            return (queueItem.id == item.id || queueName === _constants2.default.SPAWN && _.get(queueItemData, ['memory', 'item', 'id']) === item.id) &&
+	            // referred items still exist
+	            // If id is set and we can see the room, we can check if the item
+	            // still exists
+	            (
+	            // not able to check if item exist because we dont know the
+	            // room or the id
+	            !_.get(queueItemData, ['fromSource', 'id']) || !Game.rooms[_.get(queueItemData, ['fromSource', 'roomName'])] || Game.getObjectById(queueItemData.fromSource.id)) && (!_.get(queueItemData, ['toTarget', 'id']) || !Game.rooms[_.get(queueItemData, ['toTarget', 'roomName'])] || Game.getObjectById(queueItemData.toTarget.id));
+	          }))) {
 	            continue nextItem;
 	          }
 	          // if(room.memory.priorityQueues && room.memory.priorityQueues.length) {
@@ -2768,6 +2810,7 @@ var modwide = global; module.exports =
 	    };
 
 	    this.maintainRoomMemory = () => {
+	      // Only main rooms
 	      let rooms = this.myMainRooms();
 	      for (let room of rooms) {
 	        let mem = room.memory;
@@ -2792,6 +2835,17 @@ var modwide = global; module.exports =
 	        }
 	        if (!mem.links) {
 	          mem.links = { sources: [], providers: [] };
+	        }
+	      }
+
+	      //For all rooms
+	      for (let roomName in Game.rooms) {
+	        let room = Game.rooms[roomName];
+	        let mem = room.memory;
+	        if (!mem.specialState) {
+	          mem.specialState = {
+	            [_constants2.default.UNDER_ATTACK]: false
+	          };
 	        }
 	      }
 	    };
@@ -2912,61 +2966,69 @@ var modwide = global; module.exports =
 	  constructor(zergling) {
 	    var _this = this;
 
-	    this.run = priorityQueues => {
+	    this.run = function (priorityQueues) {
+	      let opts = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
 
 	      try {
-	        if (this.zergling.ticksToLive == 1) {
-	          this.zergling.say('For the ☣');
+	        if (_this.zergling.ticksToLive == 1) {
+	          _this.zergling.say('For the ☣');
 	        }
-
-	        this.priorityQueues = priorityQueues;
-	        if (!this.zergling.memory.item) {
-	          if (this.zergling.memory.myRoomName && this.zergling.pos.roomName != this.zergling.memory.myRoomName) {
-	            this.zergling.moveTo(Game.rooms[this.zergling.memory.myRoomName].controller);
+	        if (opts[_constants2.default.UNDER_ATTACK]) {
+	          if (_this.flee()) {
+	            _this.zergling.say('Nope');
 	            return;
 	          }
-	          if (!this.zergling.memory.kind) {
-	            this.zergling.say('calcKind');
-	            this.calcKind();
+	        }
+
+	        _this.priorityQueues = priorityQueues;
+	        if (!_this.mem.item) {
+	          if (_this.mem.myRoomName && _this.zergling.pos.roomName != _this.mem.myRoomName) {
+	            _this.zergling.moveTo(Game.rooms[_this.mem.myRoomName].controller);
+	            return;
 	          }
-	          if (!this.zergling.memory.myRoomName) {
-	            this.zergling.memory.myRoomName = this.zergling.pos.roomName;
+	          if (!_this.mem.kind) {
+	            _this.zergling.say('calcKind');
+	            _this.calcKind();
 	          }
-	          if (this.findWork(priorityQueues)) {
-	            this.work();
+	          if (!_this.mem.myRoomName) {
+	            _this.mem.myRoomName = _this.zergling.pos.roomName;
+	          }
+	          if (_this.findWork(priorityQueues)) {
+	            _this.work();
 	          } else {
-	            this.vacation();
+	            _this.vacation();
 	          }
-	        } else if (this.zergling.memory.sourcing === null || _.isUndefined(this.zergling.memory.sourcing)) {
+	        } else if (_this.mem.sourcing === null || _.isUndefined(_this.mem.sourcing)) {
 	          // Zerg has item, but hasnt found a source for it yet
-	          if (this.initWorkStart()) {
-	            this.work();
+	          if (_this.initWorkStart()) {
+	            _this.work();
 	          } else {
-	            this.vacation();
+	            _this.vacation();
 	          }
 	        } else {
-	          this.work();
+	          _this.work();
 	        }
-	        if (!this.hasWorked && this.zergling.memory.kind[0] == WORK) {
-	          this.repairSurroundings();
+	        if (!_this.hasWorked && _this.mem.kind[0] == WORK) {
+	          _this.repairSurroundings();
 	        }
 	      } catch (e) {
 	        console.log('<span style="color: red">Creep Error`d:\n' + e.stack + '\n');
-	        if (this.zergling.memory.item && !_hiveMind2.default.data[this.zergling.memory.item.id]) {
+	        if (_this.mem.item && !_hiveMind2.default.data[_this.mem.item.id]) {
 	          log.cyan('Cleaning up missing hiveMind-Data');
-	          this.zergling.memory.item = null;
-	          this.zergling.memory.sourcing = null;
+	          _this.mem.item = null;
+	          _this.mem.sourcing = null;
 	        }
 	      } finally {
-	        if (this.zergling.ticksToLive == 1) {
-	          this.swarmPurposeFulfilled();
+	        if (_this.zergling.ticksToLive == 1) {
+	          _this.swarmPurposeFulfilled();
 	        }
 	      }
 	    };
 
 	    this.calcKind = () => {
 	      if (_.isEqual(this.zergling.body, [MOVE])) {
-	        this.zergling.memory.kind = [_constants2.default.SCOUT];
+	        this.mem.kind = [_constants2.default.SCOUT];
 	        return;
 	      }
 	      let parts = [];
@@ -2978,10 +3040,10 @@ var modwide = global; module.exports =
 	      parts[workPartIndex].count = (parts[workPartIndex].count - 1) * 2;
 	      parts = _.sortByOrder(parts, 'count', 'desc');
 
-	      this.zergling.memory.kind = [];
+	      this.mem.kind = [];
 	      parts.forEach(part => {
 	        if (part.count > 0) {
-	          this.zergling.memory.kind.push(part.type);
+	          this.mem.kind.push(part.type);
 	        }
 	      });
 	    };
@@ -2989,23 +3051,23 @@ var modwide = global; module.exports =
 	    this.findWork = priorityQueues => {
 
 	      let queues = [];
-	      if (Array.isArray(this.zergling.memory.kind)) {
+	      if (Array.isArray(this.mem.kind)) {
 	        // Old Style (kind contains the queuenames)
-	        queues = this.zergling.memory.kind;
+	        queues = this.mem.kind;
 	      } else {
 	        // New Style (kind contains the kind)
-	        queues = _constants2.default.QUEUES_FOR_KINDS[this.zergling.memory.kind];
+	        queues = _constants2.default.QUEUES_FOR_KINDS[this.mem.kind];
 	      }
 	      for (let queueName of queues) {
 	        let queue = priorityQueues[queueName];
 	        if (!queue) {
 	          //newstyle
-	          queue = priorityQueues[_constants2.default.QUEUES_FOR_KINDS[this.zergling.memory.kind]];
+	          queue = priorityQueues[_constants2.default.QUEUES_FOR_KINDS[this.mem.kind]];
 	        }
 	        if (queue) {
 	          if (queue.peek()) {
-	            this.zergling.memory.item = queue.dequeue();
-	            let itemData = _hiveMind2.default.data[this.zergling.memory.item.id];
+	            this.mem.item = queue.dequeue();
+	            let itemData = _hiveMind2.default.data[this.mem.item.id];
 	            itemData.assigned = true;
 	            if (itemData.fromSource && !itemData.fromSource.amount) {
 	              itemData.fromSource.amount = this.zergling.carryCapacity;
@@ -3025,51 +3087,51 @@ var modwide = global; module.exports =
 	    };
 
 	    this.initWorkStart = () => {
-	      if (_.isUndefined(_hiveMind2.default.data[this.zergling.memory.item.id].fromSource) && this.zergling.memory.kind !== _constants2.default.KIND_CORRUPTOR) {
+	      if (_.isUndefined(_hiveMind2.default.data[this.mem.item.id].fromSource) && this.mem.kind !== _constants2.default.KIND_CORRUPTOR) {
 	        // fromSource does not exist
-	        let item = _hiveMind2.default.data[this.zergling.memory.item.id];
+	        let item = _hiveMind2.default.data[this.mem.item.id];
 	        if (this.zergling.carry[item.res] >= item.toTarget.amount) {
 	          // We have enough energy left for the target, dont need no source
 	          this.zergling.say('♻➟▣', true);
-	          _hiveMind2.default.data[this.zergling.memory.item.id].stage = TYPE_TARGET;
-	          this.zergling.memory.sourcing = false;
+	          _hiveMind2.default.data[this.mem.item.id].stage = TYPE_TARGET;
+	          this.mem.sourcing = false;
 	          return true;
 	        } else {
 	          // search for a source
-	          let source = new _Overlord2.default(this.zergling.pos.roomName).findSourceForCreep(this.zergling, _hiveMind2.default.data[this.zergling.memory.item.id], item.res);
+	          let source = new _Overlord2.default(this.zergling.pos.roomName).findSourceForCreep(this.zergling, _hiveMind2.default.data[this.mem.item.id], item.res);
 	          if (source === true) {
 	            // Thanks, Overlord. You already assigned me the source
 	          } else if (source) {
-	            _hiveMind2.default.data[this.zergling.memory.item.id].fromSource = {
+	            _hiveMind2.default.data[this.mem.item.id].fromSource = {
 	              id: source.id, x: source.pos.x, y: source.pos.y,
 	              roomName: source.pos.roomName,
 	              amount: this.creepCarryCapacity
 	            };
 	            this.zergling.say('⚗', true);
-	            _hiveMind2.default.data[this.zergling.memory.item.id].stage = TYPE_SOURCE;
-	            this.zergling.memory.sourcing = true;
+	            _hiveMind2.default.data[this.mem.item.id].stage = TYPE_SOURCE;
+	            this.mem.sourcing = true;
 	            return true;
 	          } else {
 	            this.zergling.say('⚗?', true);
-	            this.zergling.memory.sourcing = null;
+	            this.mem.sourcing = null;
 	            return false;
 	          }
 	        }
-	      } else if (_hiveMind2.default.data[this.zergling.memory.item.id].fromSource === false) {
+	      } else if (_hiveMind2.default.data[this.mem.item.id].fromSource === false) {
 	        // Theres explicitly no source, for example with continuous tasks
 	        this.zergling.say('▣ (✖⚗)', true);
-	        _hiveMind2.default.data[this.zergling.memory.item.id].stage = TYPE_TARGET;
-	        this.zergling.memory.sourcing = false;
+	        _hiveMind2.default.data[this.mem.item.id].stage = TYPE_TARGET;
+	        this.mem.sourcing = false;
 	        return true;
 	      } else {
-	        _hiveMind2.default.data[this.zergling.memory.item.id].stage = TYPE_SOURCE;
-	        this.zergling.memory.sourcing = true;
+	        _hiveMind2.default.data[this.mem.item.id].stage = TYPE_SOURCE;
+	        this.mem.sourcing = true;
 	        return true;
 	      }
 	    };
 
 	    this.work = () => {
-	      if (this.zergling.memory.sourcing) {
+	      if (this.mem.sourcing) {
 	        this.workWith(TYPE_SOURCE);
 	      } else {
 	        this.workWith(TYPE_TARGET);
@@ -3078,7 +3140,7 @@ var modwide = global; module.exports =
 
 	    this.workWith = type => {
 	      let memObject = false;
-	      const itemData = _hiveMind2.default.data[this.zergling.memory.item.id];
+	      const itemData = _hiveMind2.default.data[this.mem.item.id];
 	      switch (type) {
 	        case TYPE_SOURCE:
 	          memObject = itemData.fromSource;
@@ -3130,7 +3192,7 @@ var modwide = global; module.exports =
 	    };
 
 	    this.withdrawFrom = source => {
-	      let data = _hiveMind2.default.data[this.zergling.memory.item.id];
+	      let data = _hiveMind2.default.data[this.mem.item.id];
 	      let type = data.type || RESOURCE_ENERGY;
 	      // 0 amount == all you can
 	      let amount = data.fromSource.amount ? data.fromSource.amount : null;
@@ -3158,7 +3220,7 @@ var modwide = global; module.exports =
 	    };
 
 	    this.transferTo = target => {
-	      let data = _hiveMind2.default.data[this.zergling.memory.item.id];
+	      let data = _hiveMind2.default.data[this.mem.item.id];
 	      let type = data.type || RESOURCE_ENERGY;
 	      // 0 amount == all you can
 	      let amount = data.toTarget.amount ? data.toTarget.amount : null;
@@ -3191,7 +3253,7 @@ var modwide = global; module.exports =
 	    };
 
 	    this.seedTo = object => {
-	      let data = _hiveMind2.default.data[this.zergling.memory.item.id];
+	      let data = _hiveMind2.default.data[this.mem.item.id];
 	      let type = data.type;
 	      switch (type) {
 	        case _constants2.default.RESERVE:
@@ -3206,15 +3268,15 @@ var modwide = global; module.exports =
 	    this.done = function (res) {
 	      let debugInfo = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
 
-	      let itemData = _hiveMind2.default.data[_.get(_this.zergling.memory, ['item', 'id'])];
-	      if (_this.zergling.memory.sourcing) {
+	      let itemData = _hiveMind2.default.data[_.get(_this.mem, ['item', 'id'])];
+	      if (_this.mem.sourcing) {
 	        // Done SOURCING Stuff
-	        if (_.get(itemData, 'continuous') && !_this.zergling.memory.toTarget) {
+	        if (_.get(itemData, 'continuous') && !_this.mem.toTarget) {
 	          _this.zergling.say('↺⚗', true);
 	          return; // We just source stuff, continue to do so
 	        } else {
-	          _hiveMind2.default.data[_this.zergling.memory.item.id].stage = TYPE_TARGET;
-	          _this.zergling.memory.sourcing = false;
+	          _hiveMind2.default.data[_this.mem.item.id].stage = TYPE_TARGET;
+	          _this.mem.sourcing = false;
 	          if (res == OK) {
 	            _this.zergling.say('▣', true);
 	          } else {
@@ -3224,19 +3286,19 @@ var modwide = global; module.exports =
 	      } else {
 	        // Done TARGETIING Stuff
 	        if (_.get(itemData, 'continuous')) {
-	          if (!_this.zergling.memory.fromSource) {
+	          if (!_this.mem.fromSource) {
 	            _this.zergling.say('↺▣', true);
 	            return; // We just target stuff, continue to do so
 	          } else {
-	            _hiveMind2.default.data[_this.zergling.memory.item.id].stage = TYPE_SOURCE;
-	            _this.zergling.memory.sourcing = true;
+	            _hiveMind2.default.data[_this.mem.item.id].stage = TYPE_SOURCE;
+	            _this.mem.sourcing = true;
 	            _this.zergling.say('↺ ➟ ⚗', true);
 	            return;
 	          }
 	        } else {
-	          _hiveMind2.default.remove(_this.zergling.memory.item.id);
-	          _this.zergling.memory.sourcing = null;
-	          _this.zergling.memory.item = null;
+	          _hiveMind2.default.remove(_this.mem.item.id);
+	          _this.mem.sourcing = null;
+	          _this.mem.item = null;
 	          if (res == OK) {
 	            _this.zergling.say('✓', true);
 	          } else {
@@ -3296,7 +3358,7 @@ var modwide = global; module.exports =
 	        case ERR_NO_BODYPART:
 	          _this.zergling.say('✖☗?', true);break;
 	        case MY_ERR_WTF:
-	          console.log('<span style="color: red">Got a WTF!</span>', `<span style="color: #aadd33">Id</span>: "${ _this.zergling.id }"`, `<span style="color: #33aadd">Pos</span>: ` + `"${ JSON.stringify(_this.zergling.pos) }"`, `<span style="color: #ddaa33">Mem</span>: "` + `${ JSON.stringify(_this.zergling.memory) }"`, `<span style="color: #aa33dd">More Info</span>: "` + `${ JSON.stringify(debugInfo) }"`);
+	          console.log('<span style="color: red">Got a WTF!</span>', `<span style="color: #aadd33">Id</span>: "${ _this.zergling.id }"`, `<span style="color: #33aadd">Pos</span>: ` + `"${ JSON.stringify(_this.zergling.pos) }"`, `<span style="color: #ddaa33">Mem</span>: "` + `${ JSON.stringify(_this.mem) }"`, `<span style="color: #aa33dd">More Info</span>: "` + `${ JSON.stringify(debugInfo) }"`);
 	          _this.zergling.say('WTF?', true);
 	          break;
 	        // case ERR_NOT_ENOUGH_EXTENSIONS: this.zergling.say('', true); break
@@ -3316,7 +3378,7 @@ var modwide = global; module.exports =
 	    this.bored = () => {
 	      let item = new _Overlord2.default(this.zergling.pos.roomName).satisfyBoredCreep(this.zergling);
 	      if (item) {
-	        this.zergling.memory.item = item;
+	        this.mem.item = item;
 	        this.initWorkStart();
 	        return false;
 	      } else {
@@ -3325,7 +3387,7 @@ var modwide = global; module.exports =
 	    };
 
 	    this.vacation = () => {
-	      let statName = `room.${ this.zergling.room.name }.zergStats.` + `${ this.zergling.memory.kind[0] }.idleTicks`;
+	      let statName = `room.${ this.zergling.room.name }.zergStats.` + `${ this.mem.kind[0] }.idleTicks`;
 	      if (!Memory.stats[statName]) {
 	        Memory.stats[statName] = 0;
 	      }
@@ -3336,18 +3398,35 @@ var modwide = global; module.exports =
 	      }
 	    };
 
+	    this.flee = () => {
+	      if (this.mem.byRoomName != this.zergling.room.name) {
+	        // Somewhere remote
+	        switch (this.kind) {
+	          case _constants2.default.KIND_INFESTOR:
+	          case _constants2.default.KIND_DRONE:
+	            this.zergling.moveTo(Game.rooms[this.mem.byRoomName]);
+	            return true;
+	            break;
+	        }
+	      } else {
+	        return false;
+	      }
+	    };
+
 	    this.swarmPurposeFulfilled = () => {
 	      this.zergling.say('For the ☣');
-	      if (this.zergling.memory.item) {
-	        _hiveMind2.default.remove(this.zergling.memory.item.id);
-	        this.zergling.memory.sourcing = null;
-	        this.zergling.memory.item = null;
+	      if (this.mem.item) {
+	        _hiveMind2.default.remove(this.mem.item.id);
+	        this.mem.sourcing = null;
+	        this.mem.item = null;
 	      }
 	    };
 
 	    this.zergling = zergling;
 	    this.hasWorked = false;
 	    this.priorityQueues = null;
+	    this.mem = this.zergling.memory;
+	    this.kind = this.mem.kind[0];
 	  }
 
 	  /**
