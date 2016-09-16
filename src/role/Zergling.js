@@ -109,9 +109,8 @@ class Zergling {
       }
     }
     finally {
-      if(this.zergling.ticksToLive == 1) {
-        this.swarmPurposeFulfilled()
-      }
+      if(this.zergling.tickstoLive == 2) { this.zergling.say('For the ☣') }
+      if(this.zergling.ticksToLive == 1) { this.swarmPurposeFulfilled() }
     }
   }
 
@@ -539,10 +538,12 @@ class Zergling {
         switch(this.kind) {
           case $.KIND_INFESTOR:
           case $.KIND_DRONE:
-            this.zergling.moveTo(Game.rooms[this.mem.byRoomName])
+            this.zergling.moveTo(Game.rooms[this.mem.byRoomName].safeArea())
             return true
             break
+          default: break
         }
+        return false
     }
     else {
       return false
@@ -553,7 +554,6 @@ class Zergling {
    * Make sure that the hiveMind-Item gets deleted before the zergling dies
    */
   swarmPurposeFulfilled = ()=> {
-    this.zergling.say('For the ☣')
     if(this.mem.item) {
       hiveMind.remove(this.mem.item.id)
       this.mem.sourcing = null

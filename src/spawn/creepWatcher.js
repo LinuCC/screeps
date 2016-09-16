@@ -6,7 +6,10 @@ var spawnCreepWatcher = {
         const spawner = new Spawner()
         const harvesters = _.filter(Game.creeps, (creep) => (
           creep.memory.role == 'harvester' &&
-          creep.pos.roomName == spawn.pos.roomName
+          (
+            creep.pos.roomName == spawn.pos.roomName ||
+            creep.memory.myRoomName === spawn.pos.roomName
+          )
         ));
         if(harvesters.length < spawn.memory.harvesterSize) {
             const res = spawner.harvester(spawn)
@@ -21,7 +24,10 @@ var spawnCreepWatcher = {
 
         let excavators = _.filter(Game.creeps, (creep) => (
           creep.memory.role == 'excavator' &&
-          creep.pos.roomName == spawn.pos.roomName
+          (
+            creep.pos.roomName == spawn.pos.roomName ||
+            creep.memory.myRoomName === spawn.pos.roomName
+          )
         ));
         if(spawn.memory.excavators) {
           let memExcavator = null
@@ -47,7 +53,10 @@ var spawnCreepWatcher = {
 
         const upgraders = _.filter(Game.creeps, (creep) => (
           creep.memory.role == 'upgrader' &&
-          creep.pos.roomName == spawn.pos.roomName
+          (
+            creep.pos.roomName == spawn.pos.roomName ||
+            creep.memory.myRoomName === spawn.pos.roomName
+          )
         ));
         if(upgraders.length < spawn.memory.upgraderSize) {
             const newName = spawner.upgrader(spawn);
@@ -56,7 +65,10 @@ var spawnCreepWatcher = {
 
         let builders = _.filter(Game.creeps, (creep) => (
           creep.memory.role == 'builder' &&
-          creep.pos.roomName == spawn.pos.roomName
+          (
+            creep.pos.roomName == spawn.pos.roomName ||
+            creep.memory.myRoomName === spawn.pos.roomName
+          )
         ));
         if(builders.length < spawn.memory.builderSize) {
             const newName = spawner.builder(spawn);
@@ -69,7 +81,10 @@ var spawnCreepWatcher = {
           ) &&
           creep.memory.kind &&
           creep.memory.kind[0] == WORK &&
-          creep.pos.roomName == spawn.pos.roomName
+          (
+            creep.pos.roomName == spawn.pos.roomName ||
+            creep.memory.myRoomName === spawn.pos.roomName
+          )
         ));
         if(zerglings.length < spawn.memory.zerglingSize) {
             const newName = spawner.zergling(spawn);
@@ -81,7 +96,10 @@ var spawnCreepWatcher = {
           )
           && creep.memory.kind &&
           creep.memory.kind[0] == CARRY &&
-          creep.pos.roomName == spawn.pos.roomName
+          (
+            creep.pos.roomName == spawn.pos.roomName ||
+            creep.memory.myRoomName === spawn.pos.roomName
+          )
         ));
         if(drones.length < spawn.memory.droneSize) {
             const newName = spawner.drone(spawn);
@@ -89,7 +107,10 @@ var spawnCreepWatcher = {
 
         let repairers = _.filter(Game.creeps, (creep) => (
           creep.memory.role == 'repairer' &&
-          creep.pos.roomName == spawn.pos.roomName
+          (
+            creep.pos.roomName == spawn.pos.roomName ||
+            creep.memory.myRoomName === spawn.pos.roomName
+          )
         ));
         if(repairers.length < spawn.memory.repairerSize) {
             const newName = spawner.repairer(spawn);
