@@ -33,18 +33,20 @@ class Spawning extends Queueing {
       creepMemory.myRoomName = this.room.name
     }
     if(_.isUndefined(creepMemory.role)) {
-      creepMemory.role = data.role
+      creepMemory.role = this._roleOrDefaultOf(data)
     }
 
     // Set the data
     const hiveMindData = {
       memory: creepMemory,
       kind: data.kind || $.KIND_ZERGLING,
-      role: data.role || $.ROLE_ZERG,
+      role: this._roleOrDefaultOf(data),
       body: data.body || undefined
     }
     return super.newItem(hiveMindData, prio)
   }
+
+  _roleOrDefaultOf = (data) => data.role || $.ROLE_ZERG
 
   itemDone(itemId) {
     super.itemDone(itemId)

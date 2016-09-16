@@ -799,45 +799,6 @@ class Overlord {
     }
   }
 
-  /**
-   * Appends a creep to spawn to the spawn-queue
-   *
-   * TODO Possibly not necessary :(
-   *
-   * @param spawnPriority - The prio of the item in the spawn-queue
-   * @param creepMemory - The memory of the creep.
-   *    The value of myRoomName will be set automatically if not set here.
-   * @param opts - Some options
-   *    assignItem - Generates a new item in the hiveMind and assigns it
-   *      directly to the spawned creep.
-   *      If priority is not set, it will have a prio of 0.
-   *      assignItem: {
-   *        data: [ITEMDATA],
-   *        priority: [ITEMPRIO]
-   *      }
-   */
-  spawnCreep = (spawnPriority, creepMemory, opts = {})=> {
-    if(!_.isUndefined(opts.assignItem)) {
-      creepMemory.item = creepMemory.item || {}
-      let itemId = hiveMind.push(opts.assignItem.data)
-      creepMemory.item.id = itemId
-      if(!_.isUndefined(opts.assignItem.priority)) {
-        creepMemory.item.prio = opts.assignItem.priority
-      }
-      else {
-        creepMemory.item.prio = 0
-      }
-    }
-    if(_.isUndefined(creepMemory.myRoomName)) {
-      creepMemory.myRoomName = this.room.name
-    }
-    this.room.pushToQueue(
-      $.SPAWN,
-      {memory: creepMemory, kind: creepMemory.kind},
-      spawnPriority
-    )
-  }
-
   initiateRemoteRoomParsing = (remoteRoomName)=> {
     log.cyan(`Please give me info on remoteRoom ${remoteRoomName}`)
     // Scout, cache & pave path with roads
@@ -873,15 +834,9 @@ class Overlord {
           spawnPrio = spawnPrio * $.REMOTE_PRIORITIES_MODIFIER
         }
         log.cyan(`Pushing to spawn-queue`)
-        this.room.pushToQueue(
-          $.SPAWN,
-          {
-            kind: $.KIND_INFESTOR,
-            memory: {role: $.ROLE_ZERG, item: queueItem}
-          },
-          spawnPrio
+        new Spawning(this.room).newItem(
+          {kind: $.KIND_INFESTOR, memory: {item: queueItem}}, spawnPrio
         )
-        console.log(JSON.stringify(this.room.queue($.SPAWN)))
       }
     }
   }
