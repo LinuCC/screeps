@@ -58,14 +58,34 @@ class Overseer {
           room.memory.priorityQueues &&
           Object.keys(room.memory.priorityQueues).length &&
           Object.keys(room.memory.priorityQueues).some((queueName)=> (
-            room.memory.priorityQueues[queueName].some((queueItem)=> (
-              queueItem.id == item.id || (
-                queueName === $.SPAWN &&
-                _.get(
-                  hiveMind.data[queueItem.id], ['memory', 'item', 'id']
-                ) === item.id
+            room.memory.priorityQueues[queueName].some((queueItem)=> {
+              const queueItemData = hiveMind.data[queueItem.id]
+              return (
+                queueItem.id == item.id || (
+                  queueName === $.SPAWN &&
+                  _.get(queueItemData, ['memory', 'item', 'id']) === item.id
+                )
+              ) &&
+              // referred items still exist
+              // If id is set and we can see the room, we can check if the item
+              // still exists
+              (
+                (
+                  (
+                    // not able to check if item exist because we dont know the
+                    // room or the id
+                    !_.get(queueItemData, ['fromSource', 'id']) ||
+                    !Game.rooms[_.get(queueItemData, ['fromSource', 'roomName'])]
+                  ) || Game.getObjectById(queueItemData.fromSource.id)
+                ) &&
+                (
+                  (
+                    !_.get(queueItemData, ['toTarget', 'id']) ||
+                    !Game.rooms[_.get(queueItemData, ['toTarget', 'roomName'])]
+                  ) || Game.getObjectById(queueItemData.toTarget.id)
+                )
               )
-            ))
+            })
           ))
         ) {
          continue nextItem
@@ -128,7 +148,8 @@ class Overseer {
     }
 
     //For all rooms
-    for(let room of Game.rooms) {
+    for(let roomName in Game.rooms) {
+      let room = Game.rooms[roomName]
       let mem = room.memory
       if(!mem.specialState) {
         mem.specialState = {

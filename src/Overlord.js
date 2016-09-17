@@ -843,7 +843,7 @@ class Overlord {
 
   defend = ()=> {
     if(this.room.find(FIND_HOSTILE_CREEPS).length > 0) {
-      if(!this.room.memory.specialState[$.UNDER_ATTACK]) {
+      if(!_.get(this.room.memory, ['specialState', $.UNDER_ATTACK])) {
         this.room.memory.specialState[$.UNDER_ATTACK] = true
         // Respond
         new Spawning(this.room).newItem(
@@ -862,7 +862,7 @@ class Overlord {
       }
     }
     else {
-      if(this.room.memory.specialState[$.UNDER_ATTACK]) {
+      if(_.get(this.room.memory, ['specialState', $.UNDER_ATTACK])) {
         this.room.memory.specialState[$.UNDER_ATTACK] = false
       }
     }

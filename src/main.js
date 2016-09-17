@@ -41,7 +41,7 @@ module.exports.loop = ()=> profiler.wrap(()=> {
   let stats = new Stats()
   stats.begin()
 
-  if(Game.time % 5000 == 0) {
+  if(Game.time % 50 == 0) {
     spawnCreepWatcher.cleanupMemory()
   }
   if(Game.time % 5 == 0) {
