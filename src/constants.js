@@ -66,7 +66,6 @@ const exports = Object.freeze({
     SCOUT,
     EXCAVATE,
     UPGRADE,
-
     SPAWN
   ],
 
@@ -147,6 +146,9 @@ const exports = Object.freeze({
   TYPE_SEED: TYPE_SEED,
 
   UNDER_ATTACK: 'uAtt',
+
+  CARRY: CARRY,
+  WORK: WORK,
 });
 
 module.exports = exports
