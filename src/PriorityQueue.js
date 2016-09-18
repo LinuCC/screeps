@@ -1,24 +1,23 @@
-/**
- * Reimplementation of
- * https://github.com/adamhooper/js-priority-queue/blob/master/src/PriorityQueue/BinaryHeapStrategy.coffee
- */
-
 class PriorityQueue {
   constructor(initialValues) {
-    this.comparator = (a, b)=> a.prio - b.prio
     this.length = 0
     this.data = initialValues
-    this._heapify()
+    this._completeSort()
+  }
+
+
+  comparator(a, b) {
+    return a.prio - b.prio
   }
 
   itemCount = ()=> (
     this.data.length
   )
 
-  _heapify = ()=> {
+  _completeSort = ()=> {
     if(this.data.length > 0) {
       for(let i in [...Array(this.data.length).keys()]) {
-        this._bubbleUp(i)
+        this._bubbleUp(i, log)
       }
     }
   }
@@ -48,7 +47,24 @@ class PriorityQueue {
 
   removeBy = (filter)=> {
     _.remove(this.data, filter)
-    this._heapify()
+  }
+
+  updatePrioById = (id, prio)=> {
+    for(let index = 0; index < this.data.length; index += 1) {
+      let item = this.data[index]
+      if(item.id === id) {
+        const oldPrio = item.prio
+        item.prio = prio
+        if(prio < oldPrio) {
+          this._bubbleUp(index, true)
+        }
+        else {
+          this._bubbleDown(index)
+        }
+        return true
+      }
+    }
+    return false
   }
 
   clear = ()=> {
@@ -56,14 +72,16 @@ class PriorityQueue {
     this.data.length = 0
   }
 
-  _bubbleUp = (pos)=> {
+  _bubbleUp = (pos, log)=> {
     while(pos > 0) {
-      let parent = (pos - 1) >>> 1
-      if(this.comparator(this.data[pos], this.data[parent]) < 0) {
-        let x = this.data[parent]
-        this.data[parent] = this.data[pos]
+      let left = (pos - 1)
+      if(log) {
+      }
+      if(this.comparator(this.data[pos], this.data[left]) < 0) {
+        let x = this.data[left]
+        this.data[left] = this.data[pos]
         this.data[pos] = x
-        pos = parent
+        pos = left
       }
       else {
         break
@@ -73,28 +91,15 @@ class PriorityQueue {
 
   _bubbleDown = (pos)=> {
     let last = this.data.length - 1
-
-    while(true) {
-      let left = (pos << 1) + 1
-      let right = left + 1
-      let minIndex = pos
-      if(
-        left <= last &&
-        this.comparator(this.data[left], this.data[minIndex]) < 0
-      ) {
-        minIndex = left
+    while(pos + 1 <= last) {
+      let right = (pos + 1)
+      if(log) {
       }
-      if(
-        right <= last &&
-        this.comparator(this.data[right], this.data[minIndex]) < 0
-      ) {
-        minIndex = right
-      }
-
-      if(minIndex != pos) {
-        let x = this.data[minIndex]
-        this.data[minIndex] = this.data[pos]
+      if(this.comparator(this.data[pos], this.data[right]) > 0) {
+        let x = this.data[right]
+        this.data[right] = this.data[pos]
         this.data[pos] = x
+        pos = right
       }
       else {
         break

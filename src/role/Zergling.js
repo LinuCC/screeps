@@ -1,6 +1,7 @@
 import $ from './../constants'
 import hiveMind from './../hiveMind'
 import Overlord from './../Overlord'
+import profiler from 'screeps-profiler'
 
 const role = require('../role')
 
@@ -189,6 +190,9 @@ class Zergling {
     ) {
       // fromSource does not exist
       let item = hiveMind.data[this.mem.item.id]
+      if(_.isUndefined(_.get(item, ['toTarget', 'amount']))) {
+        this.done(MY_ERR_WTF, 'initWorkStart#amount'); return;
+      }
       if(this.zergling.carry[item.res] >= item.toTarget.amount) {
         // We have enough energy left for the target, dont need no source
         this.zergling.say('♻➟▣', true)
@@ -258,10 +262,10 @@ class Zergling {
         memObject = itemData.toTarget; break
     }
     if(!memObject) { this.done(MY_ERR_WTF, 'workWith#memObject'); return; }
-    if(!memObject.id) {
-      this.done(MY_ERR_WTF, 'No memObject.id; Not guessing.'); return
+    if(!memObject.id && !memObject.objId) {
+      this.done(MY_ERR_WTF, 'No memObject.id/objId; Not guessing.'); return
     }
-    let object = Game.getObjectById(memObject.id)
+    let object = Game.getObjectById(memObject.objId || memObject.id)
     if(!object && !_.isUndefined(Game.rooms[memObject.roomName])) {
       // Object doesnt exist but we can see the room. Nope
       this.done(MY_ERR_WTF, 'workWith#object');
@@ -533,12 +537,19 @@ class Zergling {
   }
 
   flee = ()=> {
-    if(this.mem.byRoomName != this.zergling.room.name) {
+    if(this.mem.myRoomName != this.zergling.room.name) {
+      log.orange(`Fleeing! ${JSON.stringify(this.mem.kind)}`)
       // Somewhere remote
-        switch(this.kind) {
+        if(Array.isArray(this.mem.kind) && this.mem.kind.includes('carry')) {
+          this.zergling.moveTo(Game.rooms[this.mem.myRoomName].safeArea())
+          return true
+        }
+        switch(this.mem.kind) {
           case $.KIND_INFESTOR:
+          case $.KIND_CORRUPTOR:
+          case $.KIND_ZERGLING:
           case $.KIND_DRONE:
-            this.zergling.moveTo(Game.rooms[this.mem.byRoomName].safeArea())
+            this.zergling.moveTo(Game.rooms[this.mem.myRoomName].safeArea())
             return true
             break
           default: break
@@ -562,5 +573,6 @@ class Zergling {
   }
 }
 
+profiler.registerObject(Zergling, 'Zergling')
 module.exports = Zergling;
 

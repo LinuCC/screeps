@@ -1,181 +1,192 @@
 import $ from '../constants'
 import Queueing from './Queueing'
 import hiveMind from '../hiveMind'
+import Shiny from '../Shiny'
+import profiler from 'screeps-profiler'
 
 /**
- * Spawn creeps
- * TODO Maintain the queue by removing unspawnable items (for example if
- * extensions got destroyed)
+ * Requesters
  */
-class Spawning extends Queueing {
+class Requesting extends Queueing {
 
-  constructor(room, queue = $.SPAWN) {
+  constructor(room, queue = null) {
     super(room, queue)
+    this.queues = {
+      [$.WORK_REQUESTING]: this.room.queue($.WORK_REQUESTING),
+      [$.RESOURCE_REQUESTING]: this.room.queue($.RESOURCE_REQUESTING)
+    }
   }
 
   /**
-   * Generates a new Spawning-item.
+   * Generates a new Requesting-item.
    */
   newItem(data, prio, opts = {}) {
-    let creepMemory = data.memory || {}
-    if(!_.isUndefined(opts.assignItem)) {
-      creepMemory.item = creepMemory.item || {}
-      let itemId = hiveMind.push(opts.assignItem.data)
-      creepMemory.item.id = itemId
-      if(!_.isUndefined(opts.assignItem.priority)) {
-        creepMemory.item.prio = opts.assignItem.priority
-      }
-      else {
-        creepMemory.item.prio = 0
-      }
+    let type = data.type
+    let amount = data.amount
+    if(!type) {
+      const resource = this._calcResourceOf(data.requester)
+      type = resource.type
+      amount = resource.amount
     }
-    if(_.isUndefined(creepMemory.myRoomName)) {
-      creepMemory.myRoomName = this.room.name
+    if(!amount) {
+      amount = this._calcNeededAmountOf(data.requester, type)
     }
-    if(_.isUndefined(creepMemory.role)) {
-      creepMemory.role = this._roleOrDefaultOf(data)
-    }
-
-    // Set the data
     const hiveMindData = {
-      memory: creepMemory,
-      kind: data.kind || $.KIND_ZERGLING,
-      role: this._roleOrDefaultOf(data),
-      body: data.body || undefined
+      roomName: data.roomName || _.get(data.requester, ['pos', 'roomName']),
+      objId: data.id || _.get(data.requester, ['id']) || undefined,
+      x: data.x || _.get(data.requester, ['pos', 'x']) || undefined,
+      y: data.y || _.get(data.requester, ['pos', 'y']) || undefined,
+      type: type,
+      amount: amount,
+      assigned: false
     }
-    return super.newItem(hiveMindData, prio)
+    const queue = data.queueType || this._calcQueueTypeOf(data.requester)
+    return super.newItem(hiveMindData, prio, this.queues[queue])
   }
 
-  _roleOrDefaultOf = (data) => data.role || $.ROLE_ZERG
+  _calcResourceOf(requester) {
+    let needs = new Shiny(requester).neededGoods()
+    _.each(needs, (amount, name)=> { if(amount === 0) { delete needs[name] } })
+    const neededResourceTypes = Object.keys(needs)
+    if(!neededResourceTypes.length) {
+      return false
+    }
+    else if(neededResourceTypes.length === 1) {
+      // If one resource is found, type is obvious
+      const type = neededResourceTypes[0]
+      return {type: type, amount: needs[type]}
+    }
+    else if(neededResourceTypes.includes(RESOURCE_ENERGY)) {
+      // Default to Energy if more than one resource found
+      return {type: RESOURCE_ENERGY, amount: needs[RESOURCE_ENERGY]}
+    }
+    else {
+      // Else basically give up and return at least something
+      log.orange(
+        `Requesting#calcTypeOf just returned ${neededResourceTypes[0]} ` +
+        `for ${provider}`
+      )
+      const type = neededResourceTypes[0]
+      return {type: type, amount: needs[type]}
+    }
+  }
 
-  itemDone(itemId) {
-    super.itemDone(itemId)
+  _calcQueueTypeOf(requester) {
+    const type = new Shiny(requester).type()
+    if(
+      type === $.OBJ_CONSTRUCTION_SITE ||
+      type === STRUCTURE_CONTROLLER
+    ) {
+      return $.WORK_REQUESTING
+    }
+    else {
+      return $.RESOURCE_REQUESTING
+    }
   }
 
   itemGenerator() {
-    // Simple target-zerg-count
-    for(let type of this.room.memory.targetZergCount) {
-      const count = this.room.memory.targetZergCount[type]
-      const existingZergs = _.filter(Game.creeps, (zerg)=> (
-        zerg.memory.role === type && (
-          zerg.memory.byRoomName === this.room.name ||
-          zerg.pos.roomName === this.room.name
-        )
+    if(this.room.name != 'E48N44') { return }
+    // Get targets
+    const rooms = this.room.accessibleControllingRooms()
+    let targets = this.room.find(
+      FIND_MY_STRUCTURES, {filter: (structure)=> (
+        (
+          structure.structureType == STRUCTURE_SPAWN ||
+          structure.structureType == STRUCTURE_EXTENSION ||
+          structure.structureType == STRUCTURE_TOWER
+        ) &&
+        structure.energy < structure.energyCapacity
+    )})
+    const sourceLinks = _.get(this.room.memory, ['links', 'sources'])
+    if(sourceLinks && sourceLinks.length > 0) {
+      targets = targets.concat(sourceLinks.map((source)=>
+        Game.getObjectById(source)
       ))
-      let queuedCreeps = this.queue.filter(
-        {memory: {kind: type, role: $.ROLE_ZERG}}
-      ).length
-      while(count > existingZergs + queuedCreeps) {
-        this.newItem({
-          role: $.ZERG,
-          kind: type,
-          memory: {body: this.bodyFor(type)}
-        })
-      }
     }
-  }
+    rooms.forEach((room)=> {
+      targets = targets.concat(this.room.find(FIND_CONSTRUCTION_SITES))
+      targets = targets.concat(this.room.find(
+        FIND_STRUCTURES, {filter: {structureType: STRUCTURE_CONTROLLER}}
+      ))
+    })
+    // Generate Items
+    if(targets.length > 0) {
+      for(let target of targets) {
+        if(!target) {
+          log.red('NOPE')
+        }
+        const existingItems = _.filter(
+          hiveMind.allForRoom(target.room),
+          {objId: target.id, type: RESOURCE_ENERGY}
+        )
+        const targetShiny = new Shiny(target)
+        const alreadyRequested = _.sum(existingItems, 'amount')
+        const stillNeededEnergy = (
+          _.get(targetShiny.neededGoods(), RESOURCE_ENERGY) - alreadyRequested
+        )
 
-  bodyFor(zergType) {
-    const maxSpawnCost = this.room.maxSpawnCost()
-    let body = $.ZERG_PARTS_TEMPLATES[zergType]
-    return this.calcCreepBody(this.room, body, maxSpawnCost)
-  }
+        if(stillNeededEnergy === 0) {
+          continue
+        }
+        const queueType = this._calcQueueTypeOf(target)
+        // log.cyan(`    > Needed Goods: ${JSON.stringify(targetShiny.neededGoods())}`)
+        log.cyan(`    > Requested: ${alreadyRequested}`)
+        // log.cyan(`    > Energy needed: ${stillNeededEnergy}`)
 
-
-  calcCreepBody = (room, parts, maxCost = 0, usingStreet = true)=> {
-    let partCost = {
-      [WORK]: 100,
-      [CARRY]: 50,
-      [MOVE]: 50,
-      [ATTACK]: 80,
-      [RANGED_ATTACK]: 150,
-      [HEAL]: 250
-    }
-    let roomMaxCost = _.sum(
-      room.find(FIND_MY_STRUCTURES, {filter: (struc)=> (
-        struc.structureType == STRUCTURE_EXTENSION ||
-        struc.structureType == STRUCTURE_SPAWN
-      )}),
-      'energy'
-    )
-    let max = (maxCost != 0) ? maxCost : roomMaxCost
-    let partBlockCost = parts.reduce((memo, part)=> (memo + partCost[part]), 0)
-    let moveRatio = (usingStreet) ? 1/2 : 1
-    let movesPerBlock = (parts.length * moveRatio)
-    let moveCost = movesPerBlock * partCost[MOVE]
-    // We should add one MOVE to the 6 calculated MOVE if we have 13 parts
-    let hiddenMoveCost = (movesPerBlock % 1 > 0) ? partCost[MOVE] / 2 : 0
-    let wholeBlockCost = partBlockCost + moveCost
-    let maxBlockCount = Math.floor(50 / (parts.length + movesPerBlock))
-    let blockCount = Math.floor((max - hiddenMoveCost) / wholeBlockCost)
-    blockCount = (maxBlockCount < blockCount) ? maxBlockCount : blockCount
-    let moveBlockCount = Math.ceil(movesPerBlock * blockCount)
-    let body = []
-    _.range(moveBlockCount).forEach(()=> body.push(MOVE))
-    for(let i = 0; i < blockCount; i += 1) {
-      body = body.concat(parts)
-    }
-    return body
-  }
-
-
-  /**
-   * TODO Probably doesnt belong here
-   */
-  itemVerwertor() {
-    if(this.queue.itemCount() > 0) {
-      while(queue.peek()) {
-        const queueItem = queue.peek()
-        const itemData = hiveMind.data[queueItem.id]
-        const spawnPriority = $.PRIORITIES[$.SPAWN][$.KIND_CORRUPTOR]
-        const memory = {
-          kind: $.KIND_CORRUPTOR,
-          memory: {
-            role: $.ZERG,
-            item: queueItem
+        const onNewItem = ()=> {
+          if(stillNeededEnergy > 0) {
+            log.orange(`    > Creating new item`)
+            this.newItem(
+              {
+                amount: stillNeededEnergy,
+                requester: target,
+                queueType: queueType
+              },
+              (data)=> (this._prioForShiny(targetShiny, data.amount))
+            )
           }
         }
-        const res = this.room.pushToQueue(
-          $.SPAWN,
-          {memory: creepMemory, kind: creepMemory.kind},
-          spawnPriority
-        )
-        if(res) {
-          queue.dequeue()
+        const onEditItem = (existingItem)=> {
+            log.orange(`    > Editing item ${existingItem.id}`)
+          existingItem['amount'] += stillNeededEnergy
+          if(existingItem.amount < 0) {
+            hiveMind.remove(existingItem.id)
+          }
+          else {
+            this.queues[queueType].updatePrioById(
+              existingItem.id, this._prioForShiny(
+                new Shiny(Game.getObjectById(existingItem.objId)),
+                existingItem.amount
+              )
+            )
+          }
         }
 
+        this.editMetaItemOrNewItem(onNewItem, onEditItem, existingItems)
       }
     }
   }
 
 
-  spawnCreep(spawnPriority, creepMemory, opts = {}) {
-    if(!_.isUndefined(opts.assignItem)) {
-      creepMemory.item = creepMemory.item || {}
-      let itemId = hiveMind.push(opts.assignItem.data)
-      creepMemory.item.id = itemId
-      if(!_.isUndefined(opts.assignItem.priority)) {
-        creepMemory.item.prio = opts.assignItem.priority
-      }
-      else {
-        creepMemory.item.prio = 0
+  _prioForShiny(shiny, amount) {
+    const type = shiny.type()
+    let prio = 0
+    if(type === $.OBJ_CONSTRUCTION_SITE) {
+      prio = $.PRIORITIES[$.WORK_REQUESTING][type]
+      if(this.room.name != shiny.obj.room.name) {
+        prio += $.REMOTE_PRIORITY_CONSTRUCTION_MODIFIER
       }
     }
-    if(_.isUndefined(creepMemory.myRoomName)) {
-      creepMemory.myRoomName = this.room.name
+    else if(type === $.STRUCTURE_CONTROLLER) {
+      prio = $.PRIORITIES[$.WORK_REQUESTING][type]
     }
-    this.room.pushToQueue(
-      $.SPAWN,
-      {memory: creepMemory, kind: creepMemory.kind},
-      spawnPriority
-    )
+    else {
+      prio = $.PRIORITIES[$.RESOURCE_REQUESTING][type]
+    }
+    return prio
   }
 
-
-  calculateStepsFromSpawnOf(room, targetPos) {
-    //TODO Implement me
-    return 0
-  }
 }
 
-module.exports = Spawning
+profiler.registerObject(Requesting, 'Requesting')
+module.exports = Requesting

@@ -46,7 +46,7 @@ class Spawning extends Queueing {
     return super.newItem(hiveMindData, prio)
   }
 
-  _roleOrDefaultOf = (data) => data.role || $.ROLE_ZERG
+  _roleOrDefaultOf = (data) => data.role || data.memory.role || $.ROLE_ZERG
 
   itemDone(itemId) {
     super.itemDone(itemId)

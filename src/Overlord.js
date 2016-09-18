@@ -1,6 +1,9 @@
 import $ from './constants'
 import hiveMind from './hiveMind'
 import PriorityQueue from './PriorityQueue'
+import Spawning from './queues/Spawning'
+import ActiveProviding from './queues/ActiveProviding'
+import Requesting from './queues/Requesting'
 
 const TYPE_SOURCE = 0
 const TYPE_TARGET = 1
@@ -51,6 +54,9 @@ class Overlord {
     if(queues[$.EXCAVATE]) {
       this.excavate(queues[$.EXCAVATE])
     }
+
+    new ActiveProviding(this.room).itemGenerator()
+    new Requesting(this.room).itemGenerator()
 
     this.remote(queues)
   }
@@ -210,9 +216,6 @@ class Overlord {
 
     // Find the targets that have stuff and generate tasks for them
     let sources = this.room.find(FIND_DROPPED_RESOURCES)
-    sources = sources.concat(this.room.find(
-      FIND_STRUCTURES, {filter: this.filterNonVoidEnergyContainers}
-    ))
     sources = sources.concat(this.room.find(
       FIND_STRUCTURES, {filter: this.filterNonVoidEnergyContainers}
     ))
@@ -779,8 +782,8 @@ class Overlord {
             }
           }
 
-          // Generate carry-tasks for remote stuff
           if(Game.rooms[remoteName]) {
+            // Generate carry-tasks for remote stuff
             let room = Game.rooms[remoteName]
             let sources = room.find(FIND_DROPPED_RESOURCES)
             if(sources.length) {
@@ -790,6 +793,8 @@ class Overlord {
                 )
               }
             }
+            //defend room
+            this.defend(room)
           }
         }
         else {
@@ -841,10 +846,10 @@ class Overlord {
     }
   }
 
-  defend = ()=> {
-    if(this.room.find(FIND_HOSTILE_CREEPS).length > 0) {
-      if(!_.get(this.room.memory, ['specialState', $.UNDER_ATTACK])) {
-        this.room.memory.specialState[$.UNDER_ATTACK] = true
+  defend = (room = this.room)=> {
+    if(room.find(FIND_HOSTILE_CREEPS).length > 0) {
+      if(!_.get(room.memory, ['specialState', $.UNDER_ATTACK])) {
+        room.memory.specialState[$.UNDER_ATTACK] = true
         // Respond
         new Spawning(this.room).newItem(
           {
@@ -855,15 +860,15 @@ class Overlord {
               ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, ATTACK
             ],
             memory: {
-              targetRoomName: this.room.name
+              targetRoomName: room.name
             }
           }
         )
       }
     }
     else {
-      if(_.get(this.room.memory, ['specialState', $.UNDER_ATTACK])) {
-        this.room.memory.specialState[$.UNDER_ATTACK] = false
+      if(_.get(room.memory, ['specialState', $.UNDER_ATTACK])) {
+        room.memory.specialState[$.UNDER_ATTACK] = false
       }
     }
   }

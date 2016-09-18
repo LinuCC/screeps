@@ -135,7 +135,7 @@ class Seeding extends Queueing {
         const memory = {item: queueItem}
         const res = new Spawning(this.room).newItem({
           role: $.ROLE_ZERG, kind: $.KIND_CORRUPTOR, memory: memory,
-          body: [CLAIM, CLAIM, CLAIM, CLAIM, CLAIM, MOVE, MOVE, MOVE]
+          body: [CLAIM, CLAIM, CLAIM, CLAIM, CLAIM, MOVE, MOVE, MOVE, MOVE, MOVE]
         }, spawnPriority)
         log.blue(`YAYY:: ${res}`)
         // const res = this.room.pushToQueue(

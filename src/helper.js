@@ -3,6 +3,7 @@ modwide.log = {
   red: (str)=> console.log(`<span style="color: red">${str}</span>`),
   green: (str)=> console.log(`<span style="color: #aadd33">${str}</span>`),
   blue: (str)=> console.log(`<span style="color: blue">${str}</span>`),
+  orange: (str)=> console.log(`<span style="color: orange">${str}</span>`),
 }
 
 module.exports = {

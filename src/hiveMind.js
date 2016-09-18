@@ -25,7 +25,8 @@ const hiveMind = {
       this.data, (entry)=> (
         (entry.fromSource && entry.fromSource.roomName == roomName) ||
         (entry.toTarget && entry.toTarget.roomName == roomName) ||
-        (entry.byRoomName == roomName)
+        (entry.byRoomName == roomName) ||
+        (entry.roomName == roomName)
       )
     )
   },

@@ -1,6 +1,7 @@
 import helper from './../helper'
 import hiveMind from './../hiveMind'
 import PriorityQueue from './../PriorityQueue'
+import $ from './../constants'
 
 Room.prototype.spawns = function(filter = {}) {
   let findFilter = null
@@ -50,7 +51,7 @@ Room.prototype.clearDrawings = function() {
 }
 
 Room.prototype.posByXY = function({x, y}) {
-  return new RoomPostion(x, y, this.name)
+  return new RoomPosition(x, y, this.name)
 }
 
 Room.prototype.maxSpawnCost = function() {
@@ -66,5 +67,19 @@ Room.prototype.maxSpawnCost = function() {
 
 // TODO
 Room.prototype.safeArea = function() {
-  return this.posByXY($.ROOM_CENTER_X, $.ROOM_CENTER_Y)
+  return this.posByXY({x: $.ROOM_CENTER_X, y: $.ROOM_CENTER_Y})
+}
+
+Room.prototype.accessibleControllingRooms = function() {
+  let controlledRooms = [this]
+  // Control remote rooms too
+  for(let remoteName in (this.memory.connectedRemoteRooms || [])) {
+    let data = this.memory.connectedRemoteRooms[[remoteName]]
+    if(data.parsed && data.active) {
+      if(Game.rooms[remoteName]) {
+        controlledRooms.push(Game.rooms[remoteName])
+      }
+    }
+  }
+  return controlledRooms
 }

@@ -14,6 +14,7 @@ import roleFighter from './role/fighter'
 import roleHealer from './role/healer'
 import roleRangedFighter from './role/rangedFighter'
 import roleAssimilator from './role/assimilator'
+import roleSweeper from './role/sweeper'
 import PriorityQueue from './PriorityQueue'
 import hiveMind from './hiveMind'
 import Overlord from './Overlord'
@@ -25,14 +26,19 @@ import 'babel-preset-es2017/polyfill'
 import profiler from 'screeps-profiler'
 import helper from './helper'
 
-import Seeding from './queues/Seeding.js'
+import Queueing from './queues/Queueing'
+import Seeding from './queues/Seeding'
+import Requesting from './queues/Requesting'
+import ActiveProviding from './queues/ActiveProviding'
+import Excavating from './queues/Excavating'
+
 
 // Maximum range for a remote mine, assuming 100% effectiveness: 190 squares
 
 // QueueData:
 // data[roomName][id]
 
-// profiler.enable()
+profiler.enable()
 
 module.exports.loop = ()=> profiler.wrap(()=> {
 
@@ -66,6 +72,11 @@ module.exports.loop = ()=> profiler.wrap(()=> {
   modwide.logHiveMindOf = (spawnName)=> {
     new Overlord(Game.spawns[spawnName].room.name).logQueuedItems()
   }
+  modwide.Queueing = Queueing
+  modwide.Seeding = Seeding
+  modwide.Requesting = Requesting
+  modwide.ActiveProviding = ActiveProviding
+  modwide.Excavating = Excavating
   new Overseer().parseCommands()
   modwide.resetHive = ()=> {
     Memory.hiveMind = {}
@@ -189,6 +200,9 @@ module.exports.loop = ()=> profiler.wrap(()=> {
       }
       else if(creep.memory.role == $.ROLE_ZERG) {
 
+      }
+      else if(creep.memory.role == $.KIND_SWEEPER) {
+        roleSweeper.run(creep)
       }
       else {
         creep.say("ROLE?!")
