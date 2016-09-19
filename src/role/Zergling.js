@@ -202,7 +202,7 @@ class Zergling {
       }
       else {
         // search for a source
-        let source = new Overlord(this.zergling.pos.roomName)
+        let source = new verlord(this.zergling.pos.roomName)
           .findSourceForCreep(
             this.zergling, hiveMind.data[this.mem.item.id],
             item.res
@@ -447,6 +447,20 @@ class Zergling {
     }
   }
 
+  newCalcActionRange = (object, item)=> {
+    if(item.workType === $.SEED) { return 1 }
+    if(
+      object.structureType == STRUCTURE_CONTROLLER ||
+      object instanceof ConstructionSite
+    ) {
+      return 3
+    }
+    else {
+      return 1
+    }
+  }
+
+
   handleActionResult = (result, type, object, debugInfo = null)=> {
     let type_str
     if(type != null) {
@@ -570,6 +584,96 @@ class Zergling {
       this.mem.sourcing = null
       this.mem.item = null
     }
+  }
+
+  newWork() {
+    if(this.mem.items && this.mem.items.length) {
+      let items = this.mem.items
+      this.workOnItem(items[0])
+    }
+    else {
+      this.newFindItems()
+    }
+  }
+
+  workOnItem(item) {
+    data = hiveMind.data(item.id)
+    let object = Game.getObjectById(itemData.objId)
+    let knowsObject = true
+    if(!object) {
+      if(_.isUndefined(Game.rooms[itemData.roomName])) {
+        // We cant see object bbut we cant see the room as well
+        /// TODO Implement checking of room with the Observer to help here?
+        object = new RoomPosition(itemData.x, itemData.y, itemData.roomName)
+        knowsObject = false
+      }
+      else {
+        // Object doesnt exist but we can see the room. Nope
+        this.done(MY_ERR_WTF, 'workOnItem#object: Couldnt find Object by Id');
+        return;
+      }
+    }
+    let range = this.newCalcActionRange(object, itemData)
+    if(knowsObject && this.zergling.pos.inRangeTo(object, range)) {
+
+      switch(itemData.kind) {
+        case $.ACTIVE_PROVIDING:
+          this.withdrawFrom(object); break
+        case $.SEEDING:
+          this.seedTo(object); break
+        case $.WORK_REQUESTING:
+        case $.RESOURCE_REQUESTING:
+          this.transferTo(object)
+          break
+        default:
+          log.orange(`Kind what?! For creep ${JSON.stringify(this.zergling)}`)
+      }
+    }
+    else {
+      this.zergling.moveTo(object)
+    }
+  }
+
+  newSearchForItems() {
+
+    // Current amount of energy
+    // Do we need to refill?
+    // If yes: refill:
+      // Get first item of requester, sorted by range (Zerglings shouldnt refill from remotes)
+      // Get its resource-type
+    // If no, just set the resource-type to the carrying-type
+    // While we have enough energy to fulfill the coming request
+      // resort fitting requester-queue based on range of last added item
+      // Get first item from that queue
+
+    // refill: How do we know what resource to refill?
+
+    providing =
+
+    const myQueueType = $.NEW_QUEUES_FOR_KINDS[this.mem.kind]
+    const providedResourceType = RESOURCE_ENERGY
+    const requesting = new Requesting(
+      Game.rooms[this.mem.myRoomName], myQueueType
+    )
+    const lastItem = this.mem.items[-1]
+    const position = new RoomPosition(lastItem.x, lastItem.y, lastItem.roomName)
+    const queue = requesting.getFirstAccountingRangeFrom(position, {
+      filter: (item, data) => (
+        position.roomName == data.roomName &&
+        data.type == providedResourceType &&
+        data.amount <= this.carry[providedResourceType]
+      )
+    })
+    potentialItem = queue.peek()
+    if(newItem) {
+      this.mem.items.push(newItem)
+    }
+
+    let items = new Overlord(this.zergling.pos.roomName)
+      .findSourceForCreep(
+        this.zergling, hiveMind.data[this.mem.item.id],
+        item.res
+      )
   }
 }
 

@@ -16,18 +16,21 @@ class Queueing {
       this.room = room
     }
     if(typeof queue === 'string') {
+      this.queueType = queue
       this.queue = this.room.queue(queue)
     }
     else if(queue === null) {
 
     }
     else {
+      this.queueType = 'ADD ME'
       this.queue = queue
     }
   }
 
   newItem(data, prio, queue = this.queue) {
     const itemId = hiveMind.push(data)
+    data.kind = data.kind || this.queueType
     queue.queue({id: itemId, prio: prio})
     return itemId
   }
@@ -122,6 +125,25 @@ class Queueing {
       }
     }
   }
+
+  reorderByRangeFrom(position, opts = {}) {
+    const filter = opts.filter || ()=> true
+    let queueData = _.map(this.queue.data, (queueItem, index)=> {
+      const hiveMindData = hiveMind.data[queueItem.id]
+      if(filter(queueItem, hiveMindData)) {
+        const range = position.getLinearRangeTo(new RoomPosition(
+          hiveMindData.x, hiveMindData.y, hiveMindData.roomName
+        ))
+        queueItem.prio = queueItem.prio + (range * $.PRIORITY_RANGE_MODIFER)
+      }
+      else {
+        queueItem.prio += $.REMOTE_PRIORITIES_PROVIDING_MODIFIER
+      }
+    })
+    return new PriorityQueue(queueData)
+  }
+
+
 }
 
 module.exports = Queueing

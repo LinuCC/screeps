@@ -10,11 +10,16 @@ import profiler from 'screeps-profiler'
 class Requesting extends Queueing {
 
   constructor(room, queue = null) {
-    super(room, queue)
+    // TODO Handles two queues at the same time.
+    // Maybe really should be splitted up.
     this.queues = {
       [$.WORK_REQUESTING]: this.room.queue($.WORK_REQUESTING),
       [$.RESOURCE_REQUESTING]: this.room.queue($.RESOURCE_REQUESTING)
     }
+    if(queue) {
+      queue = this.queues[queue]
+    }
+    super(room, queue)
   }
 
   /**
@@ -166,7 +171,6 @@ class Requesting extends Queueing {
       }
     }
   }
-
 
   _prioForShiny(shiny, amount) {
     const type = shiny.type()
