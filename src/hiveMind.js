@@ -19,14 +19,17 @@ const hiveMind = {
     delete this.data[id]
   },
 
-  allForRoom: function(room) {
+  allForRoom: function(room, opts = {}) {
+    const filter = opts.filter || ()=> true
     const roomName = (typeof room === 'string') ? room : room.name
     return _.filter(
       this.data, (entry)=> (
-        (entry.fromSource && entry.fromSource.roomName == roomName) ||
-        (entry.toTarget && entry.toTarget.roomName == roomName) ||
-        (entry.byRoomName == roomName) ||
-        (entry.roomName == roomName)
+        (
+          (entry.fromSource && entry.fromSource.roomName == roomName) ||
+          (entry.toTarget && entry.toTarget.roomName == roomName) ||
+          (entry.byRoomName == roomName) ||
+          (entry.roomName == roomName)
+        ) && filter()
       )
     )
   },

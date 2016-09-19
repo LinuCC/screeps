@@ -648,32 +648,115 @@ class Zergling {
 
     // refill: How do we know what resource to refill?
 
-    providing =
-
+    let position = null
+    let providedResourceType = RESOURCE_ENERGY
+    const itemFilter = (item, data) => (
+      position.roomName == data.roomName &&
+      data.type == providedResourceType &&
+      // Dont filter by amount since we want to put all of our energy we have
+      // left into stuff.
+      // data.amount <= this.carry[providedResourceType]
+    )
     const myQueueType = $.NEW_QUEUES_FOR_KINDS[this.mem.kind]
-    const providedResourceType = RESOURCE_ENERGY
+
     const requesting = new Requesting(
       Game.rooms[this.mem.myRoomName], myQueueType
     )
-    const lastItem = this.mem.items[-1]
-    const position = new RoomPosition(lastItem.x, lastItem.y, lastItem.roomName)
-    const queue = requesting.getFirstAccountingRangeFrom(position, {
-      filter: (item, data) => (
-        position.roomName == data.roomName &&
-        data.type == providedResourceType &&
-        data.amount <= this.carry[providedResourceType]
+    // First get a target-item to check if we have enough resources carried with
+    // us to satisfy it
+    const prioritizedItem = _.get(requesting.reorderByRangeFrom(
+      this.zergling.pos, {filter: itemFilter}
+    ), 0)
+    if(!prioritizedItem) { log.red('No prio item!'); return }
+
+    const maxGrep = this.zergling.carryCapacity - _.sum(this.zergling.carry)
+    const minGrep = 200
+    if(prioritizedItem.amount >= this.zergling.carry[providedResourceType]) {
+      // I would in theory need to find the next target to this source to find
+      // out how much energy I want, but thats getting too complicated for now.
+      // Just get as much energy as ye can
+
+      // Search for source, put it before the targets
+
+      const providing = new ActiveProviding(Game.rooms[this.mem.myRoomName])
+      const activeSourceItem = _.get(
+        providing.reorderByRangeFrom(this.zergling.pos, {
+          filter: (item, data)=> (data.amount >= minGrep)
+        }),
+        0
       )
-    })
-    potentialItem = queue.peek()
-    if(newItem) {
-      this.mem.items.push(newItem)
+      if(activeSourceItem) {
+        const newItem = providing.generateNewItemFromMetaItem(
+          activeSourceItem, maxGrep
+        )
+        this.mem.items.unshift(newItem)
+      }
+      else {
+        // Search for passive sources
+        /// TODO
+      }
+    }
+    else {
+      // Only put the range-ordered item actually into the items-memory when we
+      // dont have to get more energy from another source since we would be
+      // somewhere else by then, meaning the ranges would have changed
+      this.mem.items.unshift(prioritizedItem)
     }
 
-    let items = new Overlord(this.zergling.pos.roomName)
-      .findSourceForCreep(
-        this.zergling, hiveMind.data[this.mem.item.id],
-        item.res
+    if(!this.mem.items.length) {
+      // we havent found a suitable target or source, give up
+      return false
+    }
+
+    const prioItemPosition = new RoomPosition(
+      prioritizedItem.x, prioritizedItem.y, prioritizedItem.roomName
+    )
+
+
+    const queue = requesting.getFirstAccountingRangeFrom(
+      position, {filter: itemFilter}
+    )
+
+    let antiEndlessLoop = 0
+    while(this._unusedCarryAmountOf(providedResourceType) > 0) {
+      let lastItem = this.mem.items[-1]
+      let position = new RoomPosition(lastItem.x, lastItem.y, lastItem.roomName)
+      let queue = requesting.getFirstAccountingRangeFrom(
+        position, {filter: itemFilter}
       )
+      potentialItem = queue.peek()
+      potentialItemData = hiveMind.data[potentialItem.id]
+      if(
+        potentialItemData.amount >
+        this._unusedCarryAmountOf(providedResourceType)
+      ) {
+        // We cant take over whole task, we have to split from it
+        const newItem = requesting.generateNewItemFromMetaItem(
+          potentialItem, this._unusedCarryAmountOf(providedResourceType)
+        )
+        if(newItem) {
+          this.mem.items.push(newItem)
+        }
+      }
+      else {
+        // Take over whole task
+        queue.dequeue()
+        this.mem.items.push(potentialItem)
+      }
+      antiEndlessLoop += 1
+      if(antiEndlessLoop > 50) { log.red('ANTIENDLESSLOOP TRIGGERED'); break }
+    }
+  }
+
+  _unusedCarryAmountOf(resource) {
+    return (
+      this.carry[resource] -
+      _.sum(_.filter(this.mem.items, (item)=> (
+        item.type == resource &&
+        item.kind != $.ACTIVE_PROVIDING
+      ))
+      , 'amount')
+    )
   }
 }
 

@@ -126,19 +126,53 @@ class Queueing {
     }
   }
 
+  /**
+   * Generates a new item that "gets" the amount of resources from the meta item
+   */
+  generateNewItemFromMetaItem(metaItem, amountToGet) {
+    let hiveMindData = hiveMind.data[metaItem.id]
+    let clonedData = JSON.parse(JSON.stringify(hiveMindData))
+    let clonedItem = JSON.parse(JSON.stringify(metaItem))
+    clonedData.amount = (hiveMindData.amount > amountToGet) ?
+      amountToGet : hiveMindData.amount
+    hiveMindData.amount -= clonedData.amount
+    const newId = hiveMind.push(clonedData)
+    clonedItem.id = newId
+    return clonedItem
+  }
+
   reorderByRangeFrom(position, opts = {}) {
     const filter = opts.filter || ()=> true
-    let queueData = _.map(this.queue.data, (queueItem, index)=> {
+    // Ignores items that are massively less prioritized
+    const useRangeThreshold = opts.useRangeThreshold || true
+    let firstPrio = null
+    let queueData = _.transform(this.queue.data, (result, queueItem, index)=> {
+      if(
+        useRangeThreshold &&
+        firstPrio !== null &&
+        firstPrio < queueItem.prio - $.RANGE_PRIORITY_THRESHOLD
+      ) {
+        // Ditch the items that are massively less prioritized
+        // Since all following Priorities will be the same or even higher,
+        // all of them wont be prioritized better than the already re-queued
+        // items
+        return false
+      }
       const hiveMindData = hiveMind.data[queueItem.id]
+      let prio = 0
       if(filter(queueItem, hiveMindData)) {
+        if(firstPrio === null) { firstPrio = queueItem.prio }
         const range = position.getLinearRangeTo(new RoomPosition(
           hiveMindData.x, hiveMindData.y, hiveMindData.roomName
         ))
-        queueItem.prio = queueItem.prio + (range * $.PRIORITY_RANGE_MODIFER)
+        prio = queueItem.prio + (range * $.PRIORITY_RANGE_MODIFER)
       }
-      else {
-        queueItem.prio += $.REMOTE_PRIORITIES_PROVIDING_MODIFIER
-      }
+      // Do I really need remote-priorities-mod? I dont think so. Datt range.
+      // else {
+      //   prio = queueItem.prio + $.REMOTE_PRIORITIES_PROVIDING_MODIFIER
+      // }
+      result.push({id: queueItem.id, prio: prio})
+      return true
     })
     return new PriorityQueue(queueData)
   }
