@@ -74,6 +74,55 @@ class Spawner {
     return index
   }
 
+  yellowBox = function(spawnRoom, test = true) {
+    const spawning = new Spawning(spawnRoom)
+    const groupId = 1
+    spawning.newItem(
+      {
+        role: 'fighter',
+        memory: {hasAssignedItself: false, isMaster: true, groupId: groupId},
+        body: [MOVE, WORK]
+      },
+      1000
+    )
+    spawning.newItem({
+        role: 'fighter',
+        memory: {
+          hasAssignedItself: false,
+          isSubordinate: true,
+          groupControl: true,
+          groupId: groupId
+        },
+        body: [MOVE, HEAL]
+      },
+      1000
+    )
+    spawning.newItem({
+        role: 'fighter',
+        memory: {
+          hasAssignedItself: false,
+          isSubordinate: true,
+          groupControl: true,
+          groupId: groupId
+        },
+        body: [MOVE, HEAL]
+      },
+      1000
+    )
+    spawning.newItem({
+        role: 'fighter',
+        memory: {
+          hasAssignedItself: false,
+          isSubordinate: true,
+          groupControl: true,
+          groupId: groupId
+        },
+        body: [MOVE, HEAL]
+      },
+      1000
+    )
+  }
+
   /**
    * @param spawnRoom - The room in which the infestor should be spawned
    * @param sourceAmount - The amount of energy the source contains
