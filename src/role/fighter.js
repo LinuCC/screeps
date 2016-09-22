@@ -21,6 +21,65 @@ const roleFighter = {
     creep.memory.hasAssignedItself = true
   },
 
+  surroundMaster(index, master, dir = null) {
+    const relPositions = {
+      [TOP]: {x: 0, y: -1},
+      [TOP_RIGHT]: {x: 1, y: -1},
+      [RIGHT]: {x: 1, y: 0},
+      [BOTTOM_RIGHT]: {x: 1, y: 1}
+      [BOTTOM]: {x: 0, y: 1},
+      [BOTTOM_LEFT]: {x: -1, y: 1},
+      [LEFT]: {x: -1, y: 0},
+      [TOP_LEFT]: {x: -1, y: -1},
+    }
+
+    let group = Memory.zergSubordinates[creep.memory.groupId]
+    let previousDir = group.previousDir
+    let turnCache = group.turnCache
+    if(turnCache && previousDir) {
+      let turnIndicator = previousDir - dir
+      turnIndicator = (turnIndicator < -3) ? turnIndicator + 8 : turnIndicator
+      turnIndicator = (turnIndicator > 3) ? turnIndicator - 8 : turnIndicator
+      const turnDir = (turnIndicator > 0) ? LEFT : RIGHT
+      const currentDir = this.surroundPositionsFor(turnCache[0])[index]
+      let newDir = null
+      if(turnDir === LEFT) {
+        newDir = currentDir - 1
+        if(newDir <= 0) { newDir = newDir + 8 }
+      }
+      if(turnDir === RIGHT) {
+        newDir = currentDir + 1
+        if(newDir > 8) { newDir = newDir - 8 }
+      }
+      return positions[newDir]
+    }
+    else {
+      const myDir = this.surroundPositionsFor(dir)[index]
+      return positions[myDir]
+    }
+  }
+
+  surroundPositionsFor(dir) {
+    switch(dir) {
+      case BOTTOM:
+      case BOTTOM_LEFT:
+        return [TOP, TOP_RIGHT, RIGHT, TOP_LEFT, LEFT]
+        break
+      case LEFT:
+      case TOP_LEFT:
+        return [RIGHT, BOTTOM_RIGHT, BOTTOM, TOP_RIGHT, TOP]
+        break
+      case TOP:
+      case TOP_RIGHT:
+        return [BOTTOM, BOTTOM_LEFT, LEFT, BOTTOM_RIGHT, RIGHT]
+        break
+      case RIGHT:
+      case BOTTOM_RIGHT:
+        return [LEFT, TOP_LEFT, TOP, BOTTOM_LEFT, BOTTOM]
+        break
+    }
+  }
+
   subPositionForIndex(index, position, moveDir) {
 
     const directions = {
@@ -110,6 +169,15 @@ const roleFighter = {
           masterPos = creep.pos
         }
 
+        let group = Memory.zergSubordinates[creep.memory.groupId]
+        let previousDir = group.previousDir
+        let turnCache = group.turnCache
+
+        if(masterDir != previousDir) {
+          //TODO create turncache
+          // turncache.push Everything between the two dirs
+        }
+
         if(creep.pos.inRangeTo(target, this.attackRange(creep))) {
           this.destroy(creep, target)
         }
@@ -132,6 +200,11 @@ const roleFighter = {
             )
           })
         }
+        previousDir = masterDir
+        if(turnCache && turnCache.length) {
+          // TODO remove first item?
+          turnCache.shift(1)
+        }
       }
       else {
         creep.say('No Path')
@@ -152,6 +225,21 @@ const roleFighter = {
     else {
       // Standard attack on flag
       creep.say('Master down?')
+      let flag = this.flagToGoFor(creep)
+      if(flag) {
+        this.attackOnFlag(creep, flag)
+      }
+      else {
+        target = this.scorchTarget(creep)
+        if(target) {
+          if(creep.pos.inRangeTo(target, this.attackRange(creep))) {
+            this.destroy(creep, targets[0])
+          }
+          else {
+            creep.moveTo(target)
+          }
+        }
+      }
       if(!this.moveAndAttackOnFlag(creep)) {
         this.attackVicinity(creep)
         this.heal(creep)
@@ -181,7 +269,7 @@ const roleFighter = {
       }
     }
     if(flag) {
-      if(flag.room) {
+      if(flag.room && flag.room.name == creep.room.name) {
         let targets = flag.pos.look()
         if(targets.length) {
           return flag
@@ -298,6 +386,8 @@ const roleFighter = {
     targets = room.find(
       FIND_HOSTILE_STRUCTURES, (s)=> s.structureType === STRUCTURE_EXTENSION
     )
+    if(targets.length) { return creep.findClosestByPath(targets) }
+    targets = room.find(FIND_HOSTILE_CREEPS)
     if(targets.length) { return creep.findClosestByPath(targets) }
     return false
   }

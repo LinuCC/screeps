@@ -1,4 +1,4 @@
-const ROLE_ZERG = 'zerg'
+jonst ROLE_ZERG = 'zerg'
 const KIND_DRONE = 1 /* Carry stuff */
 const KIND_ZERGLING = 2 /* Work stuff */
 const KIND_INFESTOR = 3 /* Mine stuff from sources */
@@ -40,6 +40,7 @@ const TYPE_SEED = 2
 const WORK_REQUESTING = 'workReq'
 const RESOURCE_REQUESTING = 'resourceReq'
 const ACTIVE_PROVIDING = 'actProv'
+const PASSIVE_PROVIDING = 'pasProv'
 
 
 const OBJ_CONSTRUCTION_SITE = 'objConSite'
@@ -90,6 +91,7 @@ const exports = Object.freeze({
   },
   PRIO_QUEUES: [
     ACTIVE_PROVIDING,
+    PASSIVE_PROVIDING,
     WORK_REQUESTING,
     RESOURCE_REQUESTING,
     WORK,
@@ -128,6 +130,12 @@ const exports = Object.freeze({
     [ACTIVE_PROVIDING]: {
       [OBJ_RESOURCE]: 1950,
       [STRUCTURE_CONTAINER]: 2000,
+    },
+    [PASSIVE_PROVIDING]: {
+      [OBJ_RESOURCE]: 1000, // For new rooms when they dont have a storage yet?
+      [STRUCTURE_CONTAINER]: 2000,
+      [STRUCTURE_STORAGE]: 2000,
+      [STRUCTURE_TERMINAL]: 3000, // Maybe shouldnt be in the passive prov queue
     },
     [RESOURCE_REQUESTING]: {
       [STRUCTURE_SPAWN]: 1000,

@@ -8,30 +8,142 @@ import Shiny from '../Shiny'
  */
 class PassiveProviding extends Queueing {
 
-  constructor(room, queue = $.CARRY) {
-    super(room, this.localQueue())
+  constructor(room, queue = $.PASSIVE_PROVIDING) {
+    super(room, queue)
   }
 
+  /**
+   * Generates a new Providing-item.
+   *
+   * Abstracts quite a bit and is somewhat intelligent.
+   * If you pass a `provider` in data and you want energy from it or it only has
+   * one resource, you only have to pass the prio and you are set.
+   *
+   * @param prio - If given as a function, it will execute it with the
+   *    calculated hiveMind-data and the return-value will be used as the prio
+   */
   newItem(data, prio, opts = {}) {
+    let type = data.type
+    let amount = data.amount
+    if(!type) {
+      const resourceData = this._calcResourceOf(data.provider)
+      type = resourceData.type
+      amount = amount || resourceData.amount
+    }
+    if(!amount) {
+      amount = this._calcCarryAmountOf(data.provider, type)
+    }
+    const hiveMindData = {
+      roomName: data.roomName || _.get(data.provider, ['pos', 'roomName']),
+      objId: data.id || _.get(data.provider, ['id']) || undefined,
+      x: data.x || _.get(data.provider, ['pos', 'x']) || undefined,
+      y: data.y || _.get(data.provider, ['pos', 'y']) || undefined,
+      type: type,
+      amount: amount,
+      assigned: false
+    }
+    if(typeof prio === 'function') {
+      prio = prio(hiveMindData)
+    }
+    return super.newItem(hiveMindData, prio)
   }
 
-  localQueue() {
-    const existingItems = allForRoom..........
-    let structures = this.room.find(
-      FIND_STRUCTURES, {filter: (struc)=> (
-        (
-          struc.structureType == STRUCTURE_STORAGE
-        ) &&
-        struc.store[resType] - (
-          _.sum(
-            _.filter(this.existingItems, (item)=> (
-              item.fromSource.id == struc.id
-            )), 'fromSource.amount'
-          )
-        ) > this.creepCarryAmount
-      )}
+  _calcResourceOf(provider) {
+    let goods = new Shiny(provider).allGoods()
+    _.each(goods, (amount, name)=> { if(amount === 0) { delete goods[name] } })
+    const availableResourceTypes = Object.keys(goods)
+    if(!availableResourceTypes.length) {
+      return false
+    }
+    else if(availableResourceTypes.length === 1) {
+      // If one resource is found, type is obvious
+      const type = availableResourceTypes[0]
+      return {type: type, amount: goods[type]}
+    }
+    else if(availableResourceTypes.includes(RESOURCE_ENERGY)) {
+      // Default to Energy if more than one resource found
+      return {type: RESOURCE_ENERGY, amount: goods[RESOURCE_ENERGY]}
+    }
+    else {
+      // Else basically give up and return at least something
+      log.orange(
+        `PassiveProviding#calcTypeOf just returned `
+        `${availableResourceTypes[0]} for ${provider}`
+      )
+      const type = availableResourceTypes[0]
+      return {type: type, amount: goods[type]}
+    }
+  }
+
+  _calcCarryAmountOf(object, type) {
+    return new Shiny(provider).goods(type)
+  }
+
+  itemDone(itemId) {
+    super.itemDone(itemId)
+  }
+
+  itemGenerator() {
+
+    let sources = []
+    // Resources
+    sources = room.find(FIND_STRUCTURES, (struc)=> (
+      struc.structureType == STRUCTURE_STORAGE ||
+      struc.structureType == STRUCTURE_TERMINAL
+    ))
+
+    if(sources.length) {
+      for(let source of sources) {
+        const existingItems = _.filter(
+          hiveMind.allForRoom(source.room),
+          {objId: source.id, type: RESOURCE_ENERGY, kind: this.queueType}
+        )
+        // If existing items do not exist, create a new one
+        // If existing items do exist, search for the one that isnt assigned
+        // (meaning that it kinda represents this source) and change datt
+        const sourceShiny = new Shiny(source)
+        const needed = _.sum(existingItems, 'amount')
+        let availableEnergy = sourceShiny.goods(RESOURCE_ENERGY) - needed
+
+        const onNewItem = ()=> {
+          if(availableEnergy > 0) {
+            this.newItem(
+              {amount: availableEnergy, provider: source},
+              (data)=> (this._prioForShiny(sourceShiny, data.amount))
+            )
+          }
+        }
+        const onEditItem = (existingItem)=> {
+          existingItem['amount'] += availableEnergy
+          if(existingItem.amount < 0) {
+            hiveMind.remove(existingItem.id)
+          }
+          else {
+            this.queue.updatePrioById(
+              existingItem.id, this._prioForShiny(
+                new Shiny(Game.getObjectById(existingItem.objId)),
+                existingItem.amount
+              )
+            )
+          }
+        }
+        // Take negative availableEnergy into account and change the
+        // existingItem based on that if necessary
+        this.editMetaItemOrNewItem(onNewItem, onEditItem, existingItems)
+      }
+    }
+  }
+
+  _prioForShiny(shiny, amount) {
+    let prio = (
+      $.PRIORITIES[$.PASSIVE_PROVIDING][shiny.type()] -
+      Math.floor(amount * $.PROVIDING_AMOUNT_MODIFIER)
     )
+    if(this.room.name != shiny.obj.room.name) {
+      prio += $.REMOTE_PRIORITY_PROVIDING_MODIFIER
+    }
+    return prio
   }
 }
 
-module.exports = ActiveProviding
+module.exports = PassiveProviding
