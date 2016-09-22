@@ -87,23 +87,23 @@ var modwide = global; module.exports =
 
 	var _creepWatcher2 = _interopRequireDefault(_creepWatcher);
 
-	var _fighter = __webpack_require__(17);
+	var _fighter = __webpack_require__(19);
 
 	var _fighter2 = _interopRequireDefault(_fighter);
 
-	var _healer = __webpack_require__(18);
+	var _healer = __webpack_require__(20);
 
 	var _healer2 = _interopRequireDefault(_healer);
 
-	var _rangedFighter = __webpack_require__(19);
+	var _rangedFighter = __webpack_require__(21);
 
 	var _rangedFighter2 = _interopRequireDefault(_rangedFighter);
 
-	var _assimilator = __webpack_require__(20);
+	var _assimilator = __webpack_require__(22);
 
 	var _assimilator2 = _interopRequireDefault(_assimilator);
 
-	var _sweeper = __webpack_require__(21);
+	var _sweeper = __webpack_require__(23);
 
 	var _sweeper2 = _interopRequireDefault(_sweeper);
 
@@ -115,7 +115,7 @@ var modwide = global; module.exports =
 
 	var _hiveMind2 = _interopRequireDefault(_hiveMind);
 
-	var _Overlord = __webpack_require__(22);
+	var _Overlord = __webpack_require__(24);
 
 	var _Overlord2 = _interopRequireDefault(_Overlord);
 
@@ -145,7 +145,7 @@ var modwide = global; module.exports =
 
 	var _helper2 = _interopRequireDefault(_helper);
 
-	var _Queueing = __webpack_require__(24);
+	var _Queueing = __webpack_require__(18);
 
 	var _Queueing2 = _interopRequireDefault(_Queueing);
 
@@ -491,8 +491,11 @@ var modwide = global; module.exports =
 	  },
 
 	  allForRoom: function (room) {
+	    let opts = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+	    const filter = opts.filter || (() => true);
 	    const roomName = typeof room === 'string' ? room : room.name;
-	    return _.filter(this.data, entry => entry.fromSource && entry.fromSource.roomName == roomName || entry.toTarget && entry.toTarget.roomName == roomName || entry.byRoomName == roomName || entry.roomName == roomName);
+	    return _.filter(this.data, entry => (entry.fromSource && entry.fromSource.roomName == roomName || entry.toTarget && entry.toTarget.roomName == roomName || entry.byRoomName == roomName || entry.roomName == roomName) && filter());
 	  },
 
 	  filter: function (filter) {
@@ -656,6 +659,9 @@ var modwide = global; module.exports =
 	const REMOTE_PRIORITY_PROVIDING_MODIFIER = 100;
 	const PROVIDING_AMOUNT_MODIFIER = 0.1;
 	const REMOTE_PRIORITY_CONSTRUCTION_MODIFIER = 50;
+	const RANGE_PRIORITY_MODIFIER = 2;
+	// Max Steps that are considered when changing the prio
+	const RANGE_PRIORITY_THRESHOLD = 50 * RANGE_PRIORITY_MODIFIER;
 
 	const SEED = 'seed';
 
@@ -716,6 +722,14 @@ var modwide = global; module.exports =
 	  },
 	  PRIO_QUEUES: [ACTIVE_PROVIDING, WORK_REQUESTING, RESOURCE_REQUESTING, WORK, CARRY, SEED, SCOUT, EXCAVATE, UPGRADE, SPAWN],
 
+	  NEW_QUEUES_FOR_KINDS: {
+	    [KIND_DRONE]: [RESOURCE_REQUESTING],
+	    [KIND_ZERGLING]: [WORK_REQUESTING],
+	    [KIND_INFESTOR]: [EXCAVATE],
+	    [KIND_CORRUPTOR]: [SEED],
+	    [KIND_MUTALISK]: [SCOUT]
+	  },
+
 	  QUEUES_FOR_KINDS: {
 	    [KIND_DRONE]: [CARRY],
 	    [KIND_ZERGLING]: [WORK, CARRY],
@@ -769,6 +783,7 @@ var modwide = global; module.exports =
 	  PROVIDING_AMOUNT_MODIFIER: PROVIDING_AMOUNT_MODIFIER,
 	  CONSTRUCTION_SITE: CONSTRUCTION_SITE,
 	  REMOTE_PRIORITY_CONSTRUCTION_MODIFIER: REMOTE_PRIORITY_CONSTRUCTION_MODIFIER,
+	  RANGE_PRIORITY_MODIFIER: RANGE_PRIORITY_MODIFIER,
 
 	  ///TODO If we need some more stuff for Shiny#type, we can use the following
 	  OBJ_CONSTRUCTION_SITE: OBJ_CONSTRUCTION_SITE,
@@ -825,7 +840,8 @@ var modwide = global; module.exports =
 
 	  WORK_REQUESTING: WORK_REQUESTING,
 	  RESOURCE_REQUESTING: RESOURCE_REQUESTING,
-	  ACTIVE_PROVIDING: ACTIVE_PROVIDING
+	  ACTIVE_PROVIDING: ACTIVE_PROVIDING,
+	  RANGE_PRIORITY_THRESHOLD: RANGE_PRIORITY_THRESHOLD
 	});
 
 	module.exports = _exports;
@@ -1618,6 +1634,12 @@ var modwide = global; module.exports =
 
 	__webpack_require__(5);
 
+	var _Spawning = __webpack_require__(17);
+
+	var _Spawning2 = _interopRequireDefault(_Spawning);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 	class Spawner {
 	  constructor() {
 	    var _this = this;
@@ -1715,6 +1737,48 @@ var modwide = global; module.exports =
 	      return index;
 	    };
 
+	    this.yellowBox = function (spawnRoom) {
+	      let test = arguments.length <= 1 || arguments[1] === undefined ? true : arguments[1];
+
+	      const spawning = new _Spawning2.default(spawnRoom);
+	      const groupId = 1;
+	      spawning.newItem({
+	        role: 'fighter',
+	        memory: { hasAssignedItself: false, isMaster: true, groupId: groupId },
+	        body: [MOVE, WORK]
+	      }, 1000);
+	      spawning.newItem({
+	        role: 'fighter',
+	        memory: {
+	          hasAssignedItself: false,
+	          isSubordinate: true,
+	          groupControl: true,
+	          groupId: groupId
+	        },
+	        body: [MOVE, HEAL]
+	      }, 1000);
+	      spawning.newItem({
+	        role: 'fighter',
+	        memory: {
+	          hasAssignedItself: false,
+	          isSubordinate: true,
+	          groupControl: true,
+	          groupId: groupId
+	        },
+	        body: [MOVE, HEAL]
+	      }, 1000);
+	      spawning.newItem({
+	        role: 'fighter',
+	        memory: {
+	          hasAssignedItself: false,
+	          isSubordinate: true,
+	          groupControl: true,
+	          groupId: groupId
+	        },
+	        body: [MOVE, HEAL]
+	      }, 1000);
+	    };
+
 	    this.calcInfestorCreepBody = (spawnRoom, sourceAmount, destinationRange) => {};
 
 	    this.calcCreepBody = function (room, parts) {
@@ -1765,12 +1829,543 @@ var modwide = global; module.exports =
 
 /***/ },
 /* 17 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _constants = __webpack_require__(5);
+
+	var _constants2 = _interopRequireDefault(_constants);
+
+	var _Queueing = __webpack_require__(18);
+
+	var _Queueing2 = _interopRequireDefault(_Queueing);
+
+	var _hiveMind = __webpack_require__(3);
+
+	var _hiveMind2 = _interopRequireDefault(_hiveMind);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	/**
+	 * Spawn creeps
+	 * TODO Maintain the queue by removing unspawnable items (for example if
+	 * extensions got destroyed)
+	 */
+	class Spawning extends _Queueing2.default {
+
+	  constructor(room) {
+	    let queue = arguments.length <= 1 || arguments[1] === undefined ? _constants2.default.SPAWN : arguments[1];
+
+	    super(room, queue);
+
+	    _initialiseProps.call(this);
+	  }
+
+	  /**
+	   * Generates a new Spawning-item.
+	   */
+	  newItem(data, prio) {
+	    let opts = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+
+	    let creepMemory = data.memory || {};
+	    if (!_.isUndefined(opts.assignItem)) {
+	      creepMemory.item = creepMemory.item || {};
+	      let itemId = _hiveMind2.default.push(opts.assignItem.data);
+	      creepMemory.item.id = itemId;
+	      if (!_.isUndefined(opts.assignItem.priority)) {
+	        creepMemory.item.prio = opts.assignItem.priority;
+	      } else {
+	        creepMemory.item.prio = 0;
+	      }
+	    }
+	    if (_.isUndefined(creepMemory.myRoomName)) {
+	      creepMemory.myRoomName = this.room.name;
+	    }
+	    if (_.isUndefined(creepMemory.role)) {
+	      creepMemory.role = this._roleOrDefaultOf(data);
+	    }
+
+	    // Set the data
+	    const hiveMindData = {
+	      memory: creepMemory,
+	      kind: data.kind || _constants2.default.KIND_ZERGLING,
+	      role: this._roleOrDefaultOf(data),
+	      body: data.body || undefined
+	    };
+	    return super.newItem(hiveMindData, prio);
+	  }
+
+	  itemDone(itemId) {
+	    super.itemDone(itemId);
+	  }
+
+	  itemGenerator() {
+	    // Simple target-zerg-count
+	    for (let type of this.room.memory.targetZergCount) {
+	      const count = this.room.memory.targetZergCount[type];
+	      const existingZergs = _.filter(Game.creeps, zerg => zerg.memory.role === type && (zerg.memory.byRoomName === this.room.name || zerg.pos.roomName === this.room.name));
+	      let queuedCreeps = this.queue.filter({ memory: { kind: type, role: _constants2.default.ROLE_ZERG } }).length;
+	      while (count > existingZergs + queuedCreeps) {
+	        this.newItem({
+	          role: _constants2.default.ZERG,
+	          kind: type,
+	          memory: { body: this.bodyFor(type) }
+	        });
+	      }
+	    }
+	  }
+
+	  bodyFor(zergType) {
+	    const maxSpawnCost = this.room.maxSpawnCost();
+	    let body = _constants2.default.ZERG_PARTS_TEMPLATES[zergType];
+	    return this.calcCreepBody(this.room, body, maxSpawnCost);
+	  }
+
+	  /**
+	   * TODO Probably doesnt belong here
+	   */
+	  itemVerwertor() {
+	    if (this.queue.itemCount() > 0) {
+	      while (queue.peek()) {
+	        const queueItem = queue.peek();
+	        const itemData = _hiveMind2.default.data[queueItem.id];
+	        const spawnPriority = _constants2.default.PRIORITIES[_constants2.default.SPAWN][_constants2.default.KIND_CORRUPTOR];
+	        const memory = {
+	          kind: _constants2.default.KIND_CORRUPTOR,
+	          memory: {
+	            role: _constants2.default.ZERG,
+	            item: queueItem
+	          }
+	        };
+	        const res = this.room.pushToQueue(_constants2.default.SPAWN, { memory: creepMemory, kind: creepMemory.kind }, spawnPriority);
+	        if (res) {
+	          queue.dequeue();
+	        }
+	      }
+	    }
+	  }
+
+	  spawnCreep(spawnPriority, creepMemory) {
+	    let opts = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+
+	    if (!_.isUndefined(opts.assignItem)) {
+	      creepMemory.item = creepMemory.item || {};
+	      let itemId = _hiveMind2.default.push(opts.assignItem.data);
+	      creepMemory.item.id = itemId;
+	      if (!_.isUndefined(opts.assignItem.priority)) {
+	        creepMemory.item.prio = opts.assignItem.priority;
+	      } else {
+	        creepMemory.item.prio = 0;
+	      }
+	    }
+	    if (_.isUndefined(creepMemory.myRoomName)) {
+	      creepMemory.myRoomName = this.room.name;
+	    }
+	    this.room.pushToQueue(_constants2.default.SPAWN, { memory: creepMemory, kind: creepMemory.kind }, spawnPriority);
+	  }
+
+	  calculateStepsFromSpawnOf(room, targetPos) {
+	    //TODO Implement me
+	    return 0;
+	  }
+	}
+
+	var _initialiseProps = function () {
+	  this._roleOrDefaultOf = data => data.role || data.memory.role || _constants2.default.ROLE_ZERG;
+
+	  this.calcCreepBody = function (room, parts) {
+	    let maxCost = arguments.length <= 2 || arguments[2] === undefined ? 0 : arguments[2];
+	    let usingStreet = arguments.length <= 3 || arguments[3] === undefined ? true : arguments[3];
+
+	    let partCost = {
+	      [WORK]: 100,
+	      [CARRY]: 50,
+	      [MOVE]: 50,
+	      [ATTACK]: 80,
+	      [RANGED_ATTACK]: 150,
+	      [HEAL]: 250
+	    };
+	    let roomMaxCost = _.sum(room.find(FIND_MY_STRUCTURES, { filter: struc => struc.structureType == STRUCTURE_EXTENSION || struc.structureType == STRUCTURE_SPAWN }), 'energy');
+	    let max = maxCost != 0 ? maxCost : roomMaxCost;
+	    let partBlockCost = parts.reduce((memo, part) => memo + partCost[part], 0);
+	    let moveRatio = usingStreet ? 1 / 2 : 1;
+	    let movesPerBlock = parts.length * moveRatio;
+	    let moveCost = movesPerBlock * partCost[MOVE];
+	    // We should add one MOVE to the 6 calculated MOVE if we have 13 parts
+	    let hiddenMoveCost = movesPerBlock % 1 > 0 ? partCost[MOVE] / 2 : 0;
+	    let wholeBlockCost = partBlockCost + moveCost;
+	    let maxBlockCount = Math.floor(50 / (parts.length + movesPerBlock));
+	    let blockCount = Math.floor((max - hiddenMoveCost) / wholeBlockCost);
+	    blockCount = maxBlockCount < blockCount ? maxBlockCount : blockCount;
+	    let moveBlockCount = Math.ceil(movesPerBlock * blockCount);
+	    let body = [];
+	    _.range(moveBlockCount).forEach(() => body.push(MOVE));
+	    for (let i = 0; i < blockCount; i += 1) {
+	      body = body.concat(parts);
+	    }
+	    return body;
+	  };
+	};
+
+	module.exports = Spawning;
+
+/***/ },
+/* 18 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _hiveMind = __webpack_require__(3);
+
+	var _hiveMind2 = _interopRequireDefault(_hiveMind);
+
+	var _PriorityQueue = __webpack_require__(4);
+
+	var _PriorityQueue2 = _interopRequireDefault(_PriorityQueue);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	/**
+	 * Basic helper-class for Queueing stuff
+	 * Combines hiveMind & PriorityQueue for some noice helper-methods
+	 */
+	class Queueing {
+	  constructor(room, queue) {
+	    this.getStructureName = struc => {
+	      let name = false;
+	      switch (struc.structureType) {
+	        case STRUCTURE_SPAWN:
+	          name = 'Spawn';break;
+	        case STRUCTURE_EXTENSION:
+	          name = 'Extension';break;
+	        case STRUCTURE_CONTROLLER:
+	          name = 'Controller';break;
+	        case STRUCTURE_TOWER:
+	          name = 'Tower';break;
+	        case STRUCTURE_RAMPART:
+	          name = 'Rampart';break;
+	        case STRUCTURE_CONTAINER:
+	          name = 'Container';break;
+	        case STRUCTURE_STORAGE:
+	          name = 'Storage';break;
+	        case STRUCTURE_WALL:
+	          name = 'Wall';break;
+	        case STRUCTURE_ROAD:
+	          name = 'Road';break;
+	        case STRUCTURE_LINK:
+	          name = 'Link';break;
+	        default:
+	          name = '???';break;
+	      }
+	      if (struc instanceof ConstructionSite) {
+	        return `ConstructionSite of ${ name }`;
+	      } else {
+	        return name;
+	      }
+	    };
+
+	    if (typeof room === 'string') {
+	      this.roomName = room;
+	      this.room = Game.rooms[this.roomName];
+	    } else {
+	      this.roomName = room.name;
+	      this.room = room;
+	    }
+	    if (typeof queue === 'string') {
+	      this.queueType = queue;
+	      this.queue = this.room.queue(queue);
+	    } else if (queue === null) {} else {
+	      this.queueType = 'ADD ME';
+	      this.queue = queue;
+	    }
+	  }
+
+	  newItem(data, prio) {
+	    let queue = arguments.length <= 2 || arguments[2] === undefined ? this.queue : arguments[2];
+
+	    const itemId = _hiveMind2.default.push(data);
+	    data.kind = data.kind || this.queueType;
+	    queue.queue({ id: itemId, prio: prio });
+	    return itemId;
+	  }
+
+	  itemDone(itemId) {
+	    _hiveMind2.default.delete(itemId);
+	  }
+
+	  allItems() {
+	    if (_.isUndefined(this._allItems)) {
+	      this._allItems = _hiveMind2.default.allForRoom(this.room || this.roomName);
+	    }
+	    return this._allItems;
+	  }
+
+	  filterQueue(filter) {
+	    return _.filter(this.queue, filter);
+	  }
+
+	  log() {
+	    /// TODO Make a nice log-output
+	    console.log(JSON.stringify(this.queue));
+	  }
+
+	  log() {
+	    let opts = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+
+	    const queue = opts.queue || this.queue;
+	    if (!queue) {
+	      log.orange('No prioqueue!');return;
+	    }
+	    console.log(`<span style="color: #33aaff">` + `====== Queue: ${ queue.constructor.name }</span>`);
+	    for (let queueItem of queue.data) {
+	      let item = Memory['hiveMind'][queueItem.id];
+	      if (!item) {
+	        continue;
+	      }
+	      console.log(this._stringifyQueueItem(queueItem, item));
+	    }
+	  }
+
+	  _stringifyQueueItem(queueItem, hiveMindItem) {
+	    return `    - <span style="color: orange">Item:</span> ` + `${ JSON.stringify(hiveMindItem) }`;
+	  }
+
+	  /**
+	   * A meta-item is one which assigned-status has been set to false.
+	   * It basically is a queue-item with an overarching hiveMindItem from which
+	   * multiple hiveMind-items can be generated.
+	   */
+	  editMetaItemOrNewItem(onNewItem, onEditItem, existingItems) {
+	    if (!existingItems.length) {
+	      onNewItem();
+	    } else {
+	      const nonAssignedExistingItems = _.filter(existingItems, { assigned: false });
+	      if (nonAssignedExistingItems.length) {
+	        onEditItem(nonAssignedExistingItems[0]);
+	      } else {
+	        onNewItem();
+	      }
+	    }
+	  }
+
+	  /**
+	   * Generates a new item that "gets" the amount of resources from the meta item
+	   */
+	  generateNewItemFromMetaItem(metaItem, amountToGet) {
+	    let hiveMindData = _hiveMind2.default.data[metaItem.id];
+	    let clonedData = JSON.parse(JSON.stringify(hiveMindData));
+	    let clonedItem = JSON.parse(JSON.stringify(metaItem));
+	    clonedData.amount = hiveMindData.amount > amountToGet ? amountToGet : hiveMindData.amount;
+	    hiveMindData.amount -= clonedData.amount;
+	    const newId = _hiveMind2.default.push(clonedData);
+	    clonedItem.id = newId;
+	    return clonedItem;
+	  }
+
+	  reorderByRangeFrom(position) {
+	    let opts = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+	    const filter = opts.filter || (() => true);
+	    // Ignores items that are massively less prioritized
+	    const useRangeThreshold = opts.useRangeThreshold || true;
+	    let firstPrio = null;
+	    let queueData = _.transform(this.queue.data, (result, queueItem, index) => {
+	      if (useRangeThreshold && firstPrio !== null && firstPrio < queueItem.prio - $.RANGE_PRIORITY_THRESHOLD) {
+	        // Ditch the items that are massively less prioritized
+	        // Since all following Priorities will be the same or even higher,
+	        // all of them wont be prioritized better than the already re-queued
+	        // items
+	        return false;
+	      }
+	      const hiveMindData = _hiveMind2.default.data[queueItem.id];
+	      let prio = 0;
+	      if (filter(queueItem, hiveMindData)) {
+	        if (firstPrio === null) {
+	          firstPrio = queueItem.prio;
+	        }
+	        const range = position.getLinearRangeTo(new RoomPosition(hiveMindData.x, hiveMindData.y, hiveMindData.roomName));
+	        prio = queueItem.prio + range * $.PRIORITY_RANGE_MODIFER;
+	      }
+	      // Do I really need remote-priorities-mod? I dont think so. Datt range.
+	      // else {
+	      //   prio = queueItem.prio + $.REMOTE_PRIORITIES_PROVIDING_MODIFIER
+	      // }
+	      result.push({ id: queueItem.id, prio: prio });
+	      return true;
+	    });
+	    return new _PriorityQueue2.default(queueData);
+	  }
+
+	}
+
+	module.exports = Queueing;
+
+/***/ },
+/* 19 */
 /***/ function(module, exports) {
 
 	'use strict';
 
 	const roleFighter = {
+
+	  assignItself(creep) {
+	    if (!Memory.zergSubordinates) {
+	      Memory.zergSubordinates = {};
+	    }
+	    if (!Memory.zergSubordinates[creep.memory.groupId]) {
+	      Memory.zergSubordinates[creep.memory.groupId] = {};
+	    }
+	    let group = Memory.zergSubordinates[creep.memory.groupId];
+	    if (creep.memory.isMaster) {
+	      group['masterId'] = creep.id;
+	    } else if (creep.memory.isSubordinate) {
+	      if (!group['subordinateIds']) {
+	        group['subordinateIds'] = [];
+	      }
+	      group['subordinateIds'].push(creep.id);
+	    }
+	    creep.memory.hasAssignedItself = true;
+	  },
+
+	  subPositionForIndex(index, position, moveDir) {
+
+	    const directions = {
+	      [TOP]: { x: 0, y: 1 },
+	      [TOP_RIGHT]: { x: -1, y: 1 },
+	      [RIGHT]: { x: -1, y: 0 },
+	      [BOTTOM_RIGHT]: { x: -1, y: -1 },
+	      [BOTTOM]: { x: 0, y: -1 },
+	      [BOTTOM_LEFT]: { x: 1, y: -1 },
+	      [LEFT]: { x: 1, y: 0 },
+	      [TOP_LEFT]: { x: 1, y: 1 }
+	    };
+	    let behind = directions[moveDir];
+	    let relativePos = null;
+	    let dir = null;
+	    switch (index) {
+	      case 0:
+	        relativePos = directions[moveDir];
+	        break;
+	      case 1:
+	        dir = moveDir - 1 >= 1 ? moveDir - 1 : 8 + (moveDir - 1);
+	        relativePos = directions[dir];
+	        break;
+	      case 2:
+	        // If moveDir is straight (top, right, left, bottom) we want one of the
+	        // creeps to stand directly besides the attacker
+	        dir = null;
+	        if (moveDir % 2 === 1) {
+	          dir = moveDir - 2 >= 1 ? moveDir - 2 : 8 + (moveDir - 2);
+	        } else {
+	          dir = moveDir + 1 <= 8 ? moveDir + 1 : moveDir + 1 - 8;
+	        }
+	        relativePos = directions[dir];
+	        break;
+	    }
+	    console.log(` = relativePos: ${ JSON.stringify(relativePos) }`);
+	    let x = relativePos.x + position.x;
+	    let y = relativePos.y + position.y;
+	    console.log(`  = x: ${ x }`);
+	    console.log(`  = y: ${ y }`);
+	    if (x < 0) {
+	      x = 50 + x;
+	    } else if (x > 50) {
+	      x = x - 50;
+	    }
+	    if (y < 0) {
+	      y = 50 + x;
+	    } else if (y > 50) {
+	      y = x - 50;
+	    }
+
+	    return new RoomPosition(x, y, position.roomName);
+	  },
+
 	  run(creep) {
+	    let itsMaster = Game.getObjectById(_.get(Memory, ['zergSubordinates', creep.memory.groupId, 'masterId']));
+	    if (creep.memory.hasAssignedItself === false) {
+	      this.assignItself(creep);
+	    }
+	    if (creep.memory.isMaster) {
+
+	      // Control master here, like getting target, moving to it
+
+	      let path = null;
+	      let target = this.flagToGoFor(creep);
+	      if (target) {
+	        this.attackOnFlag(creep, target);
+	      } else {
+	        // Scorched earth
+	        target = this.scorchTarget(creep);
+	      }
+	      if (target) {
+	        path = creep.pos.findPathTo(target);
+	      }
+	      if (path) {
+	        let masterDir = null;
+	        let masterPos = null;
+	        if (path.length) {
+	          masterDir = path[0].direction; // Which dir is the master going?
+	          masterPos = new RoomPosition(path[0].x, path[0].y, creep.room.name);
+	          creep.move(masterDir);
+	        } else {
+	          masterDir = creep.pos.getDirectionTo(target);
+	        }
+	        if (!masterDir) {
+	          log.red('masterDir undefined');
+	          masterDir = 1;
+	          masterPos = creep.pos;
+	        }
+
+	        if (creep.pos.inRangeTo(target, this.attackRange(creep))) {
+	          this.destroy(creep, target);
+	        } else {
+	          this.attackVicinity(creep);
+	          this.heal(creep);
+	        }
+
+	        // Try to move the target with the master
+	        const subs = _.get(Memory, ['zergSubordinates', creep.memory.groupId, 'subordinateIds']);
+	        log.red(subs.length);
+	        if (subs && subs.length) {
+	          subs.forEach((sub, index) => {
+	            console.log(`  = Sub-index is ${ index }`);
+	            Game.getObjectById(sub).moveTo(this.subPositionForIndex(index, masterPos, masterDir), { ignoreCreeps: false });
+	          });
+	        }
+	      } else {
+	        creep.say('No Path');
+	        this.attackVicinity(creep);
+	        this.heal(creep);
+	      }
+	    } else if (creep.memory.isSubordinate && itsMaster && creep.memory.groupControl) {
+	      // Master controlls my movement
+	      this.attackVicinity(creep);
+	      this.heal(creep);
+	    } else if (creep.memory.isSubordinate && itsMaster) {
+	      creep.moveTo(itsMaster);
+	    } else {
+	      // Standard attack on flag
+	      creep.say('Master down?');
+	      if (!this.moveAndAttackOnFlag(creep)) {
+	        this.attackVicinity(creep);
+	        this.heal(creep);
+	      }
+	    }
+	  },
+
+	  attackOnFlag(creep, flag) {
+	    if (creep.pos.inRangeTo(flag, this.attackRange(creep))) {
+	      let targets = flag.pos.look();
+	      if (targets.length) {
+	        this.destroy(creep, targets[0]);
+	        return true;
+	      }
+	    }
+	  },
+
+	  flagToGoFor(creep) {
 	    let flag;
 	    if (creep.memory.flagName) {
 	      flag = Game.flags[creep.memory.flagName];
@@ -1781,33 +2376,113 @@ var modwide = global; module.exports =
 	      }
 	    }
 	    if (flag) {
-	      creep.moveTo(flag);
-	      if (creep.pos.inRangeTo(flag, 1)) {
+	      if (flag.room) {
+	        let targets = flag.pos.look();
+	        if (targets.length) {
+	          return flag;
+	        } else {
+	          return false;
+	        }
+	      } else {
+	        return flag.pos;
+	      }
+	    } else {
+	      return false;
+	    }
+	  },
+
+	  moveAndAttackOnFlag(creep) {
+	    let flag;
+	    if (creep.memory.flagName) {
+	      flag = Game.flags[creep.memory.flagName];
+	    } else {
+	      let flags = _.filter(Game.flags, { color: COLOR_RED });
+	      if (flags.length) {
+	        flag = flags[0];
+	      }
+	    }
+	    if (flag) {
+	      if (creep.pos.inRangeTo(flag, this.attackRange(creep))) {
 	        let targets = flag.pos.look();
 	        if (targets.length) {
 	          this.destroy(creep, targets[0]);
+	          return true;
 	        }
-	      }
-	      let targets = creep.pos.findInRange(FIND_HOSTILE_CREEPS, 1);
-	      if (targets.length > 0) {
-	        this.destroy(creep, targets[0]);
+	      } else {
+	        creep.moveTo(flag);
+	        return false;
 	      }
 	    }
 	  },
 
+	  attackRange(creep) {
+	    if (creep.getActiveBodyparts(RANGED_ATTACK) > 0) {
+	      return 3;
+	    } else {
+	      return 1;
+	    }
+	  },
+
+	  attackVicinity(creep) {
+	    let targets = creep.pos.findInRange(FIND_HOSTILE_CREEPS, this.attackRange(creep));
+	    if (targets.length > 0) {
+	      this.destroy(creep, targets[0]);
+	    }
+	  },
+
 	  destroy(creep, target) {
+	    if (target instanceof Flag) {
+	      let targets = _.reject(target.pos.look(), t => t instanceof Flag);
+	      target = targets[0];
+	    }
 	    if (creep.getActiveBodyparts(WORK) > 0 && !(target instanceof Creep)) {
-	      console.log(creep.dismantle(Game.getObjectById('57a2ac0b0ed300e43ec06811')));
+	      log.orange(`dismantling! ${ creep.dismantle(target.id) }, ${ JSON.stringify(target) }`);
+	      creep.dismantle(target);
 	    } else {
 	      creep.attack(target);
 	    }
+	    if (creep.getActiveBodyparts(RANGED_ATTACK) > 0) {
+	      creep.rangedAttack(target);
+	    }
+	  },
+
+	  heal(creep) {
+	    if (creep.hitsMax - _.sum(_.filter(creep.body, (b, k) => k == HEAL)) >= creep.hits) {
+	      creep.heal(creep);
+	    } else {
+	      let targets = creep.pos.findInRange(FIND_MY_CREEPS, 1, { filter: creep => creep.hitsMax - creep.hits > 0 });
+	      if (!(targets.length > 0)) {
+	        targets = creep.pos.findInRange(FIND_MY_CREEPS, 2, { filter: creep => creep.hitsMax - creep.hits > 0 });
+	      }
+	      if (targets.length > 0) {
+	        targets = _.sortByOrder(targets, c => c.maxHits - c.hits, 'asc');
+	        creep.heal(targets[0]);
+	      }
+	    }
+	  },
+
+	  scorchTarget(creep) {
+	    const room = creep.room;
+	    targets = room.find(FIND_HOSTILE_STRUCTURES, s => s.structureType === STRUCTURE_TOWER);
+	    if (targets.length) {
+	      return creep.findClosestByPath(targets);
+	    }
+	    targets = room.find(FIND_HOSTILE_STRUCTURES, s => s.structureType === STRUCTURE_SPAWN);
+	    if (targets.length) {
+	      return creep.findClosestByPath(targets);
+	    }
+	    targets = room.find(FIND_HOSTILE_STRUCTURES, s => s.structureType === STRUCTURE_EXTENSION);
+	    if (targets.length) {
+	      return creep.findClosestByPath(targets);
+	    }
+	    return false;
 	  }
 	};
 
 	module.exports = roleFighter;
 
 /***/ },
-/* 18 */
+/* 20 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -1851,7 +2526,7 @@ var modwide = global; module.exports =
 	module.exports = roleHealer;
 
 /***/ },
-/* 19 */
+/* 21 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -1886,7 +2561,7 @@ var modwide = global; module.exports =
 	module.exports = roleRangedFighter;
 
 /***/ },
-/* 20 */
+/* 22 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -1917,7 +2592,7 @@ var modwide = global; module.exports =
 	module.exports = roleAssimilator;
 
 /***/ },
-/* 21 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1960,7 +2635,7 @@ var modwide = global; module.exports =
 	module.exports = roleSweeper;
 
 /***/ },
-/* 22 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1977,7 +2652,7 @@ var modwide = global; module.exports =
 
 	var _PriorityQueue2 = _interopRequireDefault(_PriorityQueue);
 
-	var _Spawning = __webpack_require__(23);
+	var _Spawning = __webpack_require__(17);
 
 	var _Spawning2 = _interopRequireDefault(_Spawning);
 
@@ -2033,8 +2708,8 @@ var modwide = global; module.exports =
 	        this.excavate(queues[_constants2.default.EXCAVATE]);
 	      }
 
-	      new _ActiveProviding2.default(this.room).itemGenerator();
-	      new _Requesting2.default(this.room).itemGenerator();
+	      // new ActiveProviding(this.room).itemGenerator()
+	      // new Requesting(this.room).itemGenerator()
 
 	      this.remote(queues);
 	    };
@@ -2852,328 +3527,6 @@ var modwide = global; module.exports =
 	module.exports = Overlord;
 
 /***/ },
-/* 23 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _constants = __webpack_require__(5);
-
-	var _constants2 = _interopRequireDefault(_constants);
-
-	var _Queueing = __webpack_require__(24);
-
-	var _Queueing2 = _interopRequireDefault(_Queueing);
-
-	var _hiveMind = __webpack_require__(3);
-
-	var _hiveMind2 = _interopRequireDefault(_hiveMind);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	/**
-	 * Spawn creeps
-	 * TODO Maintain the queue by removing unspawnable items (for example if
-	 * extensions got destroyed)
-	 */
-	class Spawning extends _Queueing2.default {
-
-	  constructor(room) {
-	    let queue = arguments.length <= 1 || arguments[1] === undefined ? _constants2.default.SPAWN : arguments[1];
-
-	    super(room, queue);
-
-	    _initialiseProps.call(this);
-	  }
-
-	  /**
-	   * Generates a new Spawning-item.
-	   */
-	  newItem(data, prio) {
-	    let opts = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
-
-	    let creepMemory = data.memory || {};
-	    if (!_.isUndefined(opts.assignItem)) {
-	      creepMemory.item = creepMemory.item || {};
-	      let itemId = _hiveMind2.default.push(opts.assignItem.data);
-	      creepMemory.item.id = itemId;
-	      if (!_.isUndefined(opts.assignItem.priority)) {
-	        creepMemory.item.prio = opts.assignItem.priority;
-	      } else {
-	        creepMemory.item.prio = 0;
-	      }
-	    }
-	    if (_.isUndefined(creepMemory.myRoomName)) {
-	      creepMemory.myRoomName = this.room.name;
-	    }
-	    if (_.isUndefined(creepMemory.role)) {
-	      creepMemory.role = this._roleOrDefaultOf(data);
-	    }
-
-	    // Set the data
-	    const hiveMindData = {
-	      memory: creepMemory,
-	      kind: data.kind || _constants2.default.KIND_ZERGLING,
-	      role: this._roleOrDefaultOf(data),
-	      body: data.body || undefined
-	    };
-	    return super.newItem(hiveMindData, prio);
-	  }
-
-	  itemDone(itemId) {
-	    super.itemDone(itemId);
-	  }
-
-	  itemGenerator() {
-	    // Simple target-zerg-count
-	    for (let type of this.room.memory.targetZergCount) {
-	      const count = this.room.memory.targetZergCount[type];
-	      const existingZergs = _.filter(Game.creeps, zerg => zerg.memory.role === type && (zerg.memory.byRoomName === this.room.name || zerg.pos.roomName === this.room.name));
-	      let queuedCreeps = this.queue.filter({ memory: { kind: type, role: _constants2.default.ROLE_ZERG } }).length;
-	      while (count > existingZergs + queuedCreeps) {
-	        this.newItem({
-	          role: _constants2.default.ZERG,
-	          kind: type,
-	          memory: { body: this.bodyFor(type) }
-	        });
-	      }
-	    }
-	  }
-
-	  bodyFor(zergType) {
-	    const maxSpawnCost = this.room.maxSpawnCost();
-	    let body = _constants2.default.ZERG_PARTS_TEMPLATES[zergType];
-	    return this.calcCreepBody(this.room, body, maxSpawnCost);
-	  }
-
-	  /**
-	   * TODO Probably doesnt belong here
-	   */
-	  itemVerwertor() {
-	    if (this.queue.itemCount() > 0) {
-	      while (queue.peek()) {
-	        const queueItem = queue.peek();
-	        const itemData = _hiveMind2.default.data[queueItem.id];
-	        const spawnPriority = _constants2.default.PRIORITIES[_constants2.default.SPAWN][_constants2.default.KIND_CORRUPTOR];
-	        const memory = {
-	          kind: _constants2.default.KIND_CORRUPTOR,
-	          memory: {
-	            role: _constants2.default.ZERG,
-	            item: queueItem
-	          }
-	        };
-	        const res = this.room.pushToQueue(_constants2.default.SPAWN, { memory: creepMemory, kind: creepMemory.kind }, spawnPriority);
-	        if (res) {
-	          queue.dequeue();
-	        }
-	      }
-	    }
-	  }
-
-	  spawnCreep(spawnPriority, creepMemory) {
-	    let opts = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
-
-	    if (!_.isUndefined(opts.assignItem)) {
-	      creepMemory.item = creepMemory.item || {};
-	      let itemId = _hiveMind2.default.push(opts.assignItem.data);
-	      creepMemory.item.id = itemId;
-	      if (!_.isUndefined(opts.assignItem.priority)) {
-	        creepMemory.item.prio = opts.assignItem.priority;
-	      } else {
-	        creepMemory.item.prio = 0;
-	      }
-	    }
-	    if (_.isUndefined(creepMemory.myRoomName)) {
-	      creepMemory.myRoomName = this.room.name;
-	    }
-	    this.room.pushToQueue(_constants2.default.SPAWN, { memory: creepMemory, kind: creepMemory.kind }, spawnPriority);
-	  }
-
-	  calculateStepsFromSpawnOf(room, targetPos) {
-	    //TODO Implement me
-	    return 0;
-	  }
-	}
-
-	var _initialiseProps = function () {
-	  this._roleOrDefaultOf = data => data.role || data.memory.role || _constants2.default.ROLE_ZERG;
-
-	  this.calcCreepBody = function (room, parts) {
-	    let maxCost = arguments.length <= 2 || arguments[2] === undefined ? 0 : arguments[2];
-	    let usingStreet = arguments.length <= 3 || arguments[3] === undefined ? true : arguments[3];
-
-	    let partCost = {
-	      [WORK]: 100,
-	      [CARRY]: 50,
-	      [MOVE]: 50,
-	      [ATTACK]: 80,
-	      [RANGED_ATTACK]: 150,
-	      [HEAL]: 250
-	    };
-	    let roomMaxCost = _.sum(room.find(FIND_MY_STRUCTURES, { filter: struc => struc.structureType == STRUCTURE_EXTENSION || struc.structureType == STRUCTURE_SPAWN }), 'energy');
-	    let max = maxCost != 0 ? maxCost : roomMaxCost;
-	    let partBlockCost = parts.reduce((memo, part) => memo + partCost[part], 0);
-	    let moveRatio = usingStreet ? 1 / 2 : 1;
-	    let movesPerBlock = parts.length * moveRatio;
-	    let moveCost = movesPerBlock * partCost[MOVE];
-	    // We should add one MOVE to the 6 calculated MOVE if we have 13 parts
-	    let hiddenMoveCost = movesPerBlock % 1 > 0 ? partCost[MOVE] / 2 : 0;
-	    let wholeBlockCost = partBlockCost + moveCost;
-	    let maxBlockCount = Math.floor(50 / (parts.length + movesPerBlock));
-	    let blockCount = Math.floor((max - hiddenMoveCost) / wholeBlockCost);
-	    blockCount = maxBlockCount < blockCount ? maxBlockCount : blockCount;
-	    let moveBlockCount = Math.ceil(movesPerBlock * blockCount);
-	    let body = [];
-	    _.range(moveBlockCount).forEach(() => body.push(MOVE));
-	    for (let i = 0; i < blockCount; i += 1) {
-	      body = body.concat(parts);
-	    }
-	    return body;
-	  };
-	};
-
-	module.exports = Spawning;
-
-/***/ },
-/* 24 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _hiveMind = __webpack_require__(3);
-
-	var _hiveMind2 = _interopRequireDefault(_hiveMind);
-
-	var _PriorityQueue = __webpack_require__(4);
-
-	var _PriorityQueue2 = _interopRequireDefault(_PriorityQueue);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	/**
-	 * Basic helper-class for Queueing stuff
-	 * Combines hiveMind & PriorityQueue for some noice helper-methods
-	 */
-	class Queueing {
-	  constructor(room, queue) {
-	    this.getStructureName = struc => {
-	      let name = false;
-	      switch (struc.structureType) {
-	        case STRUCTURE_SPAWN:
-	          name = 'Spawn';break;
-	        case STRUCTURE_EXTENSION:
-	          name = 'Extension';break;
-	        case STRUCTURE_CONTROLLER:
-	          name = 'Controller';break;
-	        case STRUCTURE_TOWER:
-	          name = 'Tower';break;
-	        case STRUCTURE_RAMPART:
-	          name = 'Rampart';break;
-	        case STRUCTURE_CONTAINER:
-	          name = 'Container';break;
-	        case STRUCTURE_STORAGE:
-	          name = 'Storage';break;
-	        case STRUCTURE_WALL:
-	          name = 'Wall';break;
-	        case STRUCTURE_ROAD:
-	          name = 'Road';break;
-	        case STRUCTURE_LINK:
-	          name = 'Link';break;
-	        default:
-	          name = '???';break;
-	      }
-	      if (struc instanceof ConstructionSite) {
-	        return `ConstructionSite of ${ name }`;
-	      } else {
-	        return name;
-	      }
-	    };
-
-	    if (typeof room === 'string') {
-	      this.roomName = room;
-	      this.room = Game.rooms[this.roomName];
-	    } else {
-	      this.roomName = room.name;
-	      this.room = room;
-	    }
-	    if (typeof queue === 'string') {
-	      this.queue = this.room.queue(queue);
-	    } else if (queue === null) {} else {
-	      this.queue = queue;
-	    }
-	  }
-
-	  newItem(data, prio) {
-	    let queue = arguments.length <= 2 || arguments[2] === undefined ? this.queue : arguments[2];
-
-	    const itemId = _hiveMind2.default.push(data);
-	    queue.queue({ id: itemId, prio: prio });
-	    return itemId;
-	  }
-
-	  itemDone(itemId) {
-	    _hiveMind2.default.delete(itemId);
-	  }
-
-	  allItems() {
-	    if (_.isUndefined(this._allItems)) {
-	      this._allItems = _hiveMind2.default.allForRoom(this.room || this.roomName);
-	    }
-	    return this._allItems;
-	  }
-
-	  filterQueue(filter) {
-	    return _.filter(this.queue, filter);
-	  }
-
-	  log() {
-	    /// TODO Make a nice log-output
-	    console.log(JSON.stringify(this.queue));
-	  }
-
-	  log() {
-	    let opts = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-
-	    const queue = opts.queue || this.queue;
-	    if (!queue) {
-	      log.orange('No prioqueue!');return;
-	    }
-	    console.log(`<span style="color: #33aaff">` + `====== Queue: ${ queue.constructor.name }</span>`);
-	    for (let queueItem of queue.data) {
-	      let item = Memory['hiveMind'][queueItem.id];
-	      if (!item) {
-	        continue;
-	      }
-	      console.log(this._stringifyQueueItem(queueItem, item));
-	    }
-	  }
-
-	  _stringifyQueueItem(queueItem, hiveMindItem) {
-	    return `    - <span style="color: orange">Item:</span> ` + `${ JSON.stringify(hiveMindItem) }`;
-	  }
-
-	  /**
-	   * A meta-item is one which assigned-status has been set to false.
-	   * It basically is a queue-item with an overarching hiveMindItem from which
-	   * multiple hiveMind-items can be generated.
-	   */
-	  editMetaItemOrNewItem(onNewItem, onEditItem, existingItems) {
-	    if (!existingItems.length) {
-	      onNewItem();
-	    } else {
-	      const nonAssignedExistingItems = _.filter(existingItems, { assigned: false });
-	      if (nonAssignedExistingItems.length) {
-	        onEditItem(nonAssignedExistingItems[0]);
-	      } else {
-	        onNewItem();
-	      }
-	    }
-	  }
-	}
-
-	module.exports = Queueing;
-
-/***/ },
 /* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -3183,7 +3536,7 @@ var modwide = global; module.exports =
 
 	var _constants2 = _interopRequireDefault(_constants);
 
-	var _Queueing = __webpack_require__(24);
+	var _Queueing = __webpack_require__(18);
 
 	var _Queueing2 = _interopRequireDefault(_Queueing);
 
@@ -3789,7 +4142,7 @@ var modwide = global; module.exports =
 
 	var _constants2 = _interopRequireDefault(_constants);
 
-	var _Queueing = __webpack_require__(24);
+	var _Queueing = __webpack_require__(18);
 
 	var _Queueing2 = _interopRequireDefault(_Queueing);
 
@@ -3815,11 +4168,17 @@ var modwide = global; module.exports =
 	  constructor(room) {
 	    let queue = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
 
-	    super(room, queue);
-	    this.queues = {
-	      [_constants2.default.WORK_REQUESTING]: this.room.queue(_constants2.default.WORK_REQUESTING),
-	      [_constants2.default.RESOURCE_REQUESTING]: this.room.queue(_constants2.default.RESOURCE_REQUESTING)
+	    // TODO Handles two queues at the same time.
+	    // Maybe really should be splitted up.
+	    const queues = {
+	      [_constants2.default.WORK_REQUESTING]: room.queue(_constants2.default.WORK_REQUESTING),
+	      [_constants2.default.RESOURCE_REQUESTING]: room.queue(_constants2.default.RESOURCE_REQUESTING)
 	    };
+	    if (queue) {
+	      queue = queues[queue];
+	    }
+	    super(room, queue);
+	    this.queues = queues;
 	  }
 
 	  /**
@@ -4168,7 +4527,7 @@ var modwide = global; module.exports =
 
 	var _hiveMind2 = _interopRequireDefault(_hiveMind);
 
-	var _Overlord = __webpack_require__(22);
+	var _Overlord = __webpack_require__(24);
 
 	var _Overlord2 = _interopRequireDefault(_Overlord);
 
@@ -4573,6 +4932,17 @@ var modwide = global; module.exports =
 	      }
 	    };
 
+	    this.newCalcActionRange = (object, item) => {
+	      if (item.workType === _constants2.default.SEED) {
+	        return 1;
+	      }
+	      if (object.structureType == STRUCTURE_CONTROLLER || object instanceof ConstructionSite) {
+	        return 3;
+	      } else {
+	        return 1;
+	      }
+	    };
+
 	    this.handleActionResult = function (result, type, object) {
 	      let debugInfo = arguments.length <= 3 || arguments[3] === undefined ? null : arguments[3];
 
@@ -4709,6 +5079,148 @@ var modwide = global; module.exports =
 	  /*
 	   * Make sure that the hiveMind-Item gets deleted before the zergling dies
 	   */
+
+
+	  newWork() {
+	    if (this.mem.items && this.mem.items.length) {
+	      let items = this.mem.items;
+	      this.workOnItem(items[0]);
+	    } else {
+	      this.newFindItems();
+	    }
+	  }
+
+	  workOnItem(item) {
+	    data = _hiveMind2.default.data(item.id);
+	    let object = Game.getObjectById(itemData.objId);
+	    let knowsObject = true;
+	    if (!object) {
+	      if (_.isUndefined(Game.rooms[itemData.roomName])) {
+	        // We cant see object bbut we cant see the room as well
+	        /// TODO Implement checking of room with the Observer to help here?
+	        object = new RoomPosition(itemData.x, itemData.y, itemData.roomName);
+	        knowsObject = false;
+	      } else {
+	        // Object doesnt exist but we can see the room. Nope
+	        this.done(MY_ERR_WTF, 'workOnItem#object: Couldnt find Object by Id');
+	        return;
+	      }
+	    }
+	    let range = this.newCalcActionRange(object, itemData);
+	    if (knowsObject && this.zergling.pos.inRangeTo(object, range)) {
+
+	      switch (itemData.kind) {
+	        case _constants2.default.ACTIVE_PROVIDING:
+	          this.withdrawFrom(object);break;
+	        case _constants2.default.SEEDING:
+	          this.seedTo(object);break;
+	        case _constants2.default.WORK_REQUESTING:
+	        case _constants2.default.RESOURCE_REQUESTING:
+	          this.transferTo(object);
+	          break;
+	        default:
+	          log.orange(`Kind what?! For creep ${ JSON.stringify(this.zergling) }`);
+	      }
+	    } else {
+	      this.zergling.moveTo(object);
+	    }
+	  }
+
+	  newSearchForItems() {
+
+	    // Current amount of energy
+	    // Do we need to refill?
+	    // If yes: refill:
+	    // Get first item of requester, sorted by range (Zerglings shouldnt refill from remotes)
+	    // Get its resource-type
+	    // If no, just set the resource-type to the carrying-type
+	    // While we have enough energy to fulfill the coming request
+	    // resort fitting requester-queue based on range of last added item
+	    // Get first item from that queue
+
+	    // refill: How do we know what resource to refill?
+
+	    let position = null;
+	    let providedResourceType = RESOURCE_ENERGY;
+	    const itemFilter = (item, data) => position.roomName == data.roomName && data.type == providedResourceType //&&
+	    // Dont filter by amount since we want to put all of our energy we have
+	    // left into stuff.
+	    // data.amount <= this.carry[providedResourceType]
+	    ;
+	    const myQueueType = _constants2.default.NEW_QUEUES_FOR_KINDS[this.mem.kind];
+
+	    const requesting = new Requesting(Game.rooms[this.mem.myRoomName], myQueueType);
+	    // First get a target-item to check if we have enough resources carried with
+	    // us to satisfy it
+	    const prioritizedItem = _.get(requesting.reorderByRangeFrom(this.zergling.pos, { filter: itemFilter }), 0);
+	    if (!prioritizedItem) {
+	      log.red('No prio item!');return;
+	    }
+
+	    const maxGrep = this.zergling.carryCapacity - _.sum(this.zergling.carry);
+	    const minGrep = 200;
+	    if (prioritizedItem.amount >= this.zergling.carry[providedResourceType]) {
+	      // I would in theory need to find the next target to this source to find
+	      // out how much energy I want, but thats getting too complicated for now.
+	      // Just get as much energy as ye can
+
+	      // Search for source, put it before the targets
+
+	      const providing = new ActiveProviding(Game.rooms[this.mem.myRoomName]);
+	      const activeSourceItem = _.get(providing.reorderByRangeFrom(this.zergling.pos, {
+	        filter: (item, data) => data.amount >= minGrep
+	      }), 0);
+	      if (activeSourceItem) {
+	        const newItem = providing.generateNewItemFromMetaItem(activeSourceItem, maxGrep);
+	        this.mem.items.unshift(newItem);
+	      } else {
+	        // Search for passive sources
+	        /// TODO
+	      }
+	    } else {
+	      // Only put the range-ordered item actually into the items-memory when we
+	      // dont have to get more energy from another source since we would be
+	      // somewhere else by then, meaning the ranges would have changed
+	      this.mem.items.unshift(prioritizedItem);
+	    }
+
+	    if (!this.mem.items.length) {
+	      // we havent found a suitable target or source, give up
+	      return false;
+	    }
+
+	    const prioItemPosition = new RoomPosition(prioritizedItem.x, prioritizedItem.y, prioritizedItem.roomName);
+
+	    const queue = requesting.getFirstAccountingRangeFrom(position, { filter: itemFilter });
+
+	    let antiEndlessLoop = 0;
+	    while (this._unusedCarryAmountOf(providedResourceType) > 0) {
+	      let lastItem = this.mem.items[-1];
+	      let position = new RoomPosition(lastItem.x, lastItem.y, lastItem.roomName);
+	      let queue = requesting.getFirstAccountingRangeFrom(position, { filter: itemFilter });
+	      potentialItem = queue.peek();
+	      potentialItemData = _hiveMind2.default.data[potentialItem.id];
+	      if (potentialItemData.amount > this._unusedCarryAmountOf(providedResourceType)) {
+	        // We cant take over whole task, we have to split from it
+	        const newItem = requesting.generateNewItemFromMetaItem(potentialItem, this._unusedCarryAmountOf(providedResourceType));
+	        if (newItem) {
+	          this.mem.items.push(newItem);
+	        }
+	      } else {
+	        // Take over whole task
+	        queue.dequeue();
+	        this.mem.items.push(potentialItem);
+	      }
+	      antiEndlessLoop += 1;
+	      if (antiEndlessLoop > 50) {
+	        log.red('ANTIENDLESSLOOP TRIGGERED');break;
+	      }
+	    }
+	  }
+
+	  _unusedCarryAmountOf(resource) {
+	    return this.carry[resource] - _.sum(_.filter(this.mem.items, item => item.type == resource && item.kind != _constants2.default.ACTIVE_PROVIDING), 'amount');
+	  }
 	}
 
 	_screepsProfiler2.default.registerObject(Zergling, 'Zergling');
@@ -5481,11 +5993,11 @@ var modwide = global; module.exports =
 
 	var _constants2 = _interopRequireDefault(_constants);
 
-	var _Queueing = __webpack_require__(24);
+	var _Queueing = __webpack_require__(18);
 
 	var _Queueing2 = _interopRequireDefault(_Queueing);
 
-	var _Spawning = __webpack_require__(23);
+	var _Spawning = __webpack_require__(17);
 
 	var _Spawning2 = _interopRequireDefault(_Spawning);
 
@@ -5657,7 +6169,7 @@ var modwide = global; module.exports =
 
 	var _constants2 = _interopRequireDefault(_constants);
 
-	var _Queueing = __webpack_require__(24);
+	var _Queueing = __webpack_require__(18);
 
 	var _Queueing2 = _interopRequireDefault(_Queueing);
 

@@ -12,14 +12,15 @@ class Requesting extends Queueing {
   constructor(room, queue = null) {
     // TODO Handles two queues at the same time.
     // Maybe really should be splitted up.
-    this.queues = {
-      [$.WORK_REQUESTING]: this.room.queue($.WORK_REQUESTING),
-      [$.RESOURCE_REQUESTING]: this.room.queue($.RESOURCE_REQUESTING)
+    const queues = {
+      [$.WORK_REQUESTING]: room.queue($.WORK_REQUESTING),
+      [$.RESOURCE_REQUESTING]: room.queue($.RESOURCE_REQUESTING)
     }
     if(queue) {
-      queue = this.queues[queue]
+      queue = queues[queue]
     }
     super(room, queue)
+    this.queues = queues
   }
 
   /**

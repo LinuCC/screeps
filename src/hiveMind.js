@@ -20,7 +20,7 @@ const hiveMind = {
   },
 
   allForRoom: function(room, opts = {}) {
-    const filter = opts.filter || ()=> true
+    const filter = opts.filter || (()=> true)
     const roomName = (typeof room === 'string') ? room : room.name
     return _.filter(
       this.data, (entry)=> (

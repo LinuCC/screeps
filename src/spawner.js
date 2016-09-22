@@ -1,4 +1,5 @@
 import './constants.js'
+import Spawning from './queues/Spawning'
 
 class Spawner {
   rebootHarvester = (spawn)=> {

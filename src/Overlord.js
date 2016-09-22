@@ -55,8 +55,8 @@ class Overlord {
       this.excavate(queues[$.EXCAVATE])
     }
 
-    new ActiveProviding(this.room).itemGenerator()
-    new Requesting(this.room).itemGenerator()
+    // new ActiveProviding(this.room).itemGenerator()
+    // new Requesting(this.room).itemGenerator()
 
     this.remote(queues)
   }

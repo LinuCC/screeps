@@ -202,7 +202,7 @@ class Zergling {
       }
       else {
         // search for a source
-        let source = new verlord(this.zergling.pos.roomName)
+        let source = new Overlord(this.zergling.pos.roomName)
           .findSourceForCreep(
             this.zergling, hiveMind.data[this.mem.item.id],
             item.res
@@ -652,7 +652,7 @@ class Zergling {
     let providedResourceType = RESOURCE_ENERGY
     const itemFilter = (item, data) => (
       position.roomName == data.roomName &&
-      data.type == providedResourceType &&
+      data.type == providedResourceType //&&
       // Dont filter by amount since we want to put all of our energy we have
       // left into stuff.
       // data.amount <= this.carry[providedResourceType]

@@ -2,6 +2,9 @@
 const roleFighter = {
 
   assignItself(creep) {
+    if(!Memory.zergSubordinates) {
+      Memory.zergSubordinates = {}
+    }
     if(!Memory.zergSubordinates[creep.memory.groupId]) {
       Memory.zergSubordinates[creep.memory.groupId] = {}
     }
@@ -21,31 +24,32 @@ const roleFighter = {
   subPositionForIndex(index, position, moveDir) {
 
     const directions = {
-      [TOP]: {x: -1, y: 0},
+      [TOP]: {x: 0, y: 1},
       [TOP_RIGHT]: {x: -1, y: 1},
       [RIGHT]: {x: -1, y: 0},
       [BOTTOM_RIGHT]: {x: -1, y: -1},
       [BOTTOM]: {x: 0, y: -1},
       [BOTTOM_LEFT]: {x: 1, y: -1},
-      [LEFT]: {x: -1, y: 0},
+      [LEFT]: {x: 1, y: 0},
       [TOP_LEFT]: {x: 1, y: 1}
     }
     let behind = directions[moveDir]
     let relativePos = null
+    let dir = null
     switch(index) {
       case 0:
         relativePos = directions[moveDir]
         break
       case 1:
-        const dir = (moveDir - 1 >= 1) ? moveDir - 1 : 8 + (moveDir - 1)
+        dir = (moveDir - 1 >= 1) ? moveDir - 1 : 8 + (moveDir - 1)
         relativePos = directions[dir]
         break
       case 2:
         // If moveDir is straight (top, right, left, bottom) we want one of the
         // creeps to stand directly besides the attacker
-        let dir = null
+        dir = null
         if(moveDir % 2 === 1) {
-          dir = (moveDir - 2 <= 8) ? moveDir - 2 : 8 + (moveDir - 2)
+          dir = (moveDir - 2 >= 1) ? moveDir - 2 : 8 + (moveDir - 2)
         }
         else {
           dir = (moveDir + 1 <= 8) ? moveDir + 1 : (moveDir + 1) - 8
@@ -53,8 +57,11 @@ const roleFighter = {
         relativePos = directions[dir]
         break
     }
+    console.log(` = relativePos: ${JSON.stringify(relativePos)}`)
     let x = relativePos.x + position.x
     let y = relativePos.y + position.y
+    console.log(`  = x: ${x}`)
+    console.log(`  = y: ${y}`)
     if(x < 0) { x = 50 + x }
     else if(x > 50) { x = x - 50 }
     if(y < 0) { y = 50 + x }
@@ -64,6 +71,9 @@ const roleFighter = {
   },
 
   run(creep) {
+    let itsMaster = Game.getObjectById(
+      _.get(Memory, ['zergSubordinates', creep.memory.groupId, 'masterId'])
+    )
     if(creep.memory.hasAssignedItself === false) {
       this.assignItself(creep)
     }
@@ -74,65 +84,74 @@ const roleFighter = {
       let path = null
       let target = this.flagToGoFor(creep)
       if(target) {
-        this.attackOnFlag(creep)
+        this.attackOnFlag(creep, target)
       }
       else {
         // Scorched earth
         target = this.scorchTarget(creep)
       }
       if(target) {
-        path = creep.findPathTo(target)
+        path = creep.pos.findPathTo(target)
       }
-      if(path && path.length) {
-
-        const masterPos = creep.pos
-        const masterDir = path.direction // Which dir is the master going?
-        creep.move(masterDir)
-
-        if(creep.pos.inRangeTo(target, this.attackRange(creep))) {
-          this.destroy(target)
+      if(path) {
+        let masterDir = null
+        let masterPos = null
+        if(path.length) {
+          masterDir = path[0].direction // Which dir is the master going?
+          masterPos = new RoomPosition(path[0].x, path[0].y, creep.room.name)
+          creep.move(masterDir)
         }
         else {
-          this.attackVicinity()
-          this.heal()
+          masterDir = creep.pos.getDirectionTo(target)
+        }
+        if(!masterDir) {
+          log.red('masterDir undefined')
+          masterDir = 1
+          masterPos = creep.pos
+        }
+
+        if(creep.pos.inRangeTo(target, this.attackRange(creep))) {
+          this.destroy(creep, target)
+        }
+        else {
+          this.attackVicinity(creep)
+          this.heal(creep)
         }
 
         // Try to move the target with the master
-        const subs = _.get(Memory, ['zergSubordinates', creep.id])
+        const subs = _.get(
+          Memory, ['zergSubordinates', creep.memory.groupId, 'subordinateIds']
+        )
+        log.red(subs.length)
         if(subs && subs.length) {
           subs.forEach((sub, index)=> {
             console.log(`  = Sub-index is ${index}`)
             Game.getObjectById(sub).moveTo(
-              this.subPositionForIndex(index, masterPos, masterDir)
+              this.subPositionForIndex(index, masterPos, masterDir),
+              {ignoreCreeps: false}
             )
           })
         }
       }
       else {
         creep.say('No Path')
-        this.attackVicinity()
-        this.heal()
+        this.attackVicinity(creep)
+        this.heal(creep)
       }
     }
     else if(
-      creep.memory.isSubordinate && creep.memory.masterId &&
-      creep.memory.groupControl
+      creep.memory.isSubordinate && itsMaster && creep.memory.groupControl
     ) {
       // Master controlls my movement
       this.attackVicinity(creep)
       this.heal(creep)
     }
-    else if(creep.memory.isSubordinate && creep.memory.masterId) {
-      const masterCreep = Game.getObjectById(creep.memory.masterId)
-      if(masterCreep) {
-        creep.moveTo(masterCreep)
-      }
-      else {
-        creep.say('Master down')
-      }
+    else if(creep.memory.isSubordinate && itsMaster) {
+      creep.moveTo(itsMaster)
     }
     else {
       // Standard attack on flag
+      creep.say('Master down?')
       if(!this.moveAndAttackOnFlag(creep)) {
         this.attackVicinity(creep)
         this.heal(creep)
@@ -162,18 +181,23 @@ const roleFighter = {
       }
     }
     if(flag) {
-      let targets = flag.pos.look()
-      if(targets.length) {
-        return flag
+      if(flag.room) {
+        let targets = flag.pos.look()
+        if(targets.length) {
+          return flag
+        }
+        else {
+          return false
+        }
       }
       else {
-        return false
+        return flag.pos
       }
     }
     else {
       return false
     }
-  }
+  },
 
   moveAndAttackOnFlag(creep) {
     let flag;
@@ -220,7 +244,12 @@ const roleFighter = {
   },
 
   destroy(creep, target) {
+    if(target instanceof Flag) {
+      let targets = _.reject(target.pos.look(), (t)=> t instanceof Flag)
+      target = targets[0]
+    }
     if(creep.getActiveBodyparts(WORK) > 0 && !(target instanceof Creep)) {
+      log.orange(`dismantling! ${creep.dismantle(target.id)}, ${JSON.stringify(target)}`)
       creep.dismantle(target)
     }
     else {
@@ -233,7 +262,7 @@ const roleFighter = {
 
   heal(creep) {
     if(
-      creeps.hitsMax - _.sum(_.filter(creep.body, (b, k)=> k == HEAL)) >=
+      creep.hitsMax - _.sum(_.filter(creep.body, (b, k)=> k == HEAL)) >=
       creep.hits
     ) {
       creep.heal(creep)

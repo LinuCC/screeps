@@ -142,7 +142,7 @@ class Queueing {
   }
 
   reorderByRangeFrom(position, opts = {}) {
-    const filter = opts.filter || ()=> true
+    const filter = opts.filter || (()=> true)
     // Ignores items that are massively less prioritized
     const useRangeThreshold = opts.useRangeThreshold || true
     let firstPrio = null
